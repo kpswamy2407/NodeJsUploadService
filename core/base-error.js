@@ -6,10 +6,10 @@ const { __extends }=require('tslib');
  * @author nandha.viswanathan@sifycorp.com 
  */
 var BaseError=(function(){
+    __extends(BaseError,Error);
     function BaseError(msg){
         return Error.call(this,msg);
     }
-    __extends(BaseError,Error);
     return BaseError;
 })();
 module.exports=exports=BaseError;

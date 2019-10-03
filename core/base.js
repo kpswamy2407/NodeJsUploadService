@@ -18,6 +18,16 @@ var Base=(function(){
             }
             return __log;
         }
+        var __dbconn;
+        this.setDb=function(log){
+            __dbconn=log;
+        }
+        this.getDb=function(){
+            if(__dbconn==undefined || __dbconn==null){
+                throw new BaseError('DB connection has NOT been set.');
+            }
+            return __dbconn;
+        }
     }
     Base.GetKey=function(collc,key){
 

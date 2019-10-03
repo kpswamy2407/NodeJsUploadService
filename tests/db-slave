@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+require('dotenv').config({
+    path:'./config/env'
+});
+var colors = require('colors');
+const Sequelize=require('sequelize');
+
+const dbconn=new Sequelize(process.env.FNXT_MYSQLDB,process.env.FNXT_MYSQL_SLAVE_USER,process.env.FNXT_MYSQL_SLAVE_PWD,{
+    dialect: 'mysql',
+    port:process.env.FNXT_MYSQLPORT,
+    host:process.env.FNXT_MYSQL_SLAVE_HOST,
+    logging:false,
+});
+dbconn.authenticate()
+    .then(() => console.log('Connection to master database successfull.'.green))
+    .catch(() => console.error('Connection to master database FAILED.'.red))
+    .finally(() => dbconn.close());
