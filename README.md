@@ -15,7 +15,15 @@ This document contains the life cycle of the XML upload services of the ForumNXT
     POST /xml-upload
     <xml body>
     
-    json response comes here...
+    {
+        "status": 1,
+        "msg": "Sales order has been imported successfully.",
+        "data": null
+    }
+    
+    * status: int =  can be either 0 or 1
+    * msg: string = Response message
+    * data: any = data to pass to the client. Defaults to null
 
 ### Save the request body in a file
 - Save the request body file with respective of service and requested date with unique file name.
@@ -28,16 +36,6 @@ This document contains the life cycle of the XML upload services of the ForumNXT
 ### Import into the database
 
 ### Write success/failure response to the client.
-
-    {
-        "status": 1,
-        "msg": "Sales order has been imported successfully.",
-        "data": null
-    }
-    
-    * status: int =  can be either 0 or 1
-    * msg: string = Response message
-    * data: any = data to pass to the client. Defaults to null
 
 ## Project File Structure
 
