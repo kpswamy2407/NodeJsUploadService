@@ -34,10 +34,9 @@ var XmlCtrl=(function(){
     }
     XmlCtrl.prototype.loadModule=function(){
         var collc=new BaseCollection(this.xmljs);
-        var Module;
         switch(collc.documentType()){
             case 'xrSalesOrder':
-                Module=require('./../modules/rsalesorder');
+                var { rSalesOrder: Module}=require('./../modules/rsalesorder');
             break;
             default:
                 throw new Error('Trying to load Invalid module.');
