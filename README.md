@@ -70,7 +70,9 @@ This document contains the life cycle of the XML upload services of the ForumNXT
  - Contains the configuration files for database, ActiveMQ,...
  - Environment ".env" files are kept here.
 
-### Testing
+## Deployment
+
+### Testing the connections && checklist
 
   Test the master database connection before deploying the application.
 
@@ -79,8 +81,6 @@ This document contains the life cycle of the XML upload services of the ForumNXT
   Test the slave (replica) connection before deploying the application.
   
     tests/db-slave
-
-## Deployment
 
 ### Create a file from the following template and save as "config/env" file.
 
