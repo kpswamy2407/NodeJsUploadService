@@ -1,5 +1,5 @@
 module.exports=(sequelize,DataTypes)=>{
-    const DmsProcessXmlStatus=sequelize.define('DmsProcessXmlStatus',{
+    const XmlStatus=sequelize.define('XmlStatus',{
         id:{
             type:DataTypes.BIGINT,
             primaryKey: true,
@@ -27,6 +27,5 @@ module.exports=(sequelize,DataTypes)=>{
         timestamps:false,
         freezeTableName:true,
     });
-    DmsProcessXmlStatus.removeAttribute('id');
-    return DmsProcessXmlStatus;
+    return XmlStatus;
 };

@@ -31,7 +31,7 @@ var BaseModule=(function(){
     BaseModule.prototype.saveXml=function(xml){
         const dbconn=this.getDb();
         const serviceName=this.constructor.name;
-        const XmlStat=dbconn.import('../models/dmsprocessxmlstatus');
+        const XmlStat=dbconn.import('../models/xmlstatus');
         return XmlStat.create({
             service_name:serviceName,
             status:0,
