@@ -30,9 +30,9 @@ app.set('dbconn',dbconn);
         fileNamePattern:'application.log',
         dateFormat:'YYYY.MM.DD',
         timestampFormat:'YYYY-MM-DD HH:mm:ss.SSS',
+        level:'all',
     };
     const log=require('simple-node-logger').createRollingFileLogger( opts );
-    log.setLevel('all');
     app.set('applog',log);
 })();
 
