@@ -1,4 +1,4 @@
-const { Base }=require('./../../core');
+const { BaseModule}=require('../../core');
 const { __extends }=require('tslib');
 
 /**
@@ -8,9 +8,9 @@ const { __extends }=require('tslib');
  * @author nandha.viswanathan@sifycorp.com 
  */
 var rSalesOrder=(function(){
-    __extends(rSalesOrder,Base);
-    function rSalesOrder(){
-        Base.call(this);
+    __extends(rSalesOrder,BaseModule);
+    function rSalesOrder(xmljs){
+        BaseModule.call(this,xmljs);
     };
     rSalesOrder.prototype.import=function(){
         const dbconn=this.getDb();
