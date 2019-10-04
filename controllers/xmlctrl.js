@@ -27,25 +27,24 @@ var XmlCtrl=(function(){
     }
     XmlCtrl.prototype.import=function(){
         return this.saveXml()
-
         .then(() => this.loadModule())
         .catch(err => {
             throw new Error('Unable to import XML');
         });
     }
     XmlCtrl.prototype.loadModule=function(){
-    var collc=new BaseCollection(this.xmljs);
-        switch(collc.documentType()){
-         case 'xrSalesOrder':
-                var { rSalesOrder: Module}=require('./../modules/rsalesorder');
+        var collc=new BaseCollection(this.xmljs);
+            switch(collc.documentType()){
+             case 'xrSalesOrder':
+                    var { rSalesOrder: Module}=require('./../modules/rsalesorder');
+                break;
+                default:
+                    throw new Error('Trying to load Invalid module.');
             break;
-            default:
-                throw new Error('Trying to load Invalid module.');
-        break;
-    };
-    var modl=new Module(this.xmljs);
-    modl.setDb(this.getDb());
-    return modl.import();
+        };
+        var modl=new Module(this.xmljs);
+        modl.setDb(this.getDb());
+        return modl.import();
     }
    
     XmlCtrl.prototype.saveXml=function(){
