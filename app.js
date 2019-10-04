@@ -57,7 +57,6 @@ app.all('*',function(req,res,next){
 
 // error handling
 app.use(function(err,req,res,next){
-    app.get('applog').fatal(err.message);
     res.status(500).json({
         status:0,
         msg:'Error while processing your request.',
