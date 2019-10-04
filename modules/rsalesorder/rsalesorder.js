@@ -1,5 +1,6 @@
-const { BaseModule}=require('../../core');
+const { BaseModule }=require('../../core');
 const { __extends }=require('tslib');
+const CollecReader=require('./collec-reader');
 
 /**
  * 
@@ -13,6 +14,8 @@ var rSalesOrder=(function(){
         BaseModule.call(this,xmljs);
     };
     rSalesOrder.prototype.import=function(){
+        var crdr=new CollecReader(this._xmljs);
+        // crdr.lineItems();
         const dbconn=this.getDb();
         const CrmEntity=dbconn.import('./../../models/crmentity');
         CrmEntity.findOne().then(entity => {
