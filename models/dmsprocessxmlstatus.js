@@ -6,7 +6,7 @@ module.exports=(sequelize,DataTypes)=>{
             autoIncrement: true
         },
         context:{
-            type:DataTypes.LONGTEXT,
+            type:DataTypes.TEXT,
         },
         service_name:{
             type:DataTypes.STRING(255),

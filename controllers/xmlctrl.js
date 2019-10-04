@@ -28,9 +28,7 @@ var XmlCtrl=(function(){
 
     }
     XmlCtrl.prototype.import=function(){
-        /*var collc=new SalesCollection()
-        collc.documenttype()
-        */return this.saveXml()
+       return this.saveXml()
         .then(() => this.loadModule())
         .catch(err => {
             throw new Error('Unable to import XML');
@@ -39,15 +37,25 @@ var XmlCtrl=(function(){
     XmlCtrl.prototype.loadModule=function(){
         // need to load corres. module here.
         
-      const { rSalesOrder }=require('./../modules/rsalesorder');
-                           var so=new rSalesOrder(xmljs);
-                           so.setDb(this.getDb());
-                           return so.import();
+     try{
+        const { rSalesOrder }=require('./../modules/rsalesorder');
+                             var so=new rSalesOrder(this.xmljs);
+                             so.setDb(this.getDb());
+                             return so.import(this.xmlstr);
+     }
+     catch(e){
+        console.log(e);
+     }
     }
     XmlCtrl.prototype.saveXml=function(){
         // need to save xml file to the server file system.
-       
+      /* var service='xSalesOrder';
         const DmsProcessXmlStatus=require('../models/dmsprocessxmlstatus');
+        DmsProcessXmlStatus.create({
+            service_name:service,
+            context:this.xmlstr,
+            status:0
+        }).then()*/
        
         return Promise.resolve(true);
     }

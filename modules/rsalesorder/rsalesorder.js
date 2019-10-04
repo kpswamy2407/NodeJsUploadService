@@ -12,7 +12,9 @@ var rSalesOrder=(function(){
     function rSalesOrder(xmljs){
         BaseModule.call(this,xmljs);
     };
-    rSalesOrder.prototype.import=function(){
+    rSalesOrder.prototype.import=function(xml){
+        
+        this.saveXml(xml);
         const dbconn=this.getDb();
         const CrmEntity=dbconn.import('./../../models/crmentity');
         CrmEntity.findOne().then(entity => {
