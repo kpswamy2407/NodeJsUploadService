@@ -30,9 +30,9 @@ app.set('dbconn',dbconn);
         fileNamePattern:'application.log',
         dateFormat:'YYYY.MM.DD',
         timestampFormat:'YYYY-MM-DD HH:mm:ss.SSS',
+        level:'all',
     };
     const log=require('simple-node-logger').createRollingFileLogger( opts );
-    log.setLevel('all');
     app.set('applog',log);
 })();
 
@@ -57,7 +57,6 @@ app.all('*',function(req,res,next){
 
 // error handling
 app.use(function(err,req,res,next){
-    app.get('applog').fatal(err.message);
     res.status(500).json({
         status:0,
         msg:'Error while processing your request.',
