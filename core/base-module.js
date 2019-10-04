@@ -1,4 +1,4 @@
-const { Base }=require('./base');
+const Base =require('./base');
 const { __extends }=require('tslib');
 /**
  * 
@@ -7,6 +7,7 @@ const { __extends }=require('tslib');
  * @author pedda.swamy@sifycorp.com 
  */
 var BaseModule=(function(){
+
     __extends(BaseModule,Base);
     function BaseModule(xmljs){
         Base.call(this);
