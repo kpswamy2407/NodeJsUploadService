@@ -24,6 +24,34 @@ var BaseCollection=(function(){
             throw new Error('Unable to get documenttype');
         }
     }
+    BaseCollection.prototype.clientId=function(){
+        try{
+            return this.__data.collections.docinfo.clientid._text
+        } catch(err){
+            throw new Error('Unable to get clientid');
+        }
+    }
+    BaseCollection.prototype.transactionId=function(){
+        try{
+            return this.__data.collections.docinfo.transactionid._text
+        } catch(err){
+            throw new Error('Unable to get transactionid');
+        }
+    }
+    BaseCollection.prototype.destApplication=function(){
+        try{
+            return this.__data.collections.docinfo.destapplication._text
+        } catch(err){
+            throw new Error('Unable to get destapplication');
+        }
+    }
+    BaseCollection.prototype.sourceApplication=function(){
+        try{
+            return this.__data.collections.docinfo.sourceapplication._text
+        } catch(err){
+            throw new Error('Unable to get sourceapplication');
+        }
+    }
     return BaseCollection;
 })();
 module.exports=exports=BaseCollection;
