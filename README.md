@@ -1,4 +1,4 @@
-# ForumNXT XML Upload Service v1.0.0
+# ForumNXT Node.Js XML Upload Service v1.0.0
 
 This document contains the life cycle of the XML upload services of the ForumNXT application.
 
@@ -13,11 +13,13 @@ This document contains the life cycle of the XML upload services of the ForumNXT
 ### Receive a HTTP request
 
     POST /xml-upload
-    
     <xml body>
+    
+    json response comes here...
 
 ### Save the request body in a file
-- Save the request body file with respective of service and requested date with unique file name. Sample  folder structure as follows public/uploads/xrSalesOrder/01-10-2019/xxxxxxx1234568888990.xml
+- Save the request body file with respective of service and requested date with unique file name.
+- Sample  folder structure as follows *public/uploads/xrSalesOrder/01-10-2019/xxxxxxx1234568888990.xml*
 
 ### Load the corresponding module
 
@@ -59,9 +61,38 @@ This document contains the life cycle of the XML upload services of the ForumNXT
  - Public accessible directory in the server.
  - All XML files passed as request body to the server will be stored here.
  - All log files of the application will be stored here.
+
 ### utils
 - Its contains the commonly used functions in the application such as helpers etc.
+
 ### config
 
  - Contains the configuration files for database, ActiveMQ,...
  - Environment ".env" files are kept here.
+
+### Testing
+
+  Test the master database connection before deploying the application.
+
+    tests/db-master
+  
+  Test the slave (replica) connection before deploying the application.
+  
+    tests/db-slave
+
+## Deployment
+
+### Create a file from the following template and save as "config/env" file.
+
+    #1 db basic
+    FNXT_MYSQLDB=database_name
+    FNXT_MYSQLPORT=3306
+    # master
+    FNXT_MYSQLHOST=some-db-host.com
+    FNXT_MYSQLUSER=username
+    FNXT_MYSQLPWD=password@123
+    # slave
+    FNXT_MYSQL_SLAVE_HOST=some-db-host.com
+    FNXT_MYSQL_SLAVE_USER=username
+    FNXT_MYSQL_SLAVE_PWD=password@123
+
