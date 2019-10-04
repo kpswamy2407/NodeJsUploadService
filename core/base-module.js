@@ -1,4 +1,5 @@
 const Base =require('./base');
+const BaseError=require('./base-error');
 const { __extends }=require('tslib');
 /**
  * 
@@ -10,39 +11,38 @@ var BaseModule=(function(){
     __extends(BaseModule,Base);
     function BaseModule(xmljs){
         Base.call(this);
-        
         Object.defineProperty(this,'_xmljs',{
             value:xmljs,
             configurable:false,
             writable:false,
             enumerable:true,
         });
+        var __stat=null;
+        this.setStatus=function(stat){
+            __stat=stat;
+        };
+        this.getStatus=function(){
+            if(__stat==null || __stat==undefined){
+                throw new BaseError('XML status model has NOT been set.');
+            }
+            return __stat;
+        };
     }
-    BaseModule.prototype.getServiceName = function() {
-    	console.log(this.__xmljs);
-    };
     BaseModule.prototype.saveXml=function(xml){
-        const serviceName=this.constructor.name;
         const dbconn=this.getDb();
-        const DmsProcessXmlStatus=dbconn.import('../models/dmsprocessxmlstatus');
-        DmsProcessXmlStatus.create({
+        const serviceName=this.constructor.name;
+        const XmlStat=dbconn.import('../models/dmsprocessxmlstatus');
+        return XmlStat.create({
             service_name:serviceName,
             status:0,
             context:xml,
-        }).then(dmsproces=>{
-            console.log(dmsproces.id);
-        }).catch(e=>{
-            console.log(e);
-        });
-
+        })
+        .then(model => {
+            this.setStatus(model);
+            return true;
+        })
+        .catch(e => {throw new BaseError('Unable to save XML status.')});
     }
-    BaseModule.prototype.setProcessId=function(id){
-
-    }
-    BaseModule.prototype.getProcessId=function(){
-
-    }
-
     return BaseModule;
 })();
 module.exports=exports=BaseModule;
