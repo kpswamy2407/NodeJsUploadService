@@ -59,7 +59,7 @@ app.all('*',function(req,res,next){
 app.use(function(err,req,res,next){
     res.status(500).json({
         status:0,
-        msg:'Error while processing your request.',
+        msg:err.message,
         data:null,
     });
 });
