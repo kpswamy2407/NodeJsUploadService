@@ -1,4 +1,3 @@
-const { __extends }=require('tslib');
 const BaseError=require('./base-error');
 /**
  * 
@@ -6,13 +5,10 @@ const BaseError=require('./base-error');
  * @since Tue October 01, 2019 05:31 PM.
  * @author nandha.viswanathan@sifycorp.com 
  */
-var HttpError=(function(){
-    __extends(HttpError,BaseError);
-    function HttpError(statusCode,msg){
-        var _this=BaseError.call(this,msg);
-        _this.statusCode=statusCode;
-        return _this;
-    }
-    return HttpError;
-})();
+class HttpError extends BaseError{
+	constructor(code,msg){
+		super(msg);
+		this.code=code;
+	};
+};
 module.exports=exports=HttpError;
