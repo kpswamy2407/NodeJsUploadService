@@ -1,4 +1,4 @@
-const { Base, BaseCollection }=require('./../core');
+const { Base, BaseError, BaseCollection }=require('./../core');
 const { __extends }=require('tslib');
 
 /**
@@ -26,29 +26,19 @@ var XmlCtrl=(function(){
         });
     }
     XmlCtrl.prototype.import=function(){
-        return this.saveXml()
-        .then(() => this.loadModule())
-        .catch(err => {
-            throw new Error('Unable to import XML');
-        });
-    }
-    XmlCtrl.prototype.loadModule=function(){
         var collc=new BaseCollection(this.xmljs);
-            switch(collc.documentType()){
+        switch(collc.documentType()){
              case 'xrSalesOrder':
-                    var { rSalesOrder: Module}=require('./../modules/rsalesorder');
-                break;
-                default:
-                    throw new Error('Trying to load Invalid module.');
+                var { rSalesOrder: Module}=require('./../modules/rsalesorder');
+            break;
+            default:
+                throw new BaseError('Trying to load Invalid module.');
             break;
         };
         var modl=new Module(this.xmljs);
         modl.setDb(this.getDb());
+        modl.setLog(this.getLog());
         return modl.import();
-    }
-   
-    XmlCtrl.prototype.saveXml=function(){
-        return Promise.resolve(true);
     }
     return XmlCtrl;
 })();
