@@ -41,6 +41,9 @@ var Base=(function(){
     Base.prototype.trace=function(msg){
         this.getLog().trace(msg);
     }
+    Base.prototype.fatal=function(msg){
+        this.getLog().fatal(msg);
+    }
     return Base;
 })();
 module.exports=exports=Base;
