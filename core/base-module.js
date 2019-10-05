@@ -41,7 +41,10 @@ var BaseModule=(function(){
             this.setStatus(model);
             return true;
         })
-        .catch(e => {throw new BaseError('Unable to save XML status.')});
+        .catch(err => {
+            this.fatal(err.message);
+            throw new BaseError('Error while saving XML to the db.');
+        });
     }
     return BaseModule;
 })();
