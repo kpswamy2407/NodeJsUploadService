@@ -25,9 +25,26 @@ var XmlCtrl=(function(){
             enumerable:true,
         });
     }
+    XmlCtrl.SAVE_XML_TO_FS=true;
+    XmlCtrl.prototype.saveXml=function(modl){
+        if(XmlCtrl.SAVE_XML_TO_FS){
+            const XmlFile=require('./../utils/xml-file');
+            const moment=require('moment')();
+            var xmlf=new XmlFile();
+            xmlf.setLog(this.getLog());
+            xmlf.basedir='./public/uploads';
+            xmlf.module=modl;
+            xmlf.content=this.xmlstr;
+            xmlf.fileName=moment.format('YYYYMMDDHHmmss.SSS');
+            xmlf.date=moment.format('YYYY-MM-DD');
+            return xmlf.save();
+        }
+        return Promise.resolve(true);
+    }
     XmlCtrl.prototype.import=function(){
         var collc=new BaseCollection(this.xmljs);
-        switch(collc.documentType()){
+        var name=collc.documentType();
+        switch(name){
              case 'xrSalesOrder':
                 var { rSalesOrder: Module}=require('./../modules/rsalesorder');
             break;
@@ -38,7 +55,7 @@ var XmlCtrl=(function(){
         var modl=new Module(this.xmljs);
         modl.setDb(this.getDb());
         modl.setLog(this.getLog());
-        return modl.import();
+        return this.saveXml(name).then(() => modl.import());
     }
     return XmlCtrl;
 })();
