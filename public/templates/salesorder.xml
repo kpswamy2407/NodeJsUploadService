@@ -1,0 +1,106 @@
+<collections>
+    <docinfo>
+        <clientid>GSKL0002</clientid>
+        <createddate>{{createddate}}</createddate>
+        <destapplication>sp</destapplication>
+        <documenttype>xrSalesOrder</documenttype>
+        <fromid>GSKL0002</fromid>
+        <provider>batch</provider>
+        <sourceapplication>sap</sourceapplication>
+        <transactionid>{{transactionid}}</transactionid>
+    </docinfo>
+    <documentcontent>
+        <salesorder>
+            <element>
+                <detail>
+                    <NewDataSet>
+                        <Table>
+                            <element>
+                                <Quantity>12</Quantity>
+                                <netamount>0.000000</netamount>
+                                <orderid>OR{{transactionid}}A</orderid>
+                                <prod_ctgry_code>GrowthPlus 200 BIB Choc Parent</prod_ctgry_code>
+                                <product_code>GC0200B</product_code>
+                                <uom_code>Each</uom_code>
+                            </element>
+                            <element>
+                                <Quantity>12</Quantity>
+                                <netamount>0.000000</netamount>
+                                <orderid>OR{{transactionid}}A</orderid>
+                                <prod_ctgry_code>GrowthPlus 200 BIB Van Parent</prod_ctgry_code>
+                                <product_code>GV0200B</product_code>
+                                <uom_code>Each</uom_code>
+                            </element>
+                            <element>
+                                <Quantity>30</Quantity>
+                                <netamount>0.000000</netamount>
+                                <orderid>OR{{transactionid}}A</orderid>
+                                <prod_ctgry_code>OstoCalcium Banana 200ml Susp</prod_ctgry_code>
+                                <product_code>OB0200B</product_code>
+                                <uom_code>Each</uom_code>
+                            </element>
+                        </Table>
+                    </NewDataSet>
+                </detail>
+                <header>
+                    <NewDataSet>
+                        <Table>
+                            <beatcode>BEAT938</beatcode>
+                            <customercode>CU1053</customercode>
+                            <distributorcode>155560</distributorcode>
+                            <duedate />
+                            <orderdate>{{orderdate}}</orderdate>
+                            <orderid>OR{{transactionid}}A</orderid>
+                            <salesman_code>SLM7924</salesman_code>
+                        </Table>
+                    </NewDataSet>
+                </header>
+            </element>
+            <element>
+                <detail>
+                    <NewDataSet>
+                        <Table>
+                            <element>
+                                <Quantity>12</Quantity>
+                                <netamount>0.000000</netamount>
+                                <orderid>OR{{transactionid}}B</orderid>
+                                <prod_ctgry_code>GrowthPlus 200 BIB Choc Parent</prod_ctgry_code>
+                                <product_code>GC0200B</product_code>
+                                <uom_code>Each</uom_code>
+                            </element>
+                            <element>
+                                <Quantity>12</Quantity>
+                                <netamount>0.000000</netamount>
+                                <orderid>OR{{transactionid}}B</orderid>
+                                <prod_ctgry_code>GrowthPlus 200 BIB Van Parent</prod_ctgry_code>
+                                <product_code>GV0200B</product_code>
+                                <uom_code>Each</uom_code>
+                            </element>
+                            <element>
+                                <Quantity>30</Quantity>
+                                <netamount>0.000000</netamount>
+                                <orderid>OR{{transactionid}}B</orderid>
+                                <prod_ctgry_code>OstoCalcium Banana 200ml Susp</prod_ctgry_code>
+                                <product_code>OB0200B</product_code>
+                                <uom_code>Each</uom_code>
+                            </element>
+                        </Table>
+                    </NewDataSet>
+                </detail>
+                <header>
+                    <NewDataSet>
+                        <Table>
+                            <beatcode>BEAT938</beatcode>
+                            <customercode>CU1053</customercode>
+                            <distributorcode>155560</distributorcode>
+                            <duedate />
+                            <orderdate>{{orderdate}}</orderdate>
+                            <orderid>OR{{transactionid}}B</orderid>
+                            <salesman_code>SLM7924</salesman_code>
+                        </Table>
+                    </NewDataSet>
+                </header>
+            </element>
+        </salesorder>
+    </documentcontent>
+</collections>
