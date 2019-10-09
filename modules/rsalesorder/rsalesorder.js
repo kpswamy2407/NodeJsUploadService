@@ -42,7 +42,26 @@ var rSalesOrder=(function(){
     };
     rSalesOrder.prototype.import=function(xml){
         this.importAssoc();
+        var crdr=new CollecReader(this._xmljs);
         var rSalesOrder=this.models['rSalesOrder'];
+        var rso=new rSalesOrder();
+        VtigerField.findAll({
+            where:{
+                table_name: rSalesOrder.tableName(),receive_x
+            }
+        }).then(felds => {
+            firlds.forEach(field => {
+                rso[field.name]=crdr.get(field.name);
+            });
+            return rso;
+        }). then()
+        rso.subject=crdr.subject();
+        rso.save();
+       
+        //
+
+        /*rso.save()
+
         var p$=rSalesOrder.findOne()
         // get mapped crmentity using sequelize belongsTo association
         p$.then(rso => {
@@ -66,7 +85,7 @@ var rSalesOrder=(function(){
         .then(rsocf => console.log(rsocf.dataValues));
         // use custom collection reader to read xml js 
         var crdr=new CollecReader(this._xmljs);
-        crdr.lineItems();
+        crdr.lineItems();*/
         return this.saveXml(xml);
     };
     return rSalesOrder;

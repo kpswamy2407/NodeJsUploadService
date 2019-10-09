@@ -55,7 +55,7 @@ var XmlCtrl=(function(){
         var modl=new Module(this.xmljs);
         modl.setDb(this.getDb());
         modl.setLog(this.getLog());
-        return this.saveXml(name).then(() => modl.import());
+        return this.saveXml(name).then(() => modl.import(this.xmlstr));
     }
     return XmlCtrl;
 })();

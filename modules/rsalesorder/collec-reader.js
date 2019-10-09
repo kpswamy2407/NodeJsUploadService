@@ -10,10 +10,23 @@ var CollecReader=(function(){
 	__extends(CollecReader,BaseCollection);
 	function CollecReader(_collc){
 		BaseCollection.call(this,_collc);
+		Object.defineProperty(this,'_collc',{
+            value:Object.assign({},_collc),
+            enumerable:false,
+            writable:false,
+            configurable:false,
+        });
 	};
 	CollecReader.prototype.lineItems=function(){
 		// get line items here
 	};
+	CollecReader.prototype.subject=function(){
+		try{
+			return this._collc.collections.vtiger_xrso.subject._text;
+		}catch(e){
+			throw new Error('Unable to get subject');
+		}
+	}
 	return CollecReader;
 })();
 module.exports=exports=CollecReader;

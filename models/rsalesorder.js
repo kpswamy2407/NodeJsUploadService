@@ -2,18 +2,26 @@ module.exports=(sequelize,DataTypes)=>{
     const rSalesOrder=sequelize.define('rSalesOrder',{
         salesorderid:{
             type: DataTypes.INTEGER(19),
-            validate:{
-                hello:function(value,err){
-                    // rSalesOrder.toString=null;
-                    console.log(sequelize.models.CrmEntity)
-                    // throw new Error('foo bar');
-                    // setTimeout(() => err('hello world'),5000);
-                },
-            },
         },
         subject:{
             type: DataTypes.STRING(100),
-            defaultValue:null,
+            validate:{
+                isExists:function(value,error) {
+                        rSalesOrder.findOne({
+                          where: {deleted: '0',subject:value},
+                          attributes: ['salesorderid']
+                        }).then(order => {
+                          if(order){
+                            error('Order already exists in the application');
+                          }
+                          else{
+                            error();
+                          }
+                        }).catch(e=>{
+                            error('Unable to validate the subject');
+                        });
+                }
+            }
         },
         buyerid:{
             type: DataTypes.STRING(100),
@@ -149,6 +157,7 @@ module.exports=(sequelize,DataTypes)=>{
         tableName:'vtiger_xrso',
         timestamps:false,
         freezeTableName:true,
+
     });
     rSalesOrder.removeAttribute('id');
     return rSalesOrder;
