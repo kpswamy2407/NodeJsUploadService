@@ -28,6 +28,7 @@ var BaseModule=(function(){
             return __stat;
         };
     }
+    BaseModule.prototype.models={};
     BaseModule.prototype.saveXml=function(xml){
         const dbconn=this.getDb();
         const serviceName=this.constructor.name;
