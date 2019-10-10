@@ -48,7 +48,7 @@ module.exports=(sequelize,DataTypes)=>{
             defaultValue:null,
         },
         dist_id:{
-            type:DataTypes.INT,
+            type:DataTypes.INTEGER,
             
         },
         treatment:{

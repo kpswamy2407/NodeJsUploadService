@@ -152,6 +152,11 @@ module.exports=(sequelize,DataTypes)=>{
         },
         lbl_rso_save_pro_cate:{
             type: DataTypes.STRING(20),
+            set(val) {
+                const invMgtConf=sequelize.models.InvMgtConfig;
+                console.log(invMgtConf);
+                  this.setDataValue('lbl_rso_save_pro_cate',true);
+            }
         },
     },{
         tableName:'vtiger_xrso',
@@ -160,5 +165,46 @@ module.exports=(sequelize,DataTypes)=>{
 
     });
     rSalesOrder.removeAttribute('id');
+    rSalesOrder.beforeCreate((rso,options)=>{
+        console.log('hllll');
+        //console.log(this.getDb());
+    });
+    rSalesOrder.afterSave((rso,options) => {
+        
+    /*
+      
+      var VtigerTab=this.sequelize.models['vTigerTab'];
+      var CrmEntitySeq=this.sequelize.models['CrmEntitySeq'];
+      Promise.all([vTigerTab.getSalesOrder(),CrmEntitySeq.fnxtIncrement()])
+          .then(res => {
+              var [tab, id]=res;
+              var rsocrm=new CrmEntity({
+                  crmid:id,
+                  smcreatorid:1,
+                  smownerid:1,
+                  modifiedby:0,
+                  setype:tab.name,
+                  setype_id:tab.tabid,
+                  description:null,
+                  createdtime:new Date(),
+                  modifiedtime:new Date(),
+                  viewedtime:null,
+                  status:null,
+                  version:0,
+                  presence:1,
+                  deleted:0,
+                  sendstatus:null,
+                  terms_conditions:null,
+              });
+              return rsocrm.save();
+          })
+          .then(function(crm){
+              return crm;
+          })
+          .catch( err => {
+              throw new Error('Unable to create CRM entity for rSalesOrder.');
+          })
+      
+    */});
     return rSalesOrder;
 };

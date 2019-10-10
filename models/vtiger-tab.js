@@ -48,13 +48,11 @@ module.exports=(sequelize,DataTypes)=>{
             defaultValue:0,
         },
     },
-    { 
-        indexes: [ { unique: true, fields: [ 'name' ] } ] 
-    },
     {
         tableName:'vtiger_tab',
         timestamps:false,
         freezeTableName:true,
+        indexes: [ { unique: true, fields: [ 'name' ] } ],
     });
     return VtigerTab;
 };
