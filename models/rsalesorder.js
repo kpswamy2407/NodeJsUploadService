@@ -165,7 +165,7 @@ module.exports=(sequelize,DataTypes)=>{
 
     });
     rSalesOrder.removeAttribute('id');
-    rSalesOrder.beforeCreate((rso,options)=>{
+    rSalesOrder.afterCreate((rso,options)=>{
         console.log('hllll');
         //console.log(this.getDb());
     });

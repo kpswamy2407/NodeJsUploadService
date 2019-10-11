@@ -27,6 +27,14 @@ var CollecReader=(function(){
 			throw new Error('Unable to get subject');
 		}
 	}
+	CollecReader.prototype.vtigerXrso=function(){
+		try{
+			return this._collc.collections.vtiger_xrso;
+		}
+		catch(e){
+			throw new Error('Unable to get the vtiger_xrso');
+		}
+	}
 	return CollecReader;
 })();
 module.exports=exports=CollecReader;
