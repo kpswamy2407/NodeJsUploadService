@@ -18,11 +18,11 @@ module.exports=(sequelize,DataTypes)=>{
             defaultValue:null,
         },
         dob:{
-            type:DataTypes.DataTypes,
+            type:DataTypes.DATE,
             defaultValue:null,
         },
         doa:{
-            type:DataTypes.DataTypes,
+            type:DataTypes.DATE,
             defaultValue:null,
         },
         bank_name:{

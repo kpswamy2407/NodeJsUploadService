@@ -27,7 +27,7 @@ var CollecReader=(function(){
 			throw new Error('Unable to get subject');
 		}
 	}
-	CollecReader.prototype.vtigerXrso=function(){
+	CollecReader.prototype.xrso= async function(){
 		try{
 			return this._collc.collections.vtiger_xrso;
 		}

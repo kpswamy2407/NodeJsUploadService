@@ -23,6 +23,9 @@ var rSalesOrder=(function(){
         const VtigerField=dbconn.import('./../../models/vtiger-field');
         const CurrencyInfo=dbconn.import('./../../models/currency-info');
         const RelModule=dbconn.import('./../../models/rel-module');
+        const Retailer=dbconn.import('./../../models/retailer');
+        const SubRetailer=dbconn.import('./../../models/sub-retailer');
+        const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
         rSalesOrder.belongsTo(CrmEntity,{
             as:'Crm',
             foreignKey:'salesorderid',
@@ -46,75 +49,126 @@ var rSalesOrder=(function(){
         this.models['VtigerTab']=VtigerTab;
         this.models['CurrencyInfo']=CurrencyInfo;
         this.models['RelModule']=RelModule;
+        this.models['Retailer']=Retailer;
+        this.models['SubRetailer']=SubRetailer;
+        this.models['RecCustMaster']=RecCustMaster;
         return this;
     };
-    rSalesOrder.prototype.import=function(xml){
-        this.importAssoc();
-        var crdr=new CollecReader(this._xmljs);
-        var rSalesOrder=this.models['rSalesOrder'];
-        var VtigerField=this.models['VtigerField'];
-        var VtigerTab=this.models['VtigerTab'];
-        var CurrencyInfo=this.models['CurrencyInfo'];
-        var RelModule=this.models['RelModule'];
-        VtigerField.findAll({
-                where:{
-                    tablename:[rSalesOrder.tableName,rSalesOrder.tableName+'cf'],xmlreceivetable:1},
-                attributes: ['fieldid','columnname','typeofdata','uitype','tabid'],
-                include:[{model:VtigerTab,required:true,attributes:['tabid','name']}],
-                }).then(fields => {
-                var baseColl=crdr.vtigerXrso();
-                if(Object.getPrototypeOf( baseColl ) === Object.prototype){
-                    var baseColls=[baseColl];
-                }
-                else{
-                    var baseColls=baseColl;
-                }
-                baseColls.forEach(coll=>{
-                    var rso=new rSalesOrder();
-                    fields.forEach(field=>{
-                        switch(field.uitype){
-                            case 117:
-                                CurrencyInfo.findOne({
-                                    where:{currency_code:coll.currency_id.currency_code._text}
-                                    }).then(currency=>{
-                                        rso[field.columnname]=currency.id;
-                                    }).catch(e=>{
-                                        throw new Error('Unable to get the currency id for sales order');
-                                    });
-                            break;
-                            case 10:
-                               RelModule.findOne({
-                                    where:{fieldid:field.fieldid},
-                                    attributes:['relmodule']
-                                }).then(rel=>{
-                                    var relModule=rel.relmodule;
-                                    //default related module for buyerid is xRetailer
-                                    if(field.columnname=='buyerid'){
-                                        var customerType=coll.customer_type._text;
-                                        if(customerType==1){
-                                            relModule='xReceiveCustomerMaster';
-                                        }
-                                        if(customerType==2){
-                                            relModule='xsubretailer';
-                                        }
-                                    }
-                                }).catch(e=>{
-                                    throw new Error('unable to get the related module');
-                                });
-                                
-                            default:
-                            //console.log(field.columnname,'=>',coll[field.columnname]);
-                            if(field.columnname!='crmid'){
-                                
-                                //rso[field.columnname]=coll[field.columnname]._text;
-                            }
-                        }
-                        return rso;
-                    });
-                    rso.save();
-                        const lastInsertedId=rso.salesorderid;
-                })
-        }).catch(err=>{console.log(err)});
+    rSalesOrder.prototype.import=async function(xml){
+        try{
+            this.importAssoc();
+            var crdr=new CollecReader(this._xmljs);
+            var rSalesOrder=this.models['rSalesOrder'];
+            var VtigerField=this.models['VtigerField'];
+            var VtigerTab=this.models['VtigerTab'];
+            var CurrencyInfo=this.models['CurrencyInfo'];
+            var RelModule=this.models['RelModule'];
+            var Retailer=this.models['Retailer'];
+            var SubRetailer=this.models['SubRetailer'];
+            var RecCustMaster=this.models['RecCustMaster'];
+            var fields=await this.getFields();
+            var baseColl=await crdr.xrso();
+            if(Object.getPrototypeOf( baseColl ) === Object.prototype){
+                var baseColls=[baseColl];
+            }
+            else{
+                var baseColls=baseColl;
+            }
+            baseColls.forEach(coll=>{
+                var rso=new rSalesOrder();
+                
+                 fields.forEach(async function(field){
+                     switch(field.uitype){
+                         case 117:
+                        await CurrencyInfo.findOne({
+                                 where:{currency_code:coll.currency_id.currency_code._text},
+                                 }).then(currency=>{
+                                     rso[field.columnname]=currency.id;
+                                 }).catch(e=>{
+                                     throw new Error('Unable to get the currency id for sales order');
+                                 });
+                         break;
+                         case 10:
+                            await RelModule.findOne({
+                                 where:{fieldid:field.fieldid},
+                                 attributes:['relmodule']
+                             }).then(rel=>{
+                                 var relModule=rel.relmodule;
+                                 //default related module for buyerid is xRetailer
+                                 if(field.columnname=='buyerid'){
+                                     var customerType=coll.customer_type._text;
+                                     switch(customerType){
+                                        case 1:
+                                            RecCustMaster.findOne({
+                                                where:{customercode:coll.buyerid.customercode._text,deleted:0},
+                                                attributes:['xreceivecustomermasterid']
+                                            }).then(retailer=>{
+                                                if(retailer){
+                                                    rso[field.columnname]=retailer.xreceivecustomermasterid;
+                                                }
+                                                else{
+                                                    throw new Error('No customer master found with provided customercode');
+                                                }
+                                            }).catch(e=>{
+                                                throw new Error('Unable to get customer master details');
+                                            });
+                                        break;
+                                        case 2:
+                                            SubRetailer.findOne({
+                                                where:{customercode:coll.buyerid.customercode._text,deleted:0},
+                                                attributes:['xsubretailerid']
+                                            }).then(retailer=>{
+                                                if(retailer){
+                                                    rso[field.columnname]=retailer.xsubretailerid;
+                                                }
+                                                else{
+                                                    throw new Error('No sub-retailer found with provided customercode');
+                                                }
+                                            }).catch(e=>{
+                                                throw new Error('Unable to get sub-retailer details');
+                                            });
+                                        break;
+                                        default
+                                            Retailer.findOne({
+                                                where:{customercode:coll.buyerid.customercode._text,deleted:0},
+                                                attributes:['xretailerid']
+                                            }).then(retailer=>{
+                                                if(retailer){
+                                                    rso[field.columnname]=retailer.xretailerid;
+                                                }
+                                                else{
+                                                    throw new Error('No Retailer found with provided customercode');
+                                                }
+                                            }).catch(e=>{
+                                                throw new Error('Unable to get retailer details');
+                                            });
+                                        } 
+                                 }
+                             }).catch(e=>{
+                                 throw new Error('unable to get the related module');
+                             });
+                             
+                         default:
+                         //console.log(field.columnname,'=>',coll[field.columnname]);
+                         if(field.columnname!='crmid'){
+                             
+                             rso[field.columnname]=coll[field.columnname]._text;
+                         }
+                     }
+                     return rso; 
+                 });
+                 console.log('======================');
+                 console.log(rso.next_stage_name);
+                 console.log('======================');
+
+                rso.save().then(res=>{console.log(res)}).catch(e=>{
+                    console.log(e);
+                });
+            });
+        }
+        catch(e){
+            return  Promise.reject(e.error);
+        }
         return Promise.resolve(true);
         //
 
@@ -158,6 +212,24 @@ var rSalesOrder=(function(){
         crdr.lineItems();*/
         return this.saveXml(xml);
     };
+    rSalesOrder.prototype.getFields=async function (){
+        const dbconn=this.getDb();
+        const VtigerField=dbconn.import('./../../models/vtiger-field');
+        const rSalesOrder=dbconn.import('./../../models/rsalesorder');
+        const VtigerTab=dbconn.import('./../../models/vtiger-tab')
+
+        return VtigerField.findAll({
+                where:{
+                    tablename:[rSalesOrder.tableName,rSalesOrder.tableName+'cf'],xmlreceivetable:1},
+                attributes: ['fieldid','columnname','typeofdata','uitype','tabid'],
+                include:[{model:VtigerTab,required:true,attributes:['tabid','name']}],
+                }).then(fields => {
+                    return fields;
+                }).catch(e=>{
+                    console.log(e);
+                    return e.error;
+                });
+    }
     return rSalesOrder;
 })();
 module.exports=exports=rSalesOrder;
