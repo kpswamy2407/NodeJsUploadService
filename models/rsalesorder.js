@@ -48,7 +48,7 @@ module.exports=(sequelize,DataTypes)=>{
             defaultValue:null,
         },
         adjustment:{
-            type: DataTypes.DECIMAL(25,3),
+            type: DataTypes.STRING(25),
             defaultValue:null,
         },
         total:{
@@ -88,9 +88,11 @@ module.exports=(sequelize,DataTypes)=>{
         },
         conversion_rate:{
             type: DataTypes.DECIMAL(10,3),
+            defaultValue:'1.0',
         },
         next_stage_name:{
             type: DataTypes.STRING(50),
+            defaultValue:'',
         },
         quoteid:{
             type: DataTypes.INTEGER(19),
@@ -165,46 +167,18 @@ module.exports=(sequelize,DataTypes)=>{
 
     });
     rSalesOrder.removeAttribute('id');
-    rSalesOrder.afterCreate((rso,options)=>{
-        console.log('hllll');
-        //console.log(this.getDb());
+    rSalesOrder.beforeCreate((rso,options)=>{
+        try{}catch(e){
+                console.log(e);
+            }
     });
-    rSalesOrder.afterSave((rso,options) => {
-        
-    /*
-      
-      var VtigerTab=this.sequelize.models['vTigerTab'];
-      var CrmEntitySeq=this.sequelize.models['CrmEntitySeq'];
-      Promise.all([vTigerTab.getSalesOrder(),CrmEntitySeq.fnxtIncrement()])
-          .then(res => {
-              var [tab, id]=res;
-              var rsocrm=new CrmEntity({
-                  crmid:id,
-                  smcreatorid:1,
-                  smownerid:1,
-                  modifiedby:0,
-                  setype:tab.name,
-                  setype_id:tab.tabid,
-                  description:null,
-                  createdtime:new Date(),
-                  modifiedtime:new Date(),
-                  viewedtime:null,
-                  status:null,
-                  version:0,
-                  presence:1,
-                  deleted:0,
-                  sendstatus:null,
-                  terms_conditions:null,
-              });
-              return rsocrm.save();
-          })
-          .then(function(crm){
-              return crm;
-          })
-          .catch( err => {
-              throw new Error('Unable to create CRM entity for rSalesOrder.');
-          })
-      
-    */});
+       
+
+       /*var CrmEntitySeq=this.sequelize.models['CrmEntitySeq'];
+       Promise.all([vTigerTab.getSalesOrder(),CrmEntitySeq.fnxtIncrement()])
+           .then(res => {
+               var [tab, id]=res;
+               */
+    rSalesOrder.afterSave((rso,options) => {});
     return rSalesOrder;
 };

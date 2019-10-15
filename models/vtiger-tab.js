@@ -54,5 +54,8 @@ module.exports=(sequelize,DataTypes)=>{
         freezeTableName:true,
         indexes: [ { unique: true, fields: [ 'name' ] } ],
     });
+    VtigerTab.getTab=function(module){
+        return VtigerTab.findOne({where:{name:module}});
+    }
     return VtigerTab;
 };

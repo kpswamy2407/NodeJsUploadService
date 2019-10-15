@@ -16,6 +16,7 @@ var rSalesOrder=(function(){
     rSalesOrder.prototype.importAssoc=function(){
         const dbconn=this.getDb();
         const CrmEntity=dbconn.import('./../../models/crmentity');
+        const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
         const rSalesOrder=dbconn.import('./../../models/rsalesorder');
         const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
         const rSoProductRel=dbconn.import('./../../models/rso-productrel');
@@ -26,6 +27,11 @@ var rSalesOrder=(function(){
         const Retailer=dbconn.import('./../../models/retailer');
         const SubRetailer=dbconn.import('./../../models/sub-retailer');
         const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
+        const Beat=dbconn.import('./../../models/beat');
+        const Salesman=dbconn.import('./../../models/salesman');
+        const XSeries=dbconn.import('./../../models/x-series');
+       
+        console.log(CrmEntitySeq);
         rSalesOrder.belongsTo(CrmEntity,{
             as:'Crm',
             foreignKey:'salesorderid',
@@ -52,6 +58,10 @@ var rSalesOrder=(function(){
         this.models['Retailer']=Retailer;
         this.models['SubRetailer']=SubRetailer;
         this.models['RecCustMaster']=RecCustMaster;
+        this.models['Salesman']=Salesman;
+        this.models['Beat']=Beat;
+        this.models['XSeries']=XSeries;
+        this.models['CrmEntitySeq']=CrmEntitySeq;
         return this;
     };
     rSalesOrder.prototype.import=async function(xml){
@@ -66,6 +76,9 @@ var rSalesOrder=(function(){
             var Retailer=this.models['Retailer'];
             var SubRetailer=this.models['SubRetailer'];
             var RecCustMaster=this.models['RecCustMaster'];
+            var Beat=this.models['Beat'];
+            var Salesman=this.models['Salesman'];
+            var XSeries=this.models['XSeries'];
             var fields=await this.getFields();
             var baseColl=await crdr.xrso();
             if(Object.getPrototypeOf( baseColl ) === Object.prototype){
@@ -74,9 +87,11 @@ var rSalesOrder=(function(){
             else{
                 var baseColls=baseColl;
             }
-            baseColls.forEach(coll=>{
+            baseColls.forEach(async function(coll){
                 var rso=new rSalesOrder();
-                
+                    var salesorderid=await this.getCrmEntity();
+                    console.log(salesorderid);
+                    rso.salesorderid=salesorderid;
                  fields.forEach(async function(field){
                      switch(field.uitype){
                          case 117:
@@ -95,54 +110,94 @@ var rSalesOrder=(function(){
                              }).then(rel=>{
                                  var relModule=rel.relmodule;
                                  //default related module for buyerid is xRetailer
-                                 if(field.columnname=='buyerid'){
-                                     var customerType=coll.customer_type._text;
-                                     switch(customerType){
-                                        case 1:
-                                            RecCustMaster.findOne({
-                                                where:{customercode:coll.buyerid.customercode._text,deleted:0},
-                                                attributes:['xreceivecustomermasterid']
-                                            }).then(retailer=>{
-                                                if(retailer){
-                                                    rso[field.columnname]=retailer.xreceivecustomermasterid;
-                                                }
-                                                else{
-                                                    throw new Error('No customer master found with provided customercode');
-                                                }
-                                            }).catch(e=>{
-                                                throw new Error('Unable to get customer master details');
-                                            });
-                                        break;
-                                        case 2:
-                                            SubRetailer.findOne({
-                                                where:{customercode:coll.buyerid.customercode._text,deleted:0},
-                                                attributes:['xsubretailerid']
-                                            }).then(retailer=>{
-                                                if(retailer){
-                                                    rso[field.columnname]=retailer.xsubretailerid;
-                                                }
-                                                else{
-                                                    throw new Error('No sub-retailer found with provided customercode');
-                                                }
-                                            }).catch(e=>{
-                                                throw new Error('Unable to get sub-retailer details');
-                                            });
-                                        break;
-                                        default
-                                            Retailer.findOne({
-                                                where:{customercode:coll.buyerid.customercode._text,deleted:0},
-                                                attributes:['xretailerid']
-                                            }).then(retailer=>{
-                                                if(retailer){
-                                                    rso[field.columnname]=retailer.xretailerid;
-                                                }
-                                                else{
-                                                    throw new Error('No Retailer found with provided customercode');
-                                                }
-                                            }).catch(e=>{
-                                                throw new Error('Unable to get retailer details');
-                                            });
-                                        } 
+                                 switch(field.columnname){
+                                    case 'buyerid':
+
+                                        var customerType=coll.customer_type._text;
+                                        switch(customerType){
+                                           case 1:
+                                               RecCustMaster.findOne({
+                                                   where:{customercode:coll.buyerid.customercode._text,deleted:0},
+                                                   attributes:['xreceivecustomermasterid']
+                                               }).then(retailer=>{
+                                                   if(retailer){
+                                                       rso[field.columnname]=retailer.xreceivecustomermasterid;
+                                                   }
+                                                   else{
+                                                       throw new Error('No customer master found with provided customercode');
+                                                   }
+                                               }).catch(e=>{
+                                                   throw new Error('Unable to get customer master details');
+                                               });
+                                           break;
+                                           case 2:
+                                               SubRetailer.findOne({
+                                                   where:{customercode:coll.buyerid.customercode._text,deleted:0},
+                                                   attributes:['xsubretailerid']
+                                               }).then(retailer=>{
+                                                   if(retailer){
+                                                       rso[field.columnname]=retailer.xsubretailerid;
+                                                   }
+                                                   else{
+                                                       throw new Error('No sub-retailer found with provided customercode');
+                                                   }
+                                               }).catch(e=>{
+                                                   throw new Error('Unable to get sub-retailer details');
+                                               });
+                                           break;
+                                           default:
+                                               Retailer.findOne({
+                                                   where:{customercode:coll.buyerid.customercode._text,deleted:0},
+                                                   attributes:['xretailerid']
+                                               }).then(retailer=>{
+                                                   if(retailer){
+                                                        rso[field.columnname]=retailer.xretailerid;
+                                                   }
+                                                   else{
+                                                       throw new Error('No Retailer found with provided customercode');
+                                                   }
+                                               }).catch(e=>{
+                                                   throw new Error('Unable to get retailer details');
+                                               });
+                                           } 
+                                        
+                                    break;
+
+                                    case 'cf_xrso_beat':
+                                        Beat.findOne({
+                                                 where:{beatcode:coll.cf_xrso_beat.beatcode._text,deleted:0},
+                                                   attributes:['xbeatid']
+                                        }).then(beat=>{
+                                            if(beat){
+                                                rso[field.columnname]=beat.xbeatid;
+                                            }
+                                            else{
+                                                throw new Error('No next_stage_name found with provided customercode');
+                                            }
+                                            
+                                        }).catch(e=>{
+                                            throw new Error('Unable to get the beat value');
+                                        });
+                                    break;
+                                    case 'cf_xrso_sales_man':
+                                        rso[field.columnname]=coll.cf_xrso_sales_man.salesmanid._text;
+                                    break;
+                                    case 'cf_salesorder_transaction_series':
+                                         XSeries.findOne({
+                                                 where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriesname._text,deleted:0},
+                                                   attributes:['xtransactionseriesid']
+                                        }).then(series=>{
+                                            if(series){
+                                                rso[field.columnname]=series.xtransactionseriesid;
+                                            }
+                                            else{
+                                                 rso[field.columnname]='';
+                                            }
+                                            
+                                        }).catch(e=>{
+                                            rso[field.columnname]='';
+                                        })
+                                    break;
                                  }
                              }).catch(e=>{
                                  throw new Error('unable to get the related module');
@@ -150,16 +205,16 @@ var rSalesOrder=(function(){
                              
                          default:
                          //console.log(field.columnname,'=>',coll[field.columnname]);
-                         if(field.columnname!='crmid'){
-                             
-                             rso[field.columnname]=coll[field.columnname]._text;
+                         if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
+                            
+                             if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+                                rso[field.columnname]=coll[field.columnname]._text;
+                             } 
                          }
                      }
                      return rso; 
                  });
-                 console.log('======================');
-                 console.log(rso.next_stage_name);
-                 console.log('======================');
+                 
 
                 rso.save().then(res=>{console.log(res)}).catch(e=>{
                     console.log(e);
@@ -167,49 +222,11 @@ var rSalesOrder=(function(){
             });
         }
         catch(e){
+            console.log(e);
             return  Promise.reject(e.error);
         }
         return Promise.resolve(true);
-        //
-
         
-        //rso.lbl_rso_save_pro_cate=false;
-        
-       // rso.save();
-      /* rSalesOrder.create({}).then(ress=>{
-        console.log(res);
-       }).catch(e=>{
-        console.log(e);
-       });*/
-       
-        //
-
-        /*rso.save()
-
-        var p$=rSalesOrder.findOne()
-        // get mapped crmentity using sequelize belongsTo association
-        p$.then(rso => {
-            console.log(rso.dataValues);
-            return rso.getCrm();
-        })
-        .then(crme => {
-            console.log(crme.dataValues);
-        });
-        // get mapped productrel using sequelize hasMany association
-        p$.then(rso => {
-            return rso.getRel();
-        })
-        .then(rels =>{
-            rels.forEach(rel => console.log(rel.dataValues));
-        });
-        // get mapped cf table using sequelize hasOne association
-        p$.then(rso => {
-            return rso.getCf();
-        })
-        .then(rsocf => console.log(rsocf.dataValues));
-        // use custom collection reader to read xml js 
-        var crdr=new CollecReader(this._xmljs);
-        crdr.lineItems();*/
         return this.saveXml(xml);
     };
     rSalesOrder.prototype.getFields=async function (){
@@ -229,6 +246,42 @@ var rSalesOrder=(function(){
                     console.log(e);
                     return e.error;
                 });
+    }
+    rSalesOrder.prototype.getCrmEntity=async function(){
+        const dbconn=this.getDb();
+        const CrmEntity=dbconn.import('./../../models/crmentity');
+        const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
+        const VtigerTab=dbconn.import('./../../models/vtiger-tab');
+        return Promise.all([VtigerTab.getTab('xSalesOrder'),CrmEntitySeq.fnxtIncrement()]).then(res=>{
+         var [tab,id]=res;
+         var rsocrm=new CrmEntity({
+                    crmid:id,
+                    smcreatorid:1,
+                    smownerid:1,
+                    modifiedby:0,
+                    setype:tab.name,
+                    setype_id:tab.tabid,
+                    description:null,
+                    createdtime:new Date(),
+                    modifiedtime:new Date(),
+                    viewedtime:null,
+                    status:null,
+                    version:0,
+                    presence:1,
+                    deleted:0,
+                    sendstatus:null,
+                    terms_conditions:null,
+                });
+                return rsocrm.save().then(crm=>{
+                    return crm.crmid;
+                }).catch(e=>{
+                 throw new Error('Unable to create CRM entity for rSalesOrder.');
+                });
+            }).catch(e=>{
+                console.log(e);
+         throw new Error('Unable to create CRM entity f or rSalesOrder');
+        });
+        
     }
     return rSalesOrder;
 })();
