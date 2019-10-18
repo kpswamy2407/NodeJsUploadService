@@ -167,11 +167,7 @@ module.exports=(sequelize,DataTypes)=>{
 
     });
     rSalesOrder.removeAttribute('id');
-    rSalesOrder.beforeCreate((rso,options)=>{
-        try{}catch(e){
-                console.log(e);
-            }
-    });
+    
        
 
        /*var CrmEntitySeq=this.sequelize.models['CrmEntitySeq'];
