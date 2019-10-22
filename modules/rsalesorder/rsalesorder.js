@@ -205,6 +205,19 @@ const CollecReader=require('./collec-reader');
  				return e.error;
  			});
  		}
+ 		rSalesOrder.prototype.getTransRel=async function(){
+ 			const dbconn=this.getDb();
+ 			const TransRel=dbconn.import('./../../models/trans-rel');
+ 			return TransRel.findOne({
+ 				where:{'transaction_name':'xrSalesOrder'},
+ 				attributes:['transaction_rel_table','profirldname','relid','uom','categoryid','receive_pro_by_cate']
+ 			}).then(relation=>{
+ 				return relation;
+ 			}).catch(e=>{
+ 				throw new Error("Unable to get the tranaction related information");
+ 			})
+ 		}
+
  		rSalesOrder.prototype.getBeat=async function(coll){
  			var dbconn=this.getDb();
  			const Beat=dbconn.import('./../../models/beat');
@@ -243,14 +256,15 @@ const CollecReader=require('./collec-reader');
 
  			});
  		}
- 		rSalesOrder.prototype.getBuyerId=async function(customerType,coll){
- 			var dbconn=this.getDb();
- 			const Retailer=dbconn.import('./../../models/retailer');
- 			const SubRetailer=dbconn.import('./../../models/sub-retailer');
- 			const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
+ 	
+	rSalesOrder.prototype.getBuyerId=async function(customerType,coll){
+ 		var dbconn=this.getDb();
+ 		const Retailer=dbconn.import('./../../models/retailer');
+ 		const SubRetailer=dbconn.import('./../../models/sub-retailer');
+ 		const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
 
- 			switch(customerType){
- 				case 1:
+ 		switch(customerType){
+ 			case 1:
  				return  RecCustMaster.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xreceivecustomermasterid']
@@ -293,53 +307,49 @@ const CollecReader=require('./collec-reader');
  					}
  				}).catch(e=>{
  					throw new Error('Unable to get retailer details');
- 				});
- 			}
+ 			});
+ 		}
+ 	}
+ 	
+ 	rSalesOrder.prototype.updateLineItems=function(so,t,lineItems){
 
-
- 		}
- 		rSalesOrder.prototype.updateCf=function(so,t,coll){
- 			return Promise.resolve(true);
- 		}
- 		rSalesOrder.prototype.updateLineItems=function(so,t,lineItems){
- 			return Promise.resolve(true);
- 		}
- 		rSalesOrder.prototype.getCrmEntity=async function(){
- 			const dbconn=this.getDb();
- 			const CrmEntity=dbconn.import('./../../models/crmentity');
- 			const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
- 			const VtigerTab=dbconn.import('./../../models/vtiger-tab');
- 			return Promise.all([VtigerTab.getTab('xSalesOrder'),CrmEntitySeq.fnxtIncrement()]).then(res=>{
- 				var [tab,id]=res;
- 				var rsocrm=new CrmEntity({
- 					crmid:id,
- 					smcreatorid:1,
- 					smownerid:1,
- 					modifiedby:0,
- 					setype:tab.name,
- 					setype_id:tab.tabid,
- 					description:null,
- 					createdtime:new Date(),
- 					modifiedtime:new Date(),
- 					viewedtime:null,
- 					status:null,
- 					version:0,
- 					presence:1,
- 					deleted:0,
- 					sendstatus:null,
- 					terms_conditions:null,
- 				});
+ 		return Promise.resolve(true);
+ 	}
+ 	rSalesOrder.prototype.getCrmEntity=async function(){
+ 		const dbconn=this.getDb();
+ 		const CrmEntity=dbconn.import('./../../models/crmentity');
+ 		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
+ 		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
+ 		return Promise.all([VtigerTab.getTab('xrSalesOrder'),CrmEntitySeq.fnxtIncrement()]).then(res=>{
+ 			var [tab,id]=res;
+ 			var rsocrm=new CrmEntity({
+ 				crmid:id,
+ 				smcreatorid:1,
+ 				smownerid:1,
+ 				modifiedby:0,
+ 				setype:tab.name,
+ 				setype_id:tab.tabid,
+ 				description:null,
+ 				createdtime:new Date(),
+ 				modifiedtime:new Date(),
+ 				viewedtime:null,
+ 				status:null,
+ 				version:0,
+ 				presence:1,
+ 				deleted:0,
+ 				sendstatus:null,
+ 				terms_conditions:null,
+ 			});
  				return rsocrm.save().then(crm=>{
  					return crm.crmid;
  				}).catch(e=>{
  					throw new Error('Unable to create CRM entity for rSalesOrder.');
  				});
  			}).catch(e=>{
- 				console.log(e);
- 				throw new Error('Unable to create CRM entity f or rSalesOrder');
- 			});
+ 			throw new Error('Unable to create CRM entity f or rSalesOrder');
+ 		});
 
- 		}
- 		return rSalesOrder;
- 	})();
- 	module.exports=exports=rSalesOrder;
+ 	}
+ 	return rSalesOrder;
+})();
+module.exports=exports=rSalesOrder;
