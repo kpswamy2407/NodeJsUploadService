@@ -92,18 +92,18 @@ const CollecReader=require('./collec-reader');
  			}
  			baseColls.forEach(async function(coll){
  				const {rso, rsocf} = await self.prepareValues(coll,fields);
- 				console.log(rsocf);
- 				/*dbconn.transaction().then(t => {
+ 				
+ 				dbconn.transaction().then(t => {
  				  return rso.save({transaction: t}).then(so => {
  				    return rsocf.save({transaction:t}).then(socf=>{
- 				    		return self.updateLineItems(socf,t,coll);
+ 				    		return self.updateLineItems(so,t,coll.lineitems);
  				    });
  				  }).then(() => {
  				    return t.commit();
  				  }).catch((err) => {
  				    return t.rollback();
  				  });
- 				});*/
+ 				});
  			});
  		}
  		catch(e){
@@ -184,9 +184,8 @@ const CollecReader=require('./collec-reader');
  		     });
 
  		return {rso:rso,rsocf: rsocf}; 
-
-
  	}
+
  	rSalesOrder.prototype.getFields=async function (){
  		const dbconn=this.getDb();
  		const VtigerField=dbconn.import('./../../models/vtiger-field');
@@ -201,11 +200,26 @@ const CollecReader=require('./collec-reader');
  			}).then(fields => {
  				return fields;
  			}).catch(e=>{
- 				console.log(e);
  				return e.error;
  			});
- 		}
- 		rSalesOrder.prototype.getTransRel=async function(){
+ 	}
+ 	rSalesOrder.prototype.getTransGridFields=async function (tableName){
+ 		const dbconn=this.getDb();
+ 		const XGridField=dbconn.import('./../../models/x-grid-field');
+ 		
+ 		return XGridField.findAll({
+ 			where:{
+ 				tablename:tableName,xmlreceivetable:1},
+ 				attributes: ['columnname'],
+ 				
+ 			}).then(fields => {
+ 				return fields;
+ 			}).catch(e=>{
+ 				console.log("grid=>>",e);
+ 				return e.error;
+ 			});
+ 	}
+ 	rSalesOrder.prototype.getTransRel=async function(){
  			const dbconn=this.getDb();
  			const TransRel=dbconn.import('./../../models/trans-rel');
  			return TransRel.findOne({
@@ -214,11 +228,12 @@ const CollecReader=require('./collec-reader');
  			}).then(relation=>{
  				return relation;
  			}).catch(e=>{
+ 				console.log(e);
  				throw new Error("Unable to get the tranaction related information");
- 			})
+ 			});
  		}
 
- 		rSalesOrder.prototype.getBeat=async function(coll){
+ 	rSalesOrder.prototype.getBeat=async function(coll){
  			var dbconn=this.getDb();
  			const Beat=dbconn.import('./../../models/beat');
  			return Beat.findOne({
@@ -235,8 +250,8 @@ const CollecReader=require('./collec-reader');
  			}).catch(e=>{
  				throw new Error('Unable to get the beat value');
  			});
- 		}
- 		rSalesOrder.prototype.getTransactionSeries=async function(coll){
+ 	}
+ 	rSalesOrder.prototype.getTransactionSeries=async function(coll){
  			var dbconn=this.getDb();
  			const XSeries=dbconn.import('./../../models/x-series');
  			return XSeries.findOne({
@@ -255,7 +270,7 @@ const CollecReader=require('./collec-reader');
  				return '';
 
  			});
- 		}
+ 	}
  	
 	rSalesOrder.prototype.getBuyerId=async function(customerType,coll){
  		var dbconn=this.getDb();
@@ -311,9 +326,29 @@ const CollecReader=require('./collec-reader');
  		}
  	}
  	
- 	rSalesOrder.prototype.updateLineItems=function(so,t,lineItems){
+ 	rSalesOrder.prototype.updateLineItems=async function(so,t,coll){
+ 		var self=this;
+ 		var dbconn=this.getDb();
+ 		const XsroProdRel=dbconn.import('./../../models/xrso-prod-rel');
+ 		var transRel=await self.getTransRel();
+ 		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
+ 		var lineItems=coll[transRel.transaction_rel_table];
+ 		lineItems.forEach(async function(lineItem){
+ 			var xsroProdRel=new XsroProdRel();
+ 			transGridFields.forEach(async function(field){
+ 				switch(field.columnname){
+ 					case transRel.relid :
+ 						xsroProdRel[transRel.relid]=so.salesorderid;
+ 					break;
+ 					case transRel.categoryid :
+ 					
+ 					break;
 
- 		return Promise.resolve(true);
+ 				}
+ 			});
+ 			console.log(lineItem);
+ 		});
+ 		return Promise.reject(true);
  	}
  	rSalesOrder.prototype.getCrmEntity=async function(){
  		const dbconn=this.getDb();
