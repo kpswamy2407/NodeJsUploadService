@@ -30,8 +30,6 @@ const CollecReader=require('./collec-reader');
  		const Beat=dbconn.import('./../../models/beat');
  		const Salesman=dbconn.import('./../../models/salesman');
  		const XSeries=dbconn.import('./../../models/x-series');
-
- 		console.log(CrmEntitySeq);
  		rSalesOrder.belongsTo(CrmEntity,{
  			as:'Crm',
  			foreignKey:'salesorderid',
@@ -251,6 +249,60 @@ const CollecReader=require('./collec-reader');
  				throw new Error('Unable to get the beat value');
  			});
  	}
+ 	rSalesOrder.prototype.getInvMgtConfig=async function(key){
+ 			var dbconn=this.getDb();
+ 			const InvMgtConfig=dbconn.import('./../../models/inv-mgt-config');
+ 			return InvMgtConfig.findOne({
+ 				where:{key:key,treatment:'sap'},
+ 				attributes:['value']
+ 			}).then(config=>{
+ 				if(config){
+ 					return config.value;
+ 				}
+ 				else{
+ 					throw new Error('Unable to get the inv mgt config for '+key);
+ 				}
+
+ 			}).catch(e=>{
+ 				throw new Error('Unable to get the inv mgt config for '+key);
+ 			});
+ 	}
+ 	rSalesOrder.prototype.getProductId=async function(productCode){
+ 			var dbconn=this.getDb();
+ 			const Product=dbconn.import('./../../models/product');
+ 			return Product.findOne({
+ 				where:{productcode:productCode},
+ 				attributes:['xproductid']
+ 			}).then(product=>{
+ 				if(product){
+ 					return product.xproductid;
+ 				}
+ 				else{
+ 					return false;
+ 				}
+
+ 			}).catch(e=>{
+ 				return false;
+ 			});
+ 	}
+ 	rSalesOrder.prototype.getUomId=async function(uomName){
+ 			var dbconn=this.getDb();
+ 			const Uom=dbconn.import('./../../models/uom');
+ 			return Uom.findOne({
+ 				where:{uomname:uomName},
+ 				attributes:['uomid']
+ 			}).then(uom=>{
+ 				if(uom){
+ 					return uom.uomid;
+ 				}
+ 				else{
+ 					return false;
+ 				}
+
+ 			}).catch(e=>{
+ 				return false;
+ 			});
+ 	}
  	rSalesOrder.prototype.getTransactionSeries=async function(coll){
  			var dbconn=this.getDb();
  			const XSeries=dbconn.import('./../../models/x-series');
@@ -333,6 +385,9 @@ const CollecReader=require('./collec-reader');
  		var transRel=await self.getTransRel();
  		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
  		var lineItems=coll[transRel.transaction_rel_table];
+ 		var LBL_RSO_SAVE_PRO_CATE= await self.getInvMgtConfig('LBL_RSO_SAVE_PRO_CATE');
+ 		var is_process=((LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && transRel.receive_pro_by_cate.toLowerCase()=='true'))?0:1;
+
  		lineItems.forEach(async function(lineItem){
  			var xsroProdRel=new XsroProdRel();
  			transGridFields.forEach(async function(field){
@@ -342,6 +397,66 @@ const CollecReader=require('./collec-reader');
  					break;
  					case transRel.categoryid :
  					
+ 					break;
+ 					case transRel.profirldname :
+ 						if(is_process==1){
+ 							var productId=await self.getProductId(lineItem.productcode._text);
+ 							if(productId==false){
+ 								var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
+ 								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
+ 									//update the error save into send and receive audit log
+ 									/*
+										$FailReason = $priname." Is Not Availabale (".$proquery.")";
+           					if( $excolumn_name == 'productcode'){
+           						$statuscode = 'FN8212';
+           						$statusmsg = 'Invalid Product Code';
+           					}else{
+           						$statuscode = 'FN8212';
+           						$statusmsg = 'Invalid Product Code';
+           					}
+           					sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
+ 									*/
+ 								}
+ 								else{
+ 									xsroProdRel['productname']='0';
+ 									xsroProdRel['productcode']=lineItem.productcode._text;
+ 								}
+ 							}
+ 							else{
+ 								xsroProdRel['productname']=productId;
+ 							}
+ 						}
+ 					break;
+ 					case transRel.reluom :
+ 						if(is_process==1){
+ 							var uomId=await self.getUomId(lineItem.tuom.uomname._text);
+ 							if(uomId==false){
+ 								/*
+								$FailReason = $UOMname." Is Not Availabale (".$UOMquery.")";
+								$statuscode = 'FN8213';
+								$statusmsg = 'Invalid UOM';
+								sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
+								$insertstatus = '100';
+								fwrite($fpx, $insertstatus."\n");
+								$focus1->trash($TraName, $inserted_Id);
+								updateSubject($moduletablename,'subject',$subjectVal,$focus->table_index,$inserted_Id,$Resulrpatth1);
+ 								*/	
+ 							}else{
+
+ 							}
+ 						}
+ 						
+ 					break;
+ 					case 'tax1' :
+ 						try{
+ 							var tax1=lineItem.tax1._text;
+ 							xsroProdRel['tax1']=tax1
+ 						}
+ 						catch(e){
+ 							xsroProdRel['tax1']='0';
+ 						}
+ 						xsroProdRel['tax2']='0';
+ 						xsroProdRel['tax3']='0';
  					break;
 
  				}

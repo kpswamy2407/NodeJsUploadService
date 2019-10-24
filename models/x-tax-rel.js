@@ -63,7 +63,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         created_dtm:{
             type:DataTypes.DATE,
-            defaultValue:date.Now(),
+            defaultValue:null,
         },
         created_at:{
              type:DataTypes.DATE,
