@@ -1,4 +1,4 @@
-module.exports=(sequelize,DataTypes)=>{
+module.exports=(sequelize,DataTypes,Sequelize)=>{
     const SendRecAudit=sequelize.define('SendRecAudit',{
         sen_rec_id:{
             type:DataTypes.INTEGER(11),
@@ -45,7 +45,8 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.STRING(250),
         },
         sen_rec_createddate:{
-            type:DataTypes.DATE,
+            type: 'TIMESTAMP',
+            allowNull: false
         },
         
     },{

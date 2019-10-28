@@ -51,7 +51,7 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.INTEGER,
             
         },
-        treatment:{
+        created_dtm:{
             type:DataTypes.DATE,
         },
     },{

@@ -1,4 +1,4 @@
-module.exports=(sequelize,DataTypes)=>{
+module.exports=(sequelize,DataTypes,Sequelize)=>{
     const RecAuditLog=sequelize.define('RecAuditLog',{
         rec_log_id:{
             type:DataTypes.INTEGER(11),
@@ -54,7 +54,8 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.STRING(250),
         },
         rec_log_createddate:{
-            type:DataTypes.DATE,
+            type: 'TIMESTAMP',
+            allowNull: false
         },
         
     },{

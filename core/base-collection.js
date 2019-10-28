@@ -52,6 +52,31 @@ var BaseCollection=(function(){
             throw new Error('Unable to get sourceapplication');
         }
     }
+    BaseCollection.prototype.fromId=function(){
+        try{
+            return this.__data.collections.vtiger_xrsodocinfo.fromid._text;
+        }
+        catch(e){
+            throw new Error('Unable to get the from id from the collection');
+        }
+    }
+    BaseCollection.prototype.docType=function(){
+        try{
+            return this.__data.collections.vtiger_xrsodocinfo.documenttype._text;
+        }
+        catch(e){
+            throw new Error('Unable to get the from id from the collection');
+        }
+    }
+
+    BaseCollection.prototype.createdDate=function(){
+        try{
+            return this.__data.collections.vtiger_xrsodocinfo.createddate._text;
+        }
+        catch(e){
+            throw new Error('Unable to get the from id from the collection');
+        }
+    }
     return BaseCollection;
 })();
 module.exports=exports=BaseCollection;

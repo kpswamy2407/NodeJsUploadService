@@ -1,6 +1,8 @@
 const { BaseModule }=require('../../core');
 const { __extends }=require('tslib');
 const CollecReader=require('./collec-reader');
+const Audit=require('../../utils/audit');
+var Sequelize = require("sequelize");
 
 /**
  * 
@@ -30,21 +32,7 @@ const CollecReader=require('./collec-reader');
  		const Beat=dbconn.import('./../../models/beat');
  		const Salesman=dbconn.import('./../../models/salesman');
  		const XSeries=dbconn.import('./../../models/x-series');
- 		rSalesOrder.belongsTo(CrmEntity,{
- 			as:'Crm',
- 			foreignKey:'salesorderid',
- 			targetKey:'crmid',
- 		});
- 		rSalesOrder.hasOne(rSalesOrderCf,{
- 			foreignKey:'salesorderid',
- 			sourceKey:'salesorderid',
- 			as:'Cf'
- 		});
- 		rSalesOrder.hasMany(rSoProductRel,{
- 			foreignKey:'id',
- 			sourceKey:'salesorderid',
- 			as:'Rel'
- 		});
+ 		
  		this.models['CrmEntity']=CrmEntity;
  		this.models['rSalesOrder']=rSalesOrder;
  		this.models['rSalesOrderCf']=rSalesOrderCf;
@@ -67,6 +55,14 @@ const CollecReader=require('./collec-reader');
  			this.importAssoc();
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);
+ 			var audit=new Audit();
+ 				audit.docName=crdr.transactionId();
+ 				audit.distCode=crdr.fromId();
+ 				audit.options="Receive";
+ 				audit.source=crdr.sourceApplication();
+ 				audit.docCreatedDate=crdr.createdDate();
+ 				audit.destination=crdr.destApplication();
+ 				audit.docType=crdr.docType();
  			var rSalesOrder=this.models['rSalesOrder'];
  			var rSalesOrderCf=this.models['rSalesOrderCf'];
  			var VtigerField=this.models['VtigerField'];
@@ -82,6 +78,7 @@ const CollecReader=require('./collec-reader');
  			var fields=await this.getFields();
  			var baseColl=await crdr.xrso();
  			var self=this;
+ 			
  			if(Object.getPrototypeOf( baseColl ) === Object.prototype){
  				var baseColls=[baseColl];
  			}
@@ -89,16 +86,21 @@ const CollecReader=require('./collec-reader');
  				var baseColls=baseColl;
  			}
  			baseColls.forEach(async function(coll){
- 				const {rso, rsocf} = await self.prepareValues(coll,fields);
- 				
+ 				const {rso, rsocf} = await self.prepareValues(coll,fields,audit);
  				dbconn.transaction().then(t => {
  				  return rso.save({transaction: t}).then(so => {
  				    return rsocf.save({transaction:t}).then(socf=>{
- 				    		return self.updateLineItems(so,t,coll.lineitems);
+ 				    		return self.updateLineItems(so,audit,coll.lineitems);
  				    });
  				  }).then(() => {
  				    return t.commit();
  				  }).catch((err) => {
+ 				  		audit.statusCode='FN2010';
+	 					audit.statusMsg=err.message;
+	 					audit.reason=err.message;
+	 					audit.status='Failed';
+	 					audit.subject=rso.subject;
+	 					audit.saveLog(dbconn);
  				    return t.rollback();
  				  });
  				});
@@ -108,11 +110,10 @@ const CollecReader=require('./collec-reader');
  			console.log(e);
  			return  Promise.reject(e.error);
  		}
- 		return Promise.resolve(true);
-
+ 		
  		return this.saveXml(xml);
  	};
- 	rSalesOrder.prototype.prepareValues=async function(coll,fields){
+ 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit){
  		var self=this;
  		var dbconn=this.getDb();
  		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
@@ -136,28 +137,59 @@ const CollecReader=require('./collec-reader');
  				});
  				break;
  				case 10:
- 					
-
  					 //default related module for buyerid is xRetailer
  						switch(field.columnname){
  					   	case 'buyerid':
 
  					               	var buyerid=await self.getBuyerId(coll.customer_type._text,coll);
- 					               	rso[field.columnname]=buyerid;
- 					               	rsocf[field.columnname]=buyerid; 
+ 					               	if(buyerid){
+ 					               		rso[field.columnname]=buyerid;
+ 					               		rsocf[field.columnname]=buyerid;
+ 					               	}
+ 					               	else{
+ 					               		audit.statusCode='FN8200';
+	 									audit.statusMsg="Due to Invalid data, we are unable to get the buyer id";
+	 									audit.reason="Error while getting the related module data";
+	 									audit.status='Failed';
+					 					audit.subject=coll.subject._text;
+					 					audit.saveLog(dbconn);
+ 					               	}
+ 					               	 
 
  					               	break;
 
  					               	case 'cf_xrso_beat':
  					               	var beatId=await self.getBeat(coll);
- 					               	rso[field.columnname]=beatId;
- 					               	rsocf[field.columnname]=beatId; 
+ 					               	if(beatId){
+ 					               		rso[field.columnname]=beatId;
+ 					               		rsocf[field.columnname]=beatId;
+ 					               	}
+ 					               	else{
+ 					               		audit.statusCode='FN8216';
+	 									audit.statusMsg="Invalid Beat";
+	 									audit.reason="Error while getting the related module data";
+	 									audit.status='Failed';
+					 					audit.subject=coll.subject._text;
+					 					audit.saveLog(dbconn);
+ 					               	}
+
+ 					               	 
 
  					               	break;
  					               	case 'cf_xrso_sales_man':
- 					               	rso[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
- 					               	rsocf[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
-
+ 					               	try{
+										rso[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
+ 					               		rsocf[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
+ 					               	}
+ 					               	catch(e){
+										audit.statusCode='FN8210';
+	 									audit.statusMsg="Invalid Salesman code";
+	 									audit.reason="Error while getting the related module data";
+	 									audit.status='Failed';
+					 					audit.subject=coll.subject._text;
+					 					audit.saveLog(dbconn);
+ 					               	}
+ 					               	
  					               	break;
  					               	case 'cf_salesorder_transaction_series':
  					               	var transSeries=await self.getTransactionSeries(coll);  
@@ -170,14 +202,14 @@ const CollecReader=require('./collec-reader');
 
  		      default:
  		                         //console.log(field.columnname,'=>',coll[field.columnname]);
- 		                         if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
+ 		            if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
 
- 		                         	if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
- 		                         		rso[field.columnname]= coll[field.columnname]._text;
- 		                         		rsocf[field.columnname]= coll[field.columnname]._text;
- 		                         	} 
- 		                         }
- 		                      }
+ 		                if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+ 		                	rso[field.columnname]= coll[field.columnname]._text;
+ 		                    rsocf[field.columnname]= coll[field.columnname]._text;
+ 		                   } 
+ 		                }
+ 		           	}
  		         
  		     });
 
@@ -213,7 +245,7 @@ const CollecReader=require('./collec-reader');
  			}).then(fields => {
  				return fields;
  			}).catch(e=>{
- 				console.log("grid=>>",e);
+ 				
  				return e.error;
  			});
  	}
@@ -226,7 +258,7 @@ const CollecReader=require('./collec-reader');
  			}).then(relation=>{
  				return relation;
  			}).catch(e=>{
- 				console.log(e);
+ 				
  				throw new Error("Unable to get the tranaction related information");
  			});
  		}
@@ -242,11 +274,11 @@ const CollecReader=require('./collec-reader');
  					return beat.xbeatid;
  				}
  				else{
- 					throw new Error('No next_stage_name found with provided customercode');
+ 					return false;
  				}
 
  			}).catch(e=>{
- 				throw new Error('Unable to get the beat value');
+ 				return false;
  			});
  	}
  	rSalesOrder.prototype.getInvMgtConfig=async function(key){
@@ -340,10 +372,10 @@ const CollecReader=require('./collec-reader');
  						return retailer.xreceivecustomermasterid;
  					}
  					else{
- 						throw new Error('No customer master found with provided customercode');
+ 						return false;
  					}
  				}).catch(e=>{
- 					throw new Error('Unable to get customer master details');
+ 					return false;
  				});
  				break;
  				case 2:
@@ -355,10 +387,10 @@ const CollecReader=require('./collec-reader');
  						return retailer.xsubretailerid;
  					}
  					else{
- 						throw new Error('No sub-retailer found with provided customercode');
+ 						return false;
  					}
  				}).catch(e=>{
- 					throw new Error('Unable to get sub-retailer details');
+ 					return false;
  				});
  				break;
  				default:
@@ -370,10 +402,10 @@ const CollecReader=require('./collec-reader');
  						return retailer.xretailerid;
  					}
  					else{
- 						throw new Error('No Retailer found with provided customercode');
+ 						return false;
  					}
  				}).catch(e=>{
- 					throw new Error('Unable to get retailer details');
+ 					return false;
  			});
  		}
  	}
@@ -381,7 +413,7 @@ const CollecReader=require('./collec-reader');
  	rSalesOrder.prototype.updateLineItems=async function(so,t,coll){
  		var self=this;
  		var dbconn=this.getDb();
- 		const XsroProdRel=dbconn.import('./../../models/xrso-prod-rel');
+ 		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  		var transRel=await self.getTransRel();
  		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
  		var lineItems=coll[transRel.transaction_rel_table];
@@ -389,11 +421,11 @@ const CollecReader=require('./collec-reader');
  		var is_process=((LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && transRel.receive_pro_by_cate.toLowerCase()=='true'))?0:1;
 
  		lineItems.forEach(async function(lineItem){
- 			var xsroProdRel=new XsroProdRel();
+ 			var xrsoProdRel=new XrsoProdRel();
  			transGridFields.forEach(async function(field){
  				switch(field.columnname){
  					case transRel.relid :
- 						xsroProdRel[transRel.relid]=so.salesorderid;
+ 						xrsoProdRel[transRel.relid]=so.salesorderid;
  					break;
  					case transRel.categoryid :
  					
@@ -418,16 +450,18 @@ const CollecReader=require('./collec-reader');
  									*/
  								}
  								else{
- 									xsroProdRel['productname']='0';
- 									xsroProdRel['productcode']=lineItem.productcode._text;
+ 									xrsoProdRel['productname']='0';
+ 									xrsoProdRel['productcode']=lineItem.productcode._text;
  								}
  							}
  							else{
- 								xsroProdRel['productname']=productId;
+ 								xrsoProdRel['productname']=productId;
+ 								xrsoProdRel[transRel.profirldname]=productId;
+ 								xrsoProdRel['productcode']=lineItem.productcode._text;
  							}
  						}
  					break;
- 					case transRel.reluom :
+ 					case transRel.uom :
  						if(is_process==1){
  							var uomId=await self.getUomId(lineItem.tuom.uomname._text);
  							if(uomId==false){
@@ -450,20 +484,66 @@ const CollecReader=require('./collec-reader');
  					case 'tax1' :
  						try{
  							var tax1=lineItem.tax1._text;
- 							xsroProdRel['tax1']=tax1
+ 							xrsoProdRel['tax1']=tax1
  						}
  						catch(e){
- 							xsroProdRel['tax1']='0';
+ 							xrsoProdRel['tax1']='0';
  						}
- 						xsroProdRel['tax2']='0';
- 						xsroProdRel['tax3']='0';
+ 						xrsoProdRel['tax2']='0';
+ 						xrsoProdRel['tax3']='0';
  					break;
 
+ 					case 'quantity' :
+ 						try{
+ 							var quantity=Number(lineItem.quantity._text);
+ 							if(quantity>0){
+ 								xrsoProdRel['quantity']=quantity;
+ 							}
+ 							else{
+ 								$FailReason = "quantity Is Not Availabale";
+ 							/*	$statuscode = 'FN8214';
+ 								$statusmsg = 'Invalid Quantity';
+ 								sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
+ 								$insertstatus = '100';
+ 								fwrite($fpx, $insertstatus."\n");
+ 								$focus1->trash($TraName, $inserted_Id);
+ 								updateSubject($moduletablename,'subject',$subjectVal,$focus->table_index,$inserted_Id,$Resulrpatth1);
+ 							*/}
+ 						}catch(e){
+ 							/*	$statuscode = 'FN8214';
+ 								$statusmsg = 'Invalid Quantity';
+ 								sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
+ 								$insertstatus = '100';
+ 								fwrite($fpx, $insertstatus."\n");
+ 								$focus1->trash($TraName, $inserted_Id);
+ 								updateSubject($moduletablename,'subject',$subjectVal,$focus->table_index,$inserted_Id,$Resulrpatth1);
+ 							*/
+ 						}
+ 					break;
+ 					case 'baseqty':
+ 						try{
+ 							xrsoProdRel['baseqty']=lineItem.baseqty._text;
+ 						}
+ 						catch(e){
+
+ 						}
+ 						
+
+ 					break;
+ 					default:
+ 						try{
+ 							xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
+ 						}
+ 						catch(e){
+ 							xrsoProdRel[field.columnname]='';
+ 						}
+ 					break;
  				}
+ 				return xrsoProdRel;
  			});
- 			console.log(lineItem);
+ 			xrsoProdRel.save({tranaction:t});
  		});
- 		return Promise.reject(true);
+ 		return Promise.resolve(true);
  	}
  	rSalesOrder.prototype.getCrmEntity=async function(){
  		const dbconn=this.getDb();
