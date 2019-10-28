@@ -410,7 +410,7 @@ var Sequelize = require("sequelize");
  		}
  	}
  	
- 	rSalesOrder.prototype.updateLineItems=async function(so,t,coll){
+ 	rSalesOrder.prototype.updateLineItems=async function(so,audit,coll){
  		var self=this;
  		var dbconn=this.getDb();
  		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
@@ -436,18 +436,11 @@ var Sequelize = require("sequelize");
  							if(productId==false){
  								var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
  								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
- 									//update the error save into send and receive audit log
- 									/*
-										$FailReason = $priname." Is Not Availabale (".$proquery.")";
-           					if( $excolumn_name == 'productcode'){
-           						$statuscode = 'FN8212';
-           						$statusmsg = 'Invalid Product Code';
-           					}else{
-           						$statuscode = 'FN8212';
-           						$statusmsg = 'Invalid Product Code';
-           					}
-           					sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
- 									*/
+ 									audit.statusCode='FN8212';
+	 								audit.statusMsg="Invalid Product Code";
+	 								audit.reason="Product Is Not Availabale with provided input";
+	 								audit.status='Failed';
+					 				audit.saveLog(dbconn);
  								}
  								else{
  									xrsoProdRel['productname']='0';
@@ -465,16 +458,11 @@ var Sequelize = require("sequelize");
  						if(is_process==1){
  							var uomId=await self.getUomId(lineItem.tuom.uomname._text);
  							if(uomId==false){
- 								/*
-								$FailReason = $UOMname." Is Not Availabale (".$UOMquery.")";
-								$statuscode = 'FN8213';
-								$statusmsg = 'Invalid UOM';
-								sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
-								$insertstatus = '100';
-								fwrite($fpx, $insertstatus."\n");
-								$focus1->trash($TraName, $inserted_Id);
-								updateSubject($moduletablename,'subject',$subjectVal,$focus->table_index,$inserted_Id,$Resulrpatth1);
- 								*/	
+ 									audit.statusCode='FN8213';
+	 								audit.statusMsg="Invalid UOM";
+	 								audit.reason="UOM Is Not Availabale with provided input";
+	 								audit.status='Failed';
+					 				audit.saveLog(dbconn);
  							}else{
 
  							}
@@ -500,24 +488,19 @@ var Sequelize = require("sequelize");
  								xrsoProdRel['quantity']=quantity;
  							}
  							else{
- 								$FailReason = "quantity Is Not Availabale";
- 							/*	$statuscode = 'FN8214';
- 								$statusmsg = 'Invalid Quantity';
- 								sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
- 								$insertstatus = '100';
- 								fwrite($fpx, $insertstatus."\n");
- 								$focus1->trash($TraName, $inserted_Id);
- 								updateSubject($moduletablename,'subject',$subjectVal,$focus->table_index,$inserted_Id,$Resulrpatth1);
- 							*/}
+ 								
+ 								audit.statusCode='FN8213';
+	 							audit.statusMsg="Invalid Quantity";
+	 							audit.reason="quantity Is Not Availabale";
+	 							audit.status='Failed';
+					 			audit.saveLog(dbconn);
+ 							}
  						}catch(e){
- 							/*	$statuscode = 'FN8214';
- 								$statusmsg = 'Invalid Quantity';
- 								sendreceiveaudit($docid, 'Receive', 'Failed', $FailReason, '', $fromid,$sourceapplication,$doccreateddate,$modname,'',$destapplication,$subjectVal,$statuscode,$statusmsg);
- 								$insertstatus = '100';
- 								fwrite($fpx, $insertstatus."\n");
- 								$focus1->trash($TraName, $inserted_Id);
- 								updateSubject($moduletablename,'subject',$subjectVal,$focus->table_index,$inserted_Id,$Resulrpatth1);
- 							*/
+ 							audit.statusCode='FN8214';
+	 						audit.statusMsg="Invalid Quantity";
+	 						audit.reason="quantity Is Not Availabale";
+	 						audit.status='Failed';
+					 		audit.saveLog(dbconn);
  						}
  					break;
  					case 'baseqty':
