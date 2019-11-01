@@ -3,6 +3,7 @@ const { __extends }=require('tslib');
 const CollecReader=require('./collec-reader');
 const Audit=require('../../utils/audit');
 var Sequelize = require("sequelize");
+var moment = require('moment');
 
 /**
  * 
@@ -87,8 +88,6 @@ var Sequelize = require("sequelize");
  			}
  			baseColls.forEach(async function(coll){
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit);
- 				console.log(rso.dataValues);
- 				console.log(rsocf.dataValues);
  				dbconn.transaction().then(t => {
  				  return rso.save({transaction: t}).then(so => {
  				    return rsocf.save({transaction:t}).then(socf=>{
@@ -317,6 +316,72 @@ var Sequelize = require("sequelize");
  			});
  	}
  	rSalesOrder.prototype.getUomId=async function(uomName){
+ 			var dbconn=this.getDb();
+ 			const Uom=dbconn.import('./../../models/uom');
+ 			return Uom.findOne({
+ 				where:{uomname:uomName},
+ 				attributes:['uomid']
+ 			}).then(uom=>{
+ 				if(uom){
+ 					return uom.uomid;
+ 				}
+ 				else{
+ 					return false;
+ 				}
+
+ 			}).catch(e=>{
+ 				return false;
+ 			});
+ 	}
+ 	rSalesOrder.prototype.trash=function(soId){
+ 			var dbconn=this.getDb();
+ 			const CrmEntity=dbconn.import('./../../models/crmentity');
+ 			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
+ 			const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
+ 			CrmEntity.update(
+ 				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{where: {crmid:soId}}
+ 			).then().catch();
+ 			rSalesOrder.update(
+ 				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{where: {salesorderid:soId}}
+ 			).then().catch();
+ 			rSalesOrderCf.update(
+ 				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{where: {salesorderid:soId}}
+ 			).then().catch();
+ 					
+ 	}
+ 	rSalesOrder.prototype.save=function(soId){
+ 			var dbconn=this.getDb();
+ 			const CrmEntity=dbconn.import('./../../models/crmentity');
+ 			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
+ 			const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
+ 			CrmEntity.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: 
+ 					{crmid:soId}}
+ 			).then().catch();
+ 			rSalesOrder.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: {salesorderid:soId}}
+ 			).then().catch();
+ 			rSalesOrderCf.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: {salesorderid:soId}}
+ 			).then().catch();
+ 					
+ 	}
+ 	rSalesOrder.prototype.update=async function(soId){
  			var dbconn=this.getDb();
  			const Uom=dbconn.import('./../../models/uom');
  			return Uom.findOne({
