@@ -87,6 +87,8 @@ var Sequelize = require("sequelize");
  			}
  			baseColls.forEach(async function(coll){
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit);
+ 				console.log(rso.dataValues);
+ 				console.log(rsocf.dataValues);
  				dbconn.transaction().then(t => {
  				  return rso.save({transaction: t}).then(so => {
  				    return rsocf.save({transaction:t}).then(socf=>{
@@ -125,94 +127,91 @@ var Sequelize = require("sequelize");
 
  		rso.salesorderid=salesorderid;
  		rsocf.salesorderid=salesorderid;
- 		fields.forEach(async function(field){
- 			switch(field.uitype){
+ 		await fields.reduce(async (promise, field) => {
+ 		    await promise;
+			switch(field.uitype){
  				case 117:
- 				await CurrencyInfo.findOne({
- 					where:{currency_code:coll.currency_id.currency_code._text},
- 				}).then(currency=>{
- 					rso[field.columnname]=currency.id;
- 				}).catch(e=>{
- 					throw new Error('Unable to get the currency id for sales order');
- 				});
- 				break;
- 				case 10:
- 					 //default related module for buyerid is xRetailer
- 						switch(field.columnname){
- 					   	case 'buyerid':
+ 			 		await CurrencyInfo.findOne({
+ 			 			where:{currency_code:coll.currency_id.currency_code._text},
+ 			 			}).then(currency=>{
+ 			 				rso[field.columnname]=currency.id;
+ 			 		}).catch(e=>{
+ 			 			throw new Error('Unable to get the currency id for sales order');
+ 			 		});
+ 			 	break;
+ 			 	case 10:
+ 			 	 //default related module for buyerid is xRetailer
+ 			 		switch(field.columnname){
+ 			 			case 'buyerid':
+ 			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll);
+ 			 			if(buyerid){
+ 			 				rso[field.columnname]=buyerid;
+ 			 				rsocf[field.columnname]=buyerid;
+ 			 			}
+ 			 			else{
+ 			 				audit.statusCode='FN8200';
+ 				 			audit.statusMsg="Due to Invalid data, we are unable to get the buyer id";
+ 				 			audit.reason="Error while getting the related module data";
+ 				 			audit.status='Failed';
+ 							audit.subject=coll.subject._text;
+ 							audit.saveLog(dbconn);
+ 			 			}
+ 			 			break;
 
- 					               	var buyerid=await self.getBuyerId(coll.customer_type._text,coll);
- 					               	if(buyerid){
- 					               		rso[field.columnname]=buyerid;
- 					               		rsocf[field.columnname]=buyerid;
- 					               	}
- 					               	else{
- 					               		audit.statusCode='FN8200';
-	 									audit.statusMsg="Due to Invalid data, we are unable to get the buyer id";
-	 									audit.reason="Error while getting the related module data";
-	 									audit.status='Failed';
-					 					audit.subject=coll.subject._text;
-					 					audit.saveLog(dbconn);
- 					               	}
- 					               	 
+ 			 			case 'cf_xrso_beat':
+ 			 				var beatId=await self.getBeat(coll);
+ 			 					if(beatId){
+ 			 						rso[field.columnname]=beatId;
+ 			 					    rsocf[field.columnname]=beatId;
+ 			 					}
+ 			 					else{
+ 			 						audit.statusCode='FN8216';
+ 				 					audit.statusMsg="Invalid Beat";
+ 				 					audit.reason="Error while getting the related module data";
+ 				 					audit.status='Failed';
+ 								 	audit.subject=coll.subject._text;
+ 								 	audit.saveLog(dbconn);
+ 			 					 }
+ 			 			break;
+ 			 			case 'cf_xrso_sales_man':
+ 			 				try{
+ 								rso[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
+ 			 					rsocf[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
+ 			 				}
+ 			 				catch(e){
+ 								audit.statusCode='FN8210';
+ 				 				audit.statusMsg="Invalid Salesman code";
+ 				 				audit.reason="Error while getting the related module data";
+ 				 				audit.status='Failed';
+ 								audit.subject=coll.subject._text;
+ 								audit.saveLog(dbconn);
+ 			 				}
+ 			 					               	
+			            break;
+			            case 'cf_salesorder_transaction_series':
+			            	var transSeries=await self.getTransactionSeries(coll);  
+			            	rso[field.columnname]= transSeries;
+			               	rsocf[field.columnname]=transSeries;
+			            break;
+			               
+			        }
+					break;
+	 		      	default:
+	 		                         //console.log(field.columnname,'=>',coll[field.columnname]);
+	 		            if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
 
- 					               	break;
-
- 					               	case 'cf_xrso_beat':
- 					               	var beatId=await self.getBeat(coll);
- 					               	if(beatId){
- 					               		rso[field.columnname]=beatId;
- 					               		rsocf[field.columnname]=beatId;
- 					               	}
- 					               	else{
- 					               		audit.statusCode='FN8216';
-	 									audit.statusMsg="Invalid Beat";
-	 									audit.reason="Error while getting the related module data";
-	 									audit.status='Failed';
-					 					audit.subject=coll.subject._text;
-					 					audit.saveLog(dbconn);
- 					               	}
-
- 					               	 
-
- 					               	break;
- 					               	case 'cf_xrso_sales_man':
- 					               	try{
-										rso[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
- 					               		rsocf[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
- 					               	}
- 					               	catch(e){
-										audit.statusCode='FN8210';
-	 									audit.statusMsg="Invalid Salesman code";
-	 									audit.reason="Error while getting the related module data";
-	 									audit.status='Failed';
-					 					audit.subject=coll.subject._text;
-					 					audit.saveLog(dbconn);
- 					               	}
- 					               	
- 					               	break;
- 					               	case 'cf_salesorder_transaction_series':
- 					               	var transSeries=await self.getTransactionSeries(coll);  
- 					               	rso[field.columnname]= transSeries;
- 					               	rsocf[field.columnname]=transSeries;
- 					               	break;
- 					               }
- 					
- 					
-
- 		      default:
- 		                         //console.log(field.columnname,'=>',coll[field.columnname]);
- 		            if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
-
- 		                if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
- 		                	rso[field.columnname]= coll[field.columnname]._text;
- 		                    rsocf[field.columnname]= coll[field.columnname]._text;
- 		                   } 
- 		                }
- 		           	}
- 		         
- 		     });
-
+	 		                if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		                	rso[field.columnname]= coll[field.columnname]._text;
+	 		                    rsocf[field.columnname]= coll[field.columnname]._text;
+	 		                   } 
+	 		                }
+	 		         break;
+	 		    }
+	 		         
+ 			 		     
+ 		  
+ 		}, Promise.resolve());
+ 		
  		return {rso:rso,rsocf: rsocf}; 
  	}
 
