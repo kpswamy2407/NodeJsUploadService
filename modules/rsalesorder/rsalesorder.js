@@ -4,6 +4,7 @@ const CollecReader=require('./collec-reader');
 const Audit=require('../../utils/audit');
 var Sequelize = require("sequelize");
 var moment = require('moment');
+const Op = Sequelize.Op
 
 /**
  * 
@@ -79,7 +80,9 @@ var moment = require('moment');
  			var fields=await this.getFields();
  			var baseColl=await crdr.xrso();
  			var self=this;
- 			
+ 			var uom=await self.isProdUomMap(40298,'');
+ 			console.log(uom);
+ 			return; 
  			if(Object.getPrototypeOf( baseColl ) === Object.prototype){
  				var baseColls=[baseColl];
  			}
@@ -91,6 +94,8 @@ var moment = require('moment');
  				dbconn.transaction().then(t => {
  				  return rso.save({transaction: t}).then(so => {
  				    return rsocf.save({transaction:t}).then(socf=>{
+ 				    		return t.commit();
+ 				    		return self.save(socf.salesorderid);
  				    		return self.updateLineItems(so,audit,coll.lineitems);
  				    });
  				  }).then(() => {
@@ -259,7 +264,7 @@ var moment = require('moment');
  				
  				throw new Error("Unable to get the tranaction related information");
  			});
- 		}
+ 	}
 
  	rSalesOrder.prototype.getBeat=async function(coll){
  			var dbconn=this.getDb();
@@ -482,11 +487,16 @@ var moment = require('moment');
  		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
  		var lineItems=coll[transRel.transaction_rel_table];
  		var LBL_RSO_SAVE_PRO_CATE= await self.getInvMgtConfig('LBL_RSO_SAVE_PRO_CATE');
+ 		var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
  		var is_process=((LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && transRel.receive_pro_by_cate.toLowerCase()=='true'))?0:1;
-
- 		lineItems.forEach(async function(lineItem){
+ 		lineItemsIteration:
+ 		for (var i = 0; i < lineItems.length; i++) {
+ 			var lineItem=lineItems[i];
+ 			transGridFieldsIteration:
  			var xrsoProdRel=new XrsoProdRel();
- 			transGridFields.forEach(async function(field){
+ 			for (var i = 0; i < transGridFields.length; i++) {
+ 				var field=transGridFields[i];
+
  				switch(field.columnname){
  					case transRel.relid :
  						xrsoProdRel[transRel.relid]=so.salesorderid;
@@ -498,17 +508,19 @@ var moment = require('moment');
  						if(is_process==1){
  							var productId=await self.getProductId(lineItem.productcode._text);
  							if(productId==false){
- 								var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
  								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
  									audit.statusCode='FN8212';
 	 								audit.statusMsg="Invalid Product Code";
 	 								audit.reason="Product Is Not Availabale with provided input";
 	 								audit.status='Failed';
 					 				audit.saveLog(dbconn);
+					 				self.trash(so.salesorderid);
+					 				continue lineItemsIteration;
  								}
  								else{
  									xrsoProdRel['productname']='0';
  									xrsoProdRel['productcode']=lineItem.productcode._text;
+ 									xrsoProdRel[transRel.profirldname]=productId;
  								}
  							}
  							else{
@@ -527,8 +539,11 @@ var moment = require('moment');
 	 								audit.reason="UOM Is Not Availabale with provided input";
 	 								audit.status='Failed';
 					 				audit.saveLog(dbconn);
- 							}else{
+					 				self.trash(so.salesorderid);
+					 				continue lineItemsIteration;
 
+ 							}else{
+ 								
  							}
  						}
  						
@@ -586,11 +601,60 @@ var moment = require('moment');
  						}
  					break;
  				}
- 				return xrsoProdRel;
- 			});
+ 			}
+ 			transGridFields.forEach(async function(field){});
  			xrsoProdRel.save({tranaction:t});
+ 		
+ 		}
+ 		lineItems.forEach(async function(lineItem){
+
  		});
  		return Promise.resolve(true);
+ 	}
+ 	rSalesOrder.prototype.isProdUomMap=async function(productId,uomId){
+ 		var self=this;
+ 		const dbconn=this.getDb();
+ 		const Product=dbconn.import('./../../models/product');
+ 		const ProductCf=dbconn.import('./../../models/product-cf');
+ 		var prodUomFields=await self.getProductUomFields('vtiger_xproduct');
+ 		var prodUomCusFields=await self.getProductUomFields('vtiger_xproductcf');
+ 		return ProductCf.findOne({
+ 				where:{
+ 					xproductid:productId,
+ 				},
+ 				attributes:prodUomCusFields,
+ 				include:[{model:Product,required:true,attributes:prodUomFields}],
+ 				raw: true,
+ 			}).then(uoms => {
+ 				console.log(uoms);
+ 				return uoms;
+ 			}).catch(e=>{
+ 				return e.error;
+ 			});
+
+ 		 
+ 	}
+ 	rSalesOrder.prototype.getProductUomFields=async function(tableName){
+ 		const dbconn=this.getDb();
+ 		const VtigerField=dbconn.import('./../../models/vtiger-field');
+
+ 		return VtigerField.findAll({
+ 			where:{
+ 				tablename:tableName,
+ 				presence:[0,2],
+ 				typeofdata:{[Op.like]:'%UOM%'}
+ 			},
+ 			attributes: ['columnname'],
+ 			raw: true,
+ 			}).then(fields => {
+ 				var uoms=fields.map((uom)=>{
+ 					return uom.columnname;
+ 				});
+ 				return uoms;
+ 			}).catch(e=>{
+ 				return e.error;
+ 			});
+
  	}
  	rSalesOrder.prototype.getCrmEntity=async function(){
  		const dbconn=this.getDb();

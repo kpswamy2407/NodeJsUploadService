@@ -1,7 +1,7 @@
 module.exports=(sequelize,DataTypes)=>{
     const Product=sequelize.define('Product',{
 		xproductid: {
-			type: DataTypes.INTEGER(11),
+			type: DataTypes.INTEGER(19),
 			defaultValue: null,
 		},
 		productname: {
@@ -194,5 +194,6 @@ module.exports=(sequelize,DataTypes)=>{
         ]
     });
     Product.removeAttribute('id');
+    
     return Product;
 };
