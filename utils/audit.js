@@ -35,8 +35,6 @@ var Audit=(function(){
 		try{
 			var SendRecAudit=db.import('./../models/send-rec-audit');
 			var RecAuditLog=db.import('./../models/rec-audit-log');
-			console.log(SendRecAudit);
-			console.log(RecAuditLog);
 			var sendRecAudit=new SendRecAudit();
 			sendRecAudit.sen_rec_doc_name=this.docName;
 			sendRecAudit.sen_rec_options=this.options;

@@ -80,9 +80,6 @@ const Op = Sequelize.Op
  			var fields=await this.getFields();
  			var baseColl=await crdr.xrso();
  			var self=this;
- 			var uom=await self.isProdUomMap(40298,'');
- 			console.log(uom);
- 			return; 
  			if(Object.getPrototypeOf( baseColl ) === Object.prototype){
  				var baseColls=[baseColl];
  			}
@@ -94,12 +91,13 @@ const Op = Sequelize.Op
  				dbconn.transaction().then(t => {
  				  return rso.save({transaction: t}).then(so => {
  				    return rsocf.save({transaction:t}).then(socf=>{
- 				    		return t.commit();
- 				    		return self.save(socf.salesorderid);
+ 				    		if(t.commit()){
+ 				    			self.save(socf.salesorderid);
+ 				    		}
  				    		return self.updateLineItems(so,audit,coll.lineitems);
  				    });
  				  }).then(() => {
- 				    return t.commit();
+ 				    ///return t.commit();
  				  }).catch((err) => {
  				  		audit.statusCode='FN2010';
 	 					audit.statusMsg=err.message;
@@ -343,6 +341,7 @@ const Op = Sequelize.Op
  			const CrmEntity=dbconn.import('./../../models/crmentity');
  			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
  			const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
+ 			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			CrmEntity.update(
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
  				{where: {crmid:soId}}
@@ -355,6 +354,12 @@ const Op = Sequelize.Op
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
  				{where: {salesorderid:soId}}
  			).then().catch();
+
+ 			XrsoProdRel.update(
+ 				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{where: {id:soId}}
+ 			).then().catch();
+ 			
  					
  	}
  	rSalesOrder.prototype.save=function(soId){
@@ -362,6 +367,7 @@ const Op = Sequelize.Op
  			const CrmEntity=dbconn.import('./../../models/crmentity');
  			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
  			const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
+ 			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			CrmEntity.update(
  				{
  					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -384,25 +390,46 @@ const Op = Sequelize.Op
  					deleted:0},
  				{where: {salesorderid:soId}}
  			).then().catch();
- 					
- 	}
- 	rSalesOrder.prototype.update=async function(soId){
- 			var dbconn=this.getDb();
- 			const Uom=dbconn.import('./../../models/uom');
- 			return Uom.findOne({
- 				where:{uomname:uomName},
- 				attributes:['uomid']
- 			}).then(uom=>{
- 				if(uom){
- 					return uom.uomid;
- 				}
- 				else{
- 					return false;
- 				}
 
- 			}).catch(e=>{
- 				return false;
- 			});
+ 			XrsoProdRel.update(
+ 				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{where: {id:soId}}
+ 			).then().catch();		
+ 	}
+ 	rSalesOrder.prototype.updateSubject= function(so,subject){
+ 		so.subject=subject;
+ 		so.save();
+ 	}
+ 	rSalesOrder.prototype.update=function(soId){
+ 			var dbconn=this.getDb();
+ 			const CrmEntity=dbconn.import('./../../models/crmentity');
+ 			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
+ 			const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
+ 			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
+ 			CrmEntity.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: 
+ 					{crmid:soId}}
+ 			).then().catch();
+ 			rSalesOrder.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: {salesorderid:soId}}
+ 			).then().catch();
+ 			rSalesOrderCf.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: {salesorderid:soId}}
+ 			).then().catch();
+
+ 			XrsoProdRel.update(
+ 				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{where: {id:soId}}
+ 			).then().catch();		
  	}
  	rSalesOrder.prototype.getTransactionSeries=async function(coll){
  			var dbconn=this.getDb();
@@ -515,6 +542,7 @@ const Op = Sequelize.Op
 	 								audit.status='Failed';
 					 				audit.saveLog(dbconn);
 					 				self.trash(so.salesorderid);
+					 				self.updateSubject(so,so.subject+'_'+so.salesorderid);
 					 				continue lineItemsIteration;
  								}
  								else{
@@ -540,10 +568,26 @@ const Op = Sequelize.Op
 	 								audit.status='Failed';
 					 				audit.saveLog(dbconn);
 					 				self.trash(so.salesorderid);
+					 				self.updateSubject(so,so.subject+'_'+so.salesorderid);
 					 				continue lineItemsIteration;
 
  							}else{
- 								
+ 								var isProdUomMapped= await self.isProdUomMap(xrsoProdRel['productid'],uomId);
+ 								if(!isProdUomMapped){
+ 									
+ 									if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase() == 'true'){
+ 										audit.statusCode='FN8218';
+		 								audit.statusMsg=productId+" & "+uomId+" are Not Mapped";
+		 								audit.reason= productId+" & "+uomId+" are Not Mapped";
+		 								audit.status='Failed';
+						 				audit.saveLog(dbconn);
+						 				self.trash(so.salesorderid);
+					 					self.updateSubject(so,so.subject+'_'+so.salesorderid);
+					 					continue lineItemsIteration;
+
+ 									}	
+ 								}
+ 								xrsoProdRel[transRel.uom]=uomId;
  							}
  						}
  						
@@ -567,12 +611,15 @@ const Op = Sequelize.Op
  								xrsoProdRel['quantity']=quantity;
  							}
  							else{
- 								
+ 							
  								audit.statusCode='FN8213';
 	 							audit.statusMsg="Invalid Quantity";
 	 							audit.reason="quantity Is Not Availabale";
 	 							audit.status='Failed';
 					 			audit.saveLog(dbconn);
+					 			self.trash(so.salesorderid);
+					 			self.updateSubject(so,so.subject+'_'+so.salesorderid);
+					 			continue lineItemsIteration;
  							}
  						}catch(e){
  							audit.statusCode='FN8214';
@@ -580,6 +627,9 @@ const Op = Sequelize.Op
 	 						audit.reason="quantity Is Not Availabale";
 	 						audit.status='Failed';
 					 		audit.saveLog(dbconn);
+					 		self.trash(so.salesorderid);
+					 		self.updateSubject(so,so.subject+'_'+so.salesorderid);
+					 		continue lineItemsIteration;
  						}
  					break;
  					case 'baseqty':
@@ -587,7 +637,7 @@ const Op = Sequelize.Op
  							xrsoProdRel['baseqty']=lineItem.baseqty._text;
  						}
  						catch(e){
-
+ 							xrsoProdRel['baseqty']=Number(lineItem.quantity._text);
  						}
  						
 
@@ -602,13 +652,10 @@ const Op = Sequelize.Op
  					break;
  				}
  			}
- 			transGridFields.forEach(async function(field){});
- 			xrsoProdRel.save({tranaction:t});
+ 			xrsoProdRel.save();
  		
  		}
- 		lineItems.forEach(async function(lineItem){
-
- 		});
+ 		
  		return Promise.resolve(true);
  	}
  	rSalesOrder.prototype.isProdUomMap=async function(productId,uomId){
@@ -626,10 +673,9 @@ const Op = Sequelize.Op
  				include:[{model:Product,required:true,attributes:prodUomFields}],
  				raw: true,
  			}).then(uoms => {
- 				console.log(uoms);
- 				return uoms;
+ 				return Object.values(uoms).includes(uomId);
  			}).catch(e=>{
- 				return e.error;
+ 				return false;
  			});
 
  		 
