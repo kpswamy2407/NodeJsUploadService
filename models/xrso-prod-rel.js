@@ -19,7 +19,8 @@ module.exports=(sequelize,DataTypes)=>{
             
         },
         xprodhierid:{
-            type:DataTypes.BIGINT(20),   
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
         },
         sequence_no:{
             type:DataTypes.INTEGER(4),

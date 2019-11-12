@@ -17,6 +17,7 @@ const Op = Sequelize.Op
  	function rSalesOrder(xmljs){
  		BaseModule.call(this,xmljs);
  	};
+ 	rSalesOrder.prototype.isFailure=false;
  	rSalesOrder.prototype.importAssoc=function(){
  		const dbconn=this.getDb();
  		const CrmEntity=dbconn.import('./../../models/crmentity');
@@ -54,6 +55,7 @@ const Op = Sequelize.Op
  	};
  	rSalesOrder.prototype.import=async function(xml){
  		try{
+ 			this.saveXml(xml,'xrSalesOrder');
  			this.importAssoc();
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);
@@ -86,36 +88,40 @@ const Op = Sequelize.Op
  			else{
  				var baseColls=baseColl;
  			}
- 			baseColls.forEach(async function(coll){
+ 			await baseColls.reduce(async (promise, coll) => {
+ 				await promise;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit);
- 				dbconn.transaction().then(t => {
- 				  return rso.save({transaction: t}).then(so => {
- 				    return rsocf.save({transaction:t}).then(socf=>{
- 				    		if(t.commit()){
- 				    			self.save(socf.salesorderid);
- 				    		}
- 				    		return self.updateLineItems(so,audit,coll.lineitems);
+ 				await dbconn.transaction().then(async (t) => {
+ 				  return await rso.save({transaction: t}).then(async (so) => {
+ 				    return await rsocf.save({transaction:t}).then(async (socf)=>{
+ 				    		
+ 				    		
  				    });
- 				  }).then(() => {
- 				    ///return t.commit();
- 				  }).catch((err) => {
+ 				  }).then(async (t) => {
+ 				    if(await t.commit()){
+ 				    			await self.save(socf.salesorderid);
+ 				    			await self.updateLineItems(so,audit,coll.lineitems)
+ 				    }
+ 				  }).catch(async (err) => {
  				  		audit.statusCode='FN2010';
 	 					audit.statusMsg=err.message;
 	 					audit.reason=err.message;
 	 					audit.status='Failed';
 	 					audit.subject=rso.subject;
 	 					audit.saveLog(dbconn);
- 				    return t.rollback();
- 				  });
+	 					self.isFailure=true;
+ 				    	return await t.rollback();
+ 					});
  				});
- 			});
+ 			
+ 			}, Promise.resolve());
+ 			
  		}
  		catch(e){
- 			console.log(e);
  			return  Promise.reject(e.error);
  		}
- 		
- 		return this.saveXml(xml);
+ 		return Promise.resolve(this.updateStatus(self.isFailure));
+
  	};
  	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit){
  		var self=this;
@@ -157,6 +163,7 @@ const Op = Sequelize.Op
  				 			audit.status='Failed';
  							audit.subject=coll.subject._text;
  							audit.saveLog(dbconn);
+ 							self.isFailure=true;
  			 			}
  			 			break;
 
@@ -173,6 +180,7 @@ const Op = Sequelize.Op
  				 					audit.status='Failed';
  								 	audit.subject=coll.subject._text;
  								 	audit.saveLog(dbconn);
+ 								 	self.isFailure=true;
  			 					 }
  			 			break;
  			 			case 'cf_xrso_sales_man':
@@ -187,6 +195,7 @@ const Op = Sequelize.Op
  				 				audit.status='Failed';
  								audit.subject=coll.subject._text;
  								audit.saveLog(dbconn);
+ 								self.isFailure=true;
  			 				}
  			 					               	
 			            break;
@@ -396,9 +405,16 @@ const Op = Sequelize.Op
  				{where: {id:soId}}
  			).then().catch();		
  	}
- 	rSalesOrder.prototype.updateSubject= function(so,subject){
- 		so.subject=subject;
- 		so.save();
+ 	rSalesOrder.prototype.updateSubject= function(soId,subject){
+ 		var dbconn=this.getDb();
+ 		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
+ 		rSalesOrder.update(
+ 				{
+ 					subject:subject
+ 				},
+ 				{where: {salesorderid:soId}}
+ 			).then().catch();
+ 		
  	}
  	rSalesOrder.prototype.update=function(soId){
  			var dbconn=this.getDb();
@@ -518,11 +534,15 @@ const Op = Sequelize.Op
  		var is_process=((LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && transRel.receive_pro_by_cate.toLowerCase()=='true'))?0:1;
  		lineItemsIteration:
  		for (var i = 0; i < lineItems.length; i++) {
+ 			
  			var lineItem=lineItems[i];
  			transGridFieldsIteration:
  			var xrsoProdRel=new XrsoProdRel();
- 			for (var i = 0; i < transGridFields.length; i++) {
- 				var field=transGridFields[i];
+ 			xrsoProdRel['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 			xrsoProdRel['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+
+ 			for (var j = 0; j < transGridFields.length; j++) {
+ 				var field=transGridFields[j];
 
  				switch(field.columnname){
  					case transRel.relid :
@@ -537,12 +557,14 @@ const Op = Sequelize.Op
  							if(productId==false){
  								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
  									audit.statusCode='FN8212';
-	 								audit.statusMsg="Invalid Product Code";
-	 								audit.reason="Product Is Not Availabale with provided input";
+	 								audit.statusMsg="Invalid Product Code "
+	 								audit.reason="Product Is Not Availabale with provided input"+lineItem.productcode._text;
 	 								audit.status='Failed';
+	 								audit.subject=so.subject;
 					 				audit.saveLog(dbconn);
 					 				self.trash(so.salesorderid);
-					 				self.updateSubject(so,so.subject+'_'+so.salesorderid);
+					 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+					 				self.isFailure=true;
 					 				continue lineItemsIteration;
  								}
  								else{
@@ -563,12 +585,14 @@ const Op = Sequelize.Op
  							var uomId=await self.getUomId(lineItem.tuom.uomname._text);
  							if(uomId==false){
  									audit.statusCode='FN8213';
-	 								audit.statusMsg="Invalid UOM";
-	 								audit.reason="UOM Is Not Availabale with provided input";
+	 								audit.statusMsg="Invalid UOM - "+lineItem.tuom.uomname._text;
+	 								audit.reason="UOM Is Not Availabale with provided input "+lineItem.tuom.uomname._text;
 	 								audit.status='Failed';
+	 								audit.subject=so.subject;
 					 				audit.saveLog(dbconn);
 					 				self.trash(so.salesorderid);
-					 				self.updateSubject(so,so.subject+'_'+so.salesorderid);
+					 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+					 				self.isFailure=true;
 					 				continue lineItemsIteration;
 
  							}else{
@@ -580,10 +604,12 @@ const Op = Sequelize.Op
 		 								audit.statusMsg=productId+" & "+uomId+" are Not Mapped";
 		 								audit.reason= productId+" & "+uomId+" are Not Mapped";
 		 								audit.status='Failed';
+		 								audit.subject=so.subject;
 						 				audit.saveLog(dbconn);
 						 				self.trash(so.salesorderid);
-					 					self.updateSubject(so,so.subject+'_'+so.salesorderid);
-					 					continue lineItemsIteration;
+					 					self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+					 					self.isFailure=true;
+										continue lineItemsIteration;
 
  									}	
  								}
@@ -616,19 +642,23 @@ const Op = Sequelize.Op
 	 							audit.statusMsg="Invalid Quantity";
 	 							audit.reason="quantity Is Not Availabale";
 	 							audit.status='Failed';
+	 							audit.subject=so.subject;
 					 			audit.saveLog(dbconn);
 					 			self.trash(so.salesorderid);
-					 			self.updateSubject(so,so.subject+'_'+so.salesorderid);
-					 			continue lineItemsIteration;
+					 			self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+					 			self.isFailure=true;
+								continue lineItemsIteration;
  							}
  						}catch(e){
  							audit.statusCode='FN8214';
 	 						audit.statusMsg="Invalid Quantity";
 	 						audit.reason="quantity Is Not Availabale";
 	 						audit.status='Failed';
+	 						audit.subject=so.subject;
 					 		audit.saveLog(dbconn);
 					 		self.trash(so.salesorderid);
-					 		self.updateSubject(so,so.subject+'_'+so.salesorderid);
+					 		self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+					 		self.isFailure=true;
 					 		continue lineItemsIteration;
  						}
  					break;
@@ -647,12 +677,17 @@ const Op = Sequelize.Op
  							xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
  						}
  						catch(e){
- 							xrsoProdRel[field.columnname]='';
+ 							
  						}
  					break;
  				}
  			}
- 			xrsoProdRel.save();
+ 			
+ 			xrsoProdRel.save().then(res=>{
+ 				
+ 			}).catch(e=>{
+ 				self.isFailure=true;
+ 			});
  		
  		}
  		

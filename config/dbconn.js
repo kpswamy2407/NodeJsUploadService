@@ -2,6 +2,7 @@ const Sequelize=require('sequelize');
 var database=process.env.FNXT_MYSQLDB;
 const dbconn=new Sequelize(database,null,null,{
     dialect: 'mysql',
+    logging: false,
     port:process.env.FNXT_MYSQLPORT,
     replication:{
         read:[

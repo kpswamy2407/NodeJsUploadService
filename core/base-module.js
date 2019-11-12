@@ -1,6 +1,7 @@
 const Base =require('./base');
 const BaseError=require('./base-error');
 const { __extends }=require('tslib');
+var moment = require('moment');
 /**
  * 
  * @see 
@@ -29,9 +30,8 @@ var BaseModule=(function(){
         };
     }
     BaseModule.prototype.models={};
-    BaseModule.prototype.saveXml=function(xml){
+    BaseModule.prototype.saveXml=function(xml,serviceName){
         const dbconn=this.getDb();
-        const serviceName=this.constructor.name;
         const XmlStat=dbconn.import('../models/xmlstatus');
         return XmlStat.create({
             service_name:serviceName,
@@ -46,6 +46,21 @@ var BaseModule=(function(){
             this.fatal(err.message);
             throw new BaseError('Error while saving XML to the db.');
         });
+    }
+    BaseModule.prototype.updateStatus=function(failure){
+        var status=this.getStatus();
+        if(failure){
+            status.status=2;
+            status.end_time=moment().format('YYYY-MM-DD HH:mm:ss');
+            status.save();
+            return true;
+        }
+        else{
+            status.status=1;
+            status.end_time=moment().format('YYYY-MM-DD HH:mm:ss');
+            status.save();
+            return true;
+        }
     }
     return BaseModule;
 })();

@@ -50,7 +50,7 @@ var Audit=(function(){
 			sendRecAudit.sen_rec_sourceapplication=this.source;
 			sendRecAudit.save().then(sr=>{
 			}).catch(e=>{
-				console.log(e);
+				//console.log(e);
 			});
 
 			var recAuditLog=new RecAuditLog();
@@ -72,11 +72,11 @@ var Audit=(function(){
 			recAuditLog.save().then(rc=>{
 				
 			}).catch(e=>{
-				console.log(e);
+				//console.log(e);
 			});
 		}
 		catch(e){
-			console.log(e);
+			//console.log(e);
 		}
 		
 	};
