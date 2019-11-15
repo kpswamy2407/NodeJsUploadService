@@ -94,14 +94,13 @@ const Op = Sequelize.Op
  				await dbconn.transaction().then(async (t) => {
  				  return await rso.save({transaction: t}).then(async (so) => {
  				    return await rsocf.save({transaction:t}).then(async (socf)=>{
- 				    		
- 				    		
- 				    });
- 				  }).then(async (t) => {
- 				    if(await t.commit()){
+ 				    	if(t.commit()){
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems)
- 				    }
+ 				    	}
+ 				    });
+ 				  }).then(async (t) => {
+ 				    
  				  }).catch(async (err) => {
  				  		audit.statusCode='FN2010';
 	 					audit.statusMsg=err.message;
@@ -209,13 +208,37 @@ const Op = Sequelize.Op
 					break;
 	 		      	default:
 	 		                         //console.log(field.columnname,'=>',coll[field.columnname]);
+	 		            if(field.typeofdata.includes('M')){
+	 		            	if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		            		rso[field.columnname]= coll[field.columnname]._text;
+	 		            	    rsocf[field.columnname]= coll[field.columnname]._text;
+	 		            	 }
+	 		            	 else{
+	 		            	 	audit.statusCode='FN8210';
+ 				 				audit.statusMsg=field.columnname+" is required";
+ 				 				audit.reason=field.columnname+" is required";
+ 				 				audit.status='Failed';
+ 								audit.subject=coll.subject._text;
+ 								audit.saveLog(dbconn);
+ 								self.isFailure=true;
+	 		            	 } 
+	 		            }
+	 		            else{
+	 		            	if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
+
+	 		            	    if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		            	    	rso[field.columnname]= coll[field.columnname]._text;
+	 		            	        rsocf[field.columnname]= coll[field.columnname]._text;
+	 		            	     } 
+	 		            	}
+	 		            }
 	 		            if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
 
 	 		                if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
 	 		                	rso[field.columnname]= coll[field.columnname]._text;
 	 		                    rsocf[field.columnname]= coll[field.columnname]._text;
 	 		                   } 
-	 		                }
+	 		            }
 	 		         break;
 	 		    }
 	 		         
@@ -601,8 +624,8 @@ const Op = Sequelize.Op
  									
  									if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase() == 'true'){
  										audit.statusCode='FN8218';
-		 								audit.statusMsg=productId+" & "+uomId+" are Not Mapped";
-		 								audit.reason= productId+" & "+uomId+" are Not Mapped";
+		 								audit.statusMsg= "product id :"+ productId+" & uom id: "+uomId+" are Not Mapped";
+		 								audit.reason= "product id :"+ productId+" & uom id: "+uomId+" are Not Mapped";
 		 								audit.status='Failed';
 		 								audit.subject=so.subject;
 						 				audit.saveLog(dbconn);

@@ -17,6 +17,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         start_time:{
             type:DataTypes.DATE,
+            defaultValue:null,
         },
         end_time:{
             type:DataTypes.DATE,

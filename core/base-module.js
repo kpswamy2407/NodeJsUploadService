@@ -37,6 +37,8 @@ var BaseModule=(function(){
             service_name:serviceName,
             status:0,
             context:xml,
+            start_time:moment().format('YYYY-MM-DD HH:mm:ss'),
+            end_time:moment().format('YYYY-MM-DD HH:mm:ss')
         })
         .then(model => {
             this.setStatus(model);
