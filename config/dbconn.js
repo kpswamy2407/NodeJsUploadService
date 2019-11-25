@@ -22,7 +22,5 @@ const dbconn=new Sequelize(database,null,null,{
         }
     }
 });
-var mysqlLog=function(msg){
-    console.log(msg);
-}
+
 module.exports=exports=dbconn;

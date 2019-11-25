@@ -37,9 +37,7 @@ var BaseModule=(function(){
         return this.logFileName;
     }
     BaseModule.prototype.setLogFileName=function(name){
-        console.log(name);
         this.logFileName=name;
-        console.log(this.logFileName);
     }
     BaseModule.prototype.saveXml=function(xml,serviceName){
         const dbconn=this.getDb();
@@ -76,8 +74,6 @@ var BaseModule=(function(){
         }
     }
     BaseModule.prototype.sqlLog=function(msg){
-        
-        console.log(this.getLogFileName());
         fs.appendFile(__log_dir+'/'+this.getLogFileName(), msg+"\n", function (err) {});
     }
     return BaseModule;
