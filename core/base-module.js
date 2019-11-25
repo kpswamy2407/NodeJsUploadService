@@ -2,6 +2,7 @@ const Base =require('./base');
 const BaseError=require('./base-error');
 const { __extends }=require('tslib');
 var moment = require('moment');
+var fs = require('fs');
 /**
  * 
  * @see 
@@ -28,8 +29,18 @@ var BaseModule=(function(){
             }
             return __stat;
         };
+        this.logFileName='app_sql_'+moment().format('YYYY-MM-DD-HH-mm-ss.SSS')+'.txt';
     }
     BaseModule.prototype.models={};
+    
+    BaseModule.prototype.getLogFileName=function(){
+        return this.logFileName;
+    }
+    BaseModule.prototype.setLogFileName=function(name){
+        console.log(name);
+        this.logFileName=name;
+        console.log(this.logFileName);
+    }
     BaseModule.prototype.saveXml=function(xml,serviceName){
         const dbconn=this.getDb();
         const XmlStat=dbconn.import('../models/xmlstatus');
@@ -63,6 +74,11 @@ var BaseModule=(function(){
             status.save();
             return true;
         }
+    }
+    BaseModule.prototype.sqlLog=function(msg){
+        
+        console.log(this.getLogFileName());
+        fs.appendFile(__log_dir+'/'+this.getLogFileName(), msg+"\n", function (err) {});
     }
     return BaseModule;
 })();

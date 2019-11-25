@@ -1,8 +1,11 @@
 const Sequelize=require('sequelize');
 var database=process.env.FNXT_MYSQLDB;
+const { BaseModule }=require('../core');
+const baseModule=new BaseModule();
 const dbconn=new Sequelize(database,null,null,{
     dialect: 'mysql',
-    logging: false,
+    logging:msg=>baseModule.sqlLog(msg),
+    benchmark:true,
     port:process.env.FNXT_MYSQLPORT,
     replication:{
         read:[
@@ -19,4 +22,7 @@ const dbconn=new Sequelize(database,null,null,{
         }
     }
 });
+var mysqlLog=function(msg){
+    console.log(msg);
+}
 module.exports=exports=dbconn;

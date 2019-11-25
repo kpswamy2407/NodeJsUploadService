@@ -56,6 +56,7 @@ const Op = Sequelize.Op
  	rSalesOrder.prototype.import=async function(xml){
  		try{
  			this.saveXml(xml,'xrSalesOrder');
+ 			this.setLogFileName('app_sql_xrSalesOrder_'+moment().format('YYYY-MM-DD-HH-mm-ss.SSS')+'.txt');
  			this.importAssoc();
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);

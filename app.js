@@ -18,7 +18,7 @@ var logStream=require('rotating-file-stream')('access.log',{
 });
 
 var app = express();
-
+global.__log_dir = log_dir;
 // setting up db connection
 app.set('dbconn',dbconn);
 

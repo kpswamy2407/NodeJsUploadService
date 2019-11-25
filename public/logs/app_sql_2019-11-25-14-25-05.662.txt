@@ -1,0 +1,17 @@
+Executed (default): SELECT `VtigerField`.`fieldid`, `VtigerField`.`columnname`, `VtigerField`.`typeofdata`, `VtigerField`.`uitype`, `VtigerField`.`tabid`, `VtigerTab`.`tabid` AS `VtigerTab.tabid`, `VtigerTab`.`name` AS `VtigerTab.name` FROM `vtiger_field` AS `VtigerField` INNER JOIN `vtiger_tab` AS `VtigerTab` ON `VtigerField`.`tabid` = `VtigerTab`.`tabid` WHERE `VtigerField`.`tablename` IN ('vtiger_xrso', 'vtiger_xrsocf') AND `VtigerField`.`xmlreceivetable` = 1;
+Executed (default): SELECT `tabid`, `name`, `presence`, `tabsequence`, `tablabel`, `modifiedby`, `modifiedtime`, `customized`, `ownedby`, `isentitytype`, `version`, `archive` FROM `vtiger_tab` AS `VtigerTab` WHERE `VtigerTab`.`name` = 'xrSalesOrder' LIMIT 1;
+Executed (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executed (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 221970
+Executed (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executed (default): INSERT INTO `dms_process_xml_status` (`id`,`context`,`service_name`,`status`,`start_time`,`end_time`) VALUES (DEFAULT,?,?,?,?,?);
+Executed (default): INSERT INTO `vtiger_crmentity` (`crmid`,`smcreatorid`,`smownerid`,`modifiedby`,`setype`,`setype_id`,`description`,`createdtime`,`modifiedtime`,`viewedtime`,`status`,`version`,`presence`,`deleted`,`sendstatus`,`terms_conditions`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+Executed (default): SELECT `xretailerid` FROM `vtiger_xretailer` AS `Retailer` WHERE `Retailer`.`customercode` = 'RET147972201500017' AND `Retailer`.`deleted` = 0 LIMIT 1;
+Executed (default): SELECT `id`, `currency_name`, `currency_code`, `currency_symbol`, `conversion_rate`, `currency_status`, `defaultid`, `deleted` FROM `vtiger_currency_info` AS `CurrencyInfo` WHERE `CurrencyInfo`.`currency_code` = 'INR' LIMIT 1;
+Executed (default): SELECT `xtransactionseriesid` FROM `vtiger_xtransactionseries` AS `XSeries` WHERE `XSeries`.`transactionseriescode` = 'RSALESORDER' AND `XSeries`.`deleted` = 0 LIMIT 1;
+Executed (default): SELECT `xbeatid` FROM `vtiger_xbeat` AS `Beat` WHERE `Beat`.`beatcode` = 'BEAT5' AND `Beat`.`deleted` = 0 LIMIT 1;
+Executed (7a056626-8aad-4612-8e83-7a874e5e58cc): START TRANSACTION;
+Executed (default): SELECT `salesorderid` FROM `vtiger_xrso` AS `rSalesOrder` WHERE `rSalesOrder`.`deleted` = '0' AND `rSalesOrder`.`subject` = 'NODEORD20191918509840SLM7866' LIMIT 1;
+Executed (7a056626-8aad-4612-8e83-7a874e5e58cc): ROLLBACK;
+Executed (default): INSERT INTO `sify_send_receive_audit` (`sen_rec_id`,`sen_rec_doc_name`,`sen_rec_options`,`sen_rec_documenttype`,`sen_rec_distcode`,`sen_rec_status`,`sen_rec_reason`,`sen_rec_recordid`,`sen_rec_sourceapplication`,`sen_rec_destapplication`,`sen_rec_doc_createddate`,`sen_rec_rawurl`,`sen_rec_createddate`) VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?);
+Executed (default): INSERT INTO `sify_receive_audit_log` (`rec_log_id`,`rec_log_doc_name`,`rec_log_options`,`rec_log_documenttype`,`rec_log_distcode`,`rec_log_status`,`rec_log_reason`,`rec_log_recordid`,`rec_log_sourceapplication`,`rec_log_destapplication`,`rec_log_doc_createddate`,`rec_log_rawurl`,`rec_log_subject`,`rec_log_status_code`,`rec_log_status_msg`,`rec_log_createddate`) VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+Executed (default): UPDATE `dms_process_xml_status` SET `status`=?,`end_time`=? WHERE `id` = ?
