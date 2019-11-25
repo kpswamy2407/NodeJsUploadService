@@ -787,6 +787,7 @@ const Op = Sequelize.Op
  				terms_conditions:null,
  			});
  				return rsocrm.save().then(crm=>{
+ 					console.log(crm);
  					return crm.crmid;
  				}).catch(e=>{
  					throw new Error('Unable to create CRM entity for rSalesOrder.');
