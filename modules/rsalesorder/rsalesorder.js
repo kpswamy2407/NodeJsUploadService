@@ -95,7 +95,7 @@ const Op = Sequelize.Op
  				await dbconn.transaction().then(async (t) => {
  				  return await rso.save({transaction: t}).then(async (so) => {
  				    return await rsocf.save({transaction:t}).then(async (socf)=>{
- 				    	if(t.commit()){
+ 				    	if(await t.commit()){
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems)
  				    	}
@@ -548,12 +548,13 @@ const Op = Sequelize.Op
  	
  	rSalesOrder.prototype.updateLineItems=async function(so,audit,coll){
  		try{
-
+ 				console.log("=====================================");
  			 		var self=this;
  			 		var dbconn=this.getDb();
  			 		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			 		var transRel=await self.getTransRel();
  			 		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
+ 			 		console.log(transGridFields);
  			 		var lineItems=coll[transRel.transaction_rel_table];
  			 		var LBL_RSO_SAVE_PRO_CATE= await self.getInvMgtConfig('LBL_RSO_SAVE_PRO_CATE');
  			 		var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
