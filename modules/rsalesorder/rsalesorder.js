@@ -719,7 +719,7 @@ const Op = Sequelize.Op
  			 			}
  			 			
  			 			xrsoProdRel.save().then(res=>{
- 			 				console.log(res);
+ 			 				
  			 			}).catch(e=>{
  			 				self.isFailure=true;
  			 			});

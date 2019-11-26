@@ -4,8 +4,8 @@ const { BaseModule }=require('../core');
 const baseModule=new BaseModule();
 const dbconn=new Sequelize(database,null,null,{
     dialect: 'mysql',
-    //logging:msg=>baseModule.sqlLog(msg),
-    logging:console.log,
+    logging:msg=>baseModule.sqlLog(msg),
+    //logging:console.log,
     benchmark:true,
     port:process.env.FNXT_MYSQLPORT,
     replication:{
