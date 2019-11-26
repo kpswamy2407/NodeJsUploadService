@@ -95,7 +95,7 @@ const Op = Sequelize.Op
  				await dbconn.transaction().then(async (t) => {
  				  return await rso.save({transaction: t}).then(async (so) => {
  				    return await rsocf.save({transaction:t}).then(async (socf)=>{
- 				    	if(await t.commit()){
+ 				    	if(t.commit()){
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems)
  				    	}
@@ -547,18 +547,26 @@ const Op = Sequelize.Op
  	}
  	
  	rSalesOrder.prototype.updateLineItems=async function(so,audit,coll){
- 		try{
- 				console.log("=====================================");
+ 		
+ 				
+ 					
  			 		var self=this;
  			 		var dbconn=this.getDb();
  			 		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			 		var transRel=await self.getTransRel();
  			 		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
- 			 		console.log(transGridFields);
- 			 		var lineItems=coll[transRel.transaction_rel_table];
+ 			 		if(Object.getPrototypeOf( coll[transRel.transaction_rel_table]) === Object.prototype){
+ 			 			
+ 			 			var lineItems=[coll[transRel.transaction_rel_table]]
+ 			 		}
+ 			 		else{
+ 			 			var lineItems=coll[transRel.transaction_rel_table];
+ 			 		}
+ 			 		
  			 		var LBL_RSO_SAVE_PRO_CATE= await self.getInvMgtConfig('LBL_RSO_SAVE_PRO_CATE');
  			 		var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
  			 		var is_process=((LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && transRel.receive_pro_by_cate.toLowerCase()=='true'))?0:1;
+ 			 		
  			 		lineItemsIteration:
  			 		for (var i = 0; i < lineItems.length; i++) {
  			 			
@@ -720,9 +728,7 @@ const Op = Sequelize.Op
  			 		
  			 		return Promise.resolve(true);
  			 	
- 		}catch(e){
- 			console.log('With update function',e);
- 		}
+ 		
  	}
  	rSalesOrder.prototype.isProdUomMap=async function(productId,uomId){
  		var self=this;
