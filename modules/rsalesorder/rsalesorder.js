@@ -547,175 +547,181 @@ const Op = Sequelize.Op
  	}
  	
  	rSalesOrder.prototype.updateLineItems=async function(so,audit,coll){
- 		var self=this;
- 		var dbconn=this.getDb();
- 		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
- 		var transRel=await self.getTransRel();
- 		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
- 		var lineItems=coll[transRel.transaction_rel_table];
- 		var LBL_RSO_SAVE_PRO_CATE= await self.getInvMgtConfig('LBL_RSO_SAVE_PRO_CATE');
- 		var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
- 		var is_process=((LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && transRel.receive_pro_by_cate.toLowerCase()=='true'))?0:1;
- 		lineItemsIteration:
- 		for (var i = 0; i < lineItems.length; i++) {
- 			
- 			var lineItem=lineItems[i];
- 			transGridFieldsIteration:
- 			var xrsoProdRel=new XrsoProdRel();
- 			xrsoProdRel['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 			xrsoProdRel['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 		try{
 
- 			for (var j = 0; j < transGridFields.length; j++) {
- 				var field=transGridFields[j];
+ 			 		var self=this;
+ 			 		var dbconn=this.getDb();
+ 			 		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
+ 			 		var transRel=await self.getTransRel();
+ 			 		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
+ 			 		var lineItems=coll[transRel.transaction_rel_table];
+ 			 		var LBL_RSO_SAVE_PRO_CATE= await self.getInvMgtConfig('LBL_RSO_SAVE_PRO_CATE');
+ 			 		var LBL_VALIDATE_RPI_PROD_CODE= await self.getInvMgtConfig('LBL_VALIDATE_RPI_PROD_CODE');
+ 			 		var is_process=((LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && transRel.receive_pro_by_cate.toLowerCase()=='true'))?0:1;
+ 			 		lineItemsIteration:
+ 			 		for (var i = 0; i < lineItems.length; i++) {
+ 			 			
+ 			 			var lineItem=lineItems[i];
+ 			 			transGridFieldsIteration:
+ 			 			var xrsoProdRel=new XrsoProdRel();
+ 			 			xrsoProdRel['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 			 			xrsoProdRel['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 
- 				switch(field.columnname){
- 					case transRel.relid :
- 						xrsoProdRel[transRel.relid]=so.salesorderid;
- 					break;
- 					case transRel.categoryid :
- 					
- 					break;
- 					case transRel.profirldname :
- 						if(is_process==1){
- 							var productId=await self.getProductId(lineItem.productcode._text);
- 							if(productId==false){
- 								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
- 									audit.statusCode='FN8212';
-	 								audit.statusMsg="Invalid Product Code "
-	 								audit.reason="Product Is Not Availabale with provided input"+lineItem.productcode._text;
-	 								audit.status='Failed';
-	 								audit.subject=so.subject;
-					 				audit.saveLog(dbconn);
-					 				self.trash(so.salesorderid);
-					 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
-					 				self.isFailure=true;
-					 				continue lineItemsIteration;
- 								}
- 								else{
- 									xrsoProdRel['productname']='0';
- 									xrsoProdRel['productcode']=lineItem.productcode._text;
- 									xrsoProdRel[transRel.profirldname]=productId;
- 								}
- 							}
- 							else{
- 								xrsoProdRel['productname']=productId;
- 								xrsoProdRel[transRel.profirldname]=productId;
- 								xrsoProdRel['productcode']=lineItem.productcode._text;
- 							}
- 						}
- 					break;
- 					case transRel.uom :
- 						if(is_process==1){
- 							var uomId=await self.getUomId(lineItem.tuom.uomname._text);
- 							if(uomId==false){
- 									audit.statusCode='FN8213';
-	 								audit.statusMsg="Invalid UOM - "+lineItem.tuom.uomname._text;
-	 								audit.reason="UOM Is Not Availabale with provided input "+lineItem.tuom.uomname._text;
-	 								audit.status='Failed';
-	 								audit.subject=so.subject;
-					 				audit.saveLog(dbconn);
-					 				self.trash(so.salesorderid);
-					 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
-					 				self.isFailure=true;
-					 				continue lineItemsIteration;
+ 			 			for (var j = 0; j < transGridFields.length; j++) {
+ 			 				var field=transGridFields[j];
 
- 							}else{
- 								var isProdUomMapped= await self.isProdUomMap(xrsoProdRel['productid'],uomId);
- 								if(!isProdUomMapped){
- 									
- 									if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase() == 'true'){
- 										audit.statusCode='FN8218';
-		 								audit.statusMsg= "product id :"+ productId+" & uom id: "+uomId+" are Not Mapped";
-		 								audit.reason= "product id :"+ productId+" & uom id: "+uomId+" are Not Mapped";
-		 								audit.status='Failed';
-		 								audit.subject=so.subject;
-						 				audit.saveLog(dbconn);
-						 				self.trash(so.salesorderid);
-					 					self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
-					 					self.isFailure=true;
-										continue lineItemsIteration;
+ 			 				switch(field.columnname){
+ 			 					case transRel.relid :
+ 			 						xrsoProdRel[transRel.relid]=so.salesorderid;
+ 			 					break;
+ 			 					case transRel.categoryid :
+ 			 					
+ 			 					break;
+ 			 					case transRel.profirldname :
+ 			 						if(is_process==1){
+ 			 							var productId=await self.getProductId(lineItem.productcode._text);
+ 			 							if(productId==false){
+ 			 								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
+ 			 									audit.statusCode='FN8212';
+ 				 								audit.statusMsg="Invalid Product Code "
+ 				 								audit.reason="Product Is Not Availabale with provided input"+lineItem.productcode._text;
+ 				 								audit.status='Failed';
+ 				 								audit.subject=so.subject;
+ 								 				audit.saveLog(dbconn);
+ 								 				self.trash(so.salesorderid);
+ 								 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 				self.isFailure=true;
+ 								 				continue lineItemsIteration;
+ 			 								}
+ 			 								else{
+ 			 									xrsoProdRel['productname']='0';
+ 			 									xrsoProdRel['productcode']=lineItem.productcode._text;
+ 			 									xrsoProdRel[transRel.profirldname]=productId;
+ 			 								}
+ 			 							}
+ 			 							else{
+ 			 								xrsoProdRel['productname']=productId;
+ 			 								xrsoProdRel[transRel.profirldname]=productId;
+ 			 								xrsoProdRel['productcode']=lineItem.productcode._text;
+ 			 							}
+ 			 						}
+ 			 					break;
+ 			 					case transRel.uom :
+ 			 						if(is_process==1){
+ 			 							var uomId=await self.getUomId(lineItem.tuom.uomname._text);
+ 			 							if(uomId==false){
+ 			 									audit.statusCode='FN8213';
+ 				 								audit.statusMsg="Invalid UOM - "+lineItem.tuom.uomname._text;
+ 				 								audit.reason="UOM Is Not Availabale with provided input "+lineItem.tuom.uomname._text;
+ 				 								audit.status='Failed';
+ 				 								audit.subject=so.subject;
+ 								 				audit.saveLog(dbconn);
+ 								 				self.trash(so.salesorderid);
+ 								 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 				self.isFailure=true;
+ 								 				continue lineItemsIteration;
 
- 									}	
- 								}
- 								xrsoProdRel[transRel.uom]=uomId;
- 							}
- 						}
- 						
- 					break;
- 					case 'tax1' :
- 						try{
- 							var tax1=lineItem.tax1._text;
- 							xrsoProdRel['tax1']=tax1
- 						}
- 						catch(e){
- 							xrsoProdRel['tax1']='0';
- 						}
- 						xrsoProdRel['tax2']='0';
- 						xrsoProdRel['tax3']='0';
- 					break;
+ 			 							}else{
+ 			 								var isProdUomMapped= await self.isProdUomMap(xrsoProdRel['productid'],uomId);
+ 			 								if(!isProdUomMapped){
+ 			 									
+ 			 									if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase() == 'true'){
+ 			 										audit.statusCode='FN8218';
+ 					 								audit.statusMsg= "product id :"+ productId+" & uom id: "+uomId+" are Not Mapped";
+ 					 								audit.reason= "product id :"+ productId+" & uom id: "+uomId+" are Not Mapped";
+ 					 								audit.status='Failed';
+ 					 								audit.subject=so.subject;
+ 									 				audit.saveLog(dbconn);
+ 									 				self.trash(so.salesorderid);
+ 								 					self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 					self.isFailure=true;
+ 													continue lineItemsIteration;
 
- 					case 'quantity' :
- 						try{
- 							var quantity=Number(lineItem.quantity._text);
- 							if(quantity>0){
- 								xrsoProdRel['quantity']=quantity;
- 							}
- 							else{
- 							
- 								audit.statusCode='FN8213';
-	 							audit.statusMsg="Invalid Quantity";
-	 							audit.reason="quantity Is Not Availabale";
-	 							audit.status='Failed';
-	 							audit.subject=so.subject;
-					 			audit.saveLog(dbconn);
-					 			self.trash(so.salesorderid);
-					 			self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
-					 			self.isFailure=true;
-								continue lineItemsIteration;
- 							}
- 						}catch(e){
- 							audit.statusCode='FN8214';
-	 						audit.statusMsg="Invalid Quantity";
-	 						audit.reason="quantity Is Not Availabale";
-	 						audit.status='Failed';
-	 						audit.subject=so.subject;
-					 		audit.saveLog(dbconn);
-					 		self.trash(so.salesorderid);
-					 		self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
-					 		self.isFailure=true;
-					 		continue lineItemsIteration;
- 						}
- 					break;
- 					case 'baseqty':
- 						try{
- 							xrsoProdRel['baseqty']=lineItem.baseqty._text;
- 						}
- 						catch(e){
- 							xrsoProdRel['baseqty']=Number(lineItem.quantity._text);
- 						}
- 						
+ 			 									}	
+ 			 								}
+ 			 								xrsoProdRel[transRel.uom]=uomId;
+ 			 							}
+ 			 						}
+ 			 						
+ 			 					break;
+ 			 					case 'tax1' :
+ 			 						try{
+ 			 							var tax1=lineItem.tax1._text;
+ 			 							xrsoProdRel['tax1']=tax1
+ 			 						}
+ 			 						catch(e){
+ 			 							xrsoProdRel['tax1']='0';
+ 			 						}
+ 			 						xrsoProdRel['tax2']='0';
+ 			 						xrsoProdRel['tax3']='0';
+ 			 					break;
 
- 					break;
- 					default:
- 						try{
- 							xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
- 						}
- 						catch(e){
- 							
- 						}
- 					break;
- 				}
- 			}
- 			
- 			xrsoProdRel.save().then(res=>{
- 				
- 			}).catch(e=>{
- 				self.isFailure=true;
- 			});
- 		
+ 			 					case 'quantity' :
+ 			 						try{
+ 			 							var quantity=Number(lineItem.quantity._text);
+ 			 							if(quantity>0){
+ 			 								xrsoProdRel['quantity']=quantity;
+ 			 							}
+ 			 							else{
+ 			 							
+ 			 								audit.statusCode='FN8213';
+ 				 							audit.statusMsg="Invalid Quantity";
+ 				 							audit.reason="quantity Is Not Availabale";
+ 				 							audit.status='Failed';
+ 				 							audit.subject=so.subject;
+ 								 			audit.saveLog(dbconn);
+ 								 			self.trash(so.salesorderid);
+ 								 			self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 			self.isFailure=true;
+ 											continue lineItemsIteration;
+ 			 							}
+ 			 						}catch(e){
+ 			 							audit.statusCode='FN8214';
+ 				 						audit.statusMsg="Invalid Quantity";
+ 				 						audit.reason="quantity Is Not Availabale";
+ 				 						audit.status='Failed';
+ 				 						audit.subject=so.subject;
+ 								 		audit.saveLog(dbconn);
+ 								 		self.trash(so.salesorderid);
+ 								 		self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 		self.isFailure=true;
+ 								 		continue lineItemsIteration;
+ 			 						}
+ 			 					break;
+ 			 					case 'baseqty':
+ 			 						try{
+ 			 							xrsoProdRel['baseqty']=lineItem.baseqty._text;
+ 			 						}
+ 			 						catch(e){
+ 			 							xrsoProdRel['baseqty']=Number(lineItem.quantity._text);
+ 			 						}
+ 			 						
+
+ 			 					break;
+ 			 					default:
+ 			 						try{
+ 			 							xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
+ 			 						}
+ 			 						catch(e){
+ 			 							
+ 			 						}
+ 			 					break;
+ 			 				}
+ 			 			}
+ 			 			
+ 			 			xrsoProdRel.save().then(res=>{
+ 			 				console.log(res);
+ 			 			}).catch(e=>{
+ 			 				self.isFailure=true;
+ 			 			});
+ 			 		
+ 			 		}
+ 			 		
+ 			 		return Promise.resolve(true);
+ 			 	
+ 		}catch(e){
+ 			console.log('With update function',e);
  		}
- 		
- 		return Promise.resolve(true);
  	}
  	rSalesOrder.prototype.isProdUomMap=async function(productId,uomId){
  		var self=this;
