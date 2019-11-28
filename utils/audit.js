@@ -13,6 +13,7 @@ var Audit=(function(){
 	__extends(Audit,Base);
 	function Audit(){
 		Base.call(this);
+		console.log(moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'));
 	};
 	Audit.prototype.docName=null;
 	Audit.prototype.options=null;
@@ -22,7 +23,7 @@ var Audit=(function(){
 	Audit.prototype.distCode=null;
 	Audit.prototype.source=null;
 	Audit.prototype.destination=null;
-	Audit.prototype.createdDate=new Date();
+	Audit.prototype.createdDate=moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss');
 	Audit.prototype.rawURL='';
 	Audit.prototype.docType=null;
 	Audit.prototype.subject=null;
