@@ -4,6 +4,7 @@ const { BaseModule }=require('../core');
 const baseModule=new BaseModule();
 const dbconn=new Sequelize(database,null,null,{
     dialect: 'mysql',
+    timezone:'+05:30',
     logging:msg=>baseModule.sqlLog(msg),
     //logging:console.log,
     benchmark:true,
