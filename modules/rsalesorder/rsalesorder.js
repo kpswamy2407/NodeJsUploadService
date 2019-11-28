@@ -376,20 +376,20 @@ const Op = Sequelize.Op
  			const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
  			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			CrmEntity.update(
- 				{modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{modified_at: new Date(),deleted:1},
  				{where: {crmid:soId}}
  			).then().catch();
  			rSalesOrder.update(
- 				{modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{modified_at: new Date(),deleted:1},
  				{where: {salesorderid:soId}}
  			).then().catch();
  			rSalesOrderCf.update(
- 				{modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{modified_at: new Date(),deleted:1},
  				{where: {salesorderid:soId}}
  			).then().catch();
 
  			XrsoProdRel.update(
- 				{modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{modified_at: new Date(),deleted:1},
  				{where: {id:soId}}
  			).then().catch();
  			
@@ -403,29 +403,29 @@ const Op = Sequelize.Op
  			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			CrmEntity.update(
  				{
- 					modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
- 					created_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
+ 					modified_at: new Date(),
+ 					created_at: new Date(),
  					deleted:0},
  				{where: 
  					{crmid:soId}}
  			).then().catch();
  			rSalesOrder.update(
  				{
- 					modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
- 					created_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
+ 					modified_at: new Date(),
+ 					created_at: new Date(),
  					deleted:0},
  				{where: {salesorderid:soId}}
  			).then().catch();
  			rSalesOrderCf.update(
  				{
- 					modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
- 					created_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
+ 					modified_at: new Date(),
+ 					created_at: new Date(),
  					deleted:0},
  				{where: {salesorderid:soId}}
  			).then().catch();
 
  			XrsoProdRel.update(
- 				{modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{modified_at: new Date(),deleted:1},
  				{where: {id:soId}}
  			).then().catch();		
  	}
@@ -448,26 +448,26 @@ const Op = Sequelize.Op
  			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			CrmEntity.update(
  				{
- 					modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
+ 					modified_at: new Date(),
  					deleted:0},
  				{where: 
  					{crmid:soId}}
  			).then().catch();
  			rSalesOrder.update(
  				{
- 					modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
+ 					modified_at: new Date(),
  					deleted:0},
  				{where: {salesorderid:soId}}
  			).then().catch();
  			rSalesOrderCf.update(
  				{
- 					modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),
+ 					modified_at: new Date(),
  					deleted:0},
  				{where: {salesorderid:soId}}
  			).then().catch();
 
  			XrsoProdRel.update(
- 				{modified_at: moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss'),deleted:1},
+ 				{modified_at: new Date(),deleted:1},
  				{where: {id:soId}}
  			).then().catch();		
  	}
@@ -573,8 +573,8 @@ const Op = Sequelize.Op
  			 			var lineItem=lineItems[i];
  			 			transGridFieldsIteration:
  			 			var xrsoProdRel=new XrsoProdRel();
- 			 			xrsoProdRel['created_at']=moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss');
- 			 			xrsoProdRel['modified_at']=moment().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss');
+ 			 			xrsoProdRel['created_at']=new Date();
+ 			 			xrsoProdRel['modified_at']=new Date();
 
  			 			for (var j = 0; j < transGridFields.length; j++) {
  			 				var field=transGridFields[j];
