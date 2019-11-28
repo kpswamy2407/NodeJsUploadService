@@ -575,7 +575,7 @@ const Op = Sequelize.Op
  			 			var xrsoProdRel=new XrsoProdRel();
  			 			xrsoProdRel['created_at']=new Date();
  			 			xrsoProdRel['modified_at']=new Date();
-
+ 			 			console.log(xrsoProdRel['created_at']);
  			 			for (var j = 0; j < transGridFields.length; j++) {
  			 				var field=transGridFields[j];
 
