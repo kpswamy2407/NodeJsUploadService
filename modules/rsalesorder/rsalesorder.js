@@ -200,8 +200,9 @@ const Op = Sequelize.Op
  			 					               	
 			            break;
 			            case 'cf_salesorder_transaction_series':
-			            	rso[field.columnname]= coll.cf_salesorder_transaction_series.transactionseriescode._text;
-			               	rsocf[field.columnname]=coll.cf_salesorder_transaction_series.transactionseriescode._text;
+			            	var transSeries=await self.getTransactionSeries(coll);  
+			            	rso[field.columnname]= transSeries;
+			               	rsocf[field.columnname]=transSeries;
 			            break;
 			               
 			        }
@@ -475,7 +476,10 @@ const Op = Sequelize.Op
  			var dbconn=this.getDb();
  			const XSeries=dbconn.import('./../../models/x-series');
  			return XSeries.findOne({
- 				where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriesname._text,deleted:0},
+ 				where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriescode._text,
+ 					deleted:0,
+ 					xdistributorid:coll.distributor_id._text,
+ 					},
  				attributes:['xtransactionseriesid']
  			}).then(series=>{
  				if(series){
