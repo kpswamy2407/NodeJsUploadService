@@ -200,9 +200,8 @@ const Op = Sequelize.Op
  			 					               	
 			            break;
 			            case 'cf_salesorder_transaction_series':
-			            	var transSeries=await self.getTransactionSeries(coll);  
-			            	rso[field.columnname]= transSeries;
-			               	rsocf[field.columnname]=transSeries;
+			            	rso[field.columnname]= coll.cf_salesorder_transaction_series.transactionseriesname._text;
+			               	rsocf[field.columnname]=coll.cf_salesorder_transaction_series.transactionseriesname._text;
 			            break;
 			               
 			        }
