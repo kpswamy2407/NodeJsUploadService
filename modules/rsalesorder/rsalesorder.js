@@ -55,6 +55,7 @@ const Op = Sequelize.Op
  	};
  	rSalesOrder.prototype.import=async function(xml){
  		try{
+ 			
  			this.saveXml(xml,'xrSalesOrder');
  			this.setLogFileName('app_sql_xrSalesOrder_'+moment().format('YYYY-MM-DD-HH-mm-ss.SSS')+'.txt');
  			this.importAssoc();
@@ -82,6 +83,8 @@ const Op = Sequelize.Op
  			var XSeries=this.models['XSeries'];
  			var fields=await this.getFields();
  			var baseColl=await crdr.xrso();
+ 			var LBL_AUTO_RSO_TO_SO=await this.getInvMgtConfig('LBL_AUTO_RSO_TO_SO');
+ 			var LBL_RSO_SUB_RETAILER_CONVERT= await this.getInvMgtConfig('LBL_RSO_SUB_RETAILER_CONVERT');
  			var self=this;
  			if(Object.getPrototypeOf( baseColl ) === Object.prototype){
  				var baseColls=[baseColl];
@@ -97,7 +100,11 @@ const Op = Sequelize.Op
  				    return await rsocf.save({transaction:t}).then(async (socf)=>{
  				    	if(t.commit()){
  				    			await self.save(socf.salesorderid);
- 				    			await self.updateLineItems(so,audit,coll.lineitems)
+ 				    			await self.updateLineItems(so,audit,coll.lineitems);
+ 				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT=='true' && !so.customer_type==2){
+ 				    				await self.autoRsoToSo(so,socf);	
+ 				    			}
+ 				    			
  				    	}
  				    });
  				  }).then(async (t) => {
@@ -776,6 +783,41 @@ const Op = Sequelize.Op
  			}).catch(e=>{
  				return e.error;
  			});
+
+ 	}
+ 	rSalesOrder.prototype.autoRsoToSo=async function(so,socf){
+ 		var self=this;
+ 		const dbconn=this.getDb();
+ 		const SalesOrder=dbconn.import('./../../models/salesorder');
+ 		var LBL_SET_NETRATE=self.getInvMgtConfig('LBL_SET_NETRATE');
+ 		var ALLOW_GST_TRANSACTION=self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+ 		var SO_LBL_TAX_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
+ 		var SO_LBL_CURRENCY_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_CURRENCY_OPTION_ENABLE');
+ 	}
+ 	rSalesOrder.prototype.getStageAction=async function(action){
+ 		try{
+ 			const dbconn=this.getDb();
+ 			var self=this;
+ 			const WFStageCf=dbconn.import('./../../models/workflow-stage-cf');
+ 			const WorkFlowCf=dbconn.import('./../../models/workflow-cf');
+ 			return WorkFlowCf.findOne({
+ 				where:{
+ 					cf_workflow_module:'xrsalesorder',
+ 					
+ 				},
+ 				include:[{model:WFStageCf,required:true,where:{cf_workflowstage_user_role:'Distributor',
+ 					cf_workflowstage_possible_action:action}}],
+ 				
+ 			}).then(res=>{
+ 				if(res.dataValues.WFStageCfs[0].dataValues){
+ 					return res.dataValues.WFStageCfs[0].dataValues;
+ 				}
+ 			}).catch(e=>{
+ 				return false;
+ 			});
+ 		}catch(e){
+ 			return false
+ 		}
 
  	}
  	rSalesOrder.prototype.getCrmEntity=async function(){

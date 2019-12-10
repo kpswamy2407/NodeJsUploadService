@@ -1,5 +1,5 @@
 module.exports=(sequelize,DataTypes)=>{
-    const rSalesOrder=sequelize.define('rSalesOrder',{
+    const SalesOrder=sequelize.define('SalesOrder',{
         salesorderid:{
             type: DataTypes.INTEGER(19),
         },
@@ -7,7 +7,7 @@ module.exports=(sequelize,DataTypes)=>{
             type: DataTypes.STRING(100),
             validate:{
                 isExists:function(value,error) {
-                        rSalesOrder.findOne({
+                        SalesOrder.findOne({
                           where: {deleted: '0',subject:value},
                           attributes: ['salesorderid']
                         }).then(order => {
@@ -45,7 +45,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         type:{
             type: DataTypes.INTEGER(11),
-            defaultValue:null,
+            defaultValue:10,
         },
         adjustment:{
             type: DataTypes.STRING(25),
@@ -161,13 +161,66 @@ module.exports=(sequelize,DataTypes)=>{
                   this.setDataValue('lbl_rso_save_pro_cate',true);
             }
         },
+        conversion_version:{
+            type:DataTypes.INTEGER(11),
+            defaultValue:0,
+        },
+        order_scheme_points:{
+            type:DataTypes:DECIMAL(25,6),
+            defaultValue:null,
+        },
+        order_scheme_description:{
+            type:DataTypes:TEXT,
+            
+        },
+        order_scheme_discount:{
+            type:DataTypes:DECIMAL(25,6),
+            defaultValue:null,
+        },
+        so_lbl_save_pro_cate:{
+            type:DataTypes:STRING(25),
+        },
+        trntaxtype:{
+            type:DataTypes.STRING(25),
+            defaultValue:null,
+        },
+        seller_state:{
+            type:DataTypes.STRING(50),
+            defaultValue:null,
+        },
+        buyer_state:{
+            type:DataTypes.STRING(50),
+            defaultValue:null,
+        },
+        seller_gstinno:{
+            type:DataTypes.STRING(50),
+            defaultValue:null,
+        },
+        buyer_gstinno:{
+            type:DataTypes.STRING(50),
+            defaultValue:null,
+        },
+        salesorder_status:{
+            type:DataTypes.STRING(100),
+            defaultValue:null,
+        },
+        xproductgroupid:{
+            type:DataTypes.INTEGER(11),
+            defaultValue:null,
+        },
+        billing_at:{
+            type:DataTypes.STRING(25),
+            defaultValue:null,
+        }
+
+
     },{
         tableName:'vtiger_xrso',
         timestamps:false,
         freezeTableName:true,
 
     });
-    rSalesOrder.removeAttribute('id');
+    SalesOrder.removeAttribute('id');
     
        
 
@@ -176,6 +229,6 @@ module.exports=(sequelize,DataTypes)=>{
            .then(res => {
                var [tab, id]=res;
                */
-    rSalesOrder.afterSave((rso,options) => {});
-    return rSalesOrder;
+    SalesOrder.afterSave((rso,options) => {});
+    return SalesOrder;
 };
