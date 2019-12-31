@@ -55,7 +55,6 @@ const Op = Sequelize.Op
  	};
  	rSalesOrder.prototype.import=async function(xml){
  		try{
- 			
  			this.saveXml(xml,'xrSalesOrder');
  			this.setLogFileName('app_sql_xrSalesOrder_'+moment().format('YYYY-MM-DD-HH-mm-ss.SSS')+'.txt');
  			this.importAssoc();
@@ -94,6 +93,7 @@ const Op = Sequelize.Op
  			}
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
+ 				const distributorId=coll.distributor_id._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit);
  				await dbconn.transaction().then(async (t) => {
  				  return await rso.save({transaction: t}).then(async (so) => {
@@ -101,8 +101,9 @@ const Op = Sequelize.Op
  				    	if(t.commit()){
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems);
- 				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT=='true' && !so.customer_type==2){
- 				    				await self.autoRsoToSo(so,socf);	
+ 				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
+ 				    				console.log('hello');
+ 				    				await self.autoRsoToSo(so,socf,distributorId);	
  				    			}
  				    			
  				    	}
@@ -138,7 +139,7 @@ const Op = Sequelize.Op
  		const CurrencyInfo=dbconn.import('./../../models/currency-info');
  		var rso=new rSalesOrder();
  		var rsocf=new rSalesOrderCf();
- 		var salesorderid=await self.getCrmEntity();
+ 		var salesorderid=await self.getCrmEntity('xrSalesOrder');
 
  		rso.salesorderid=salesorderid;
  		rsocf.salesorderid=salesorderid;
@@ -159,6 +160,7 @@ const Op = Sequelize.Op
  			 		switch(field.columnname){
  			 			case 'buyerid':
  			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll);
+ 			 			
  			 			if(buyerid){
  			 				rso[field.columnname]=buyerid;
  			 				rsocf[field.columnname]=buyerid;
@@ -333,11 +335,11 @@ const Op = Sequelize.Op
  					return config.value;
  				}
  				else{
- 					throw new Error('Unable to get the inv mgt config for '+key);
+ 					return false;
  				}
 
  			}).catch(e=>{
- 				throw new Error('Unable to get the inv mgt config for '+key);
+ 				return false;
  			});
  	}
  	rSalesOrder.prototype.getProductId=async function(productCode){
@@ -403,7 +405,7 @@ const Op = Sequelize.Op
  					
  	}
  	rSalesOrder.prototype.save=function(soId){
- 		console.log( moment().format('YYYY-MM-DD HH:mm:ss'));
+ 		
  			var dbconn=this.getDb();
  			const CrmEntity=dbconn.import('./../../models/crmentity');
  			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
@@ -785,14 +787,386 @@ const Op = Sequelize.Op
  			});
 
  	}
- 	rSalesOrder.prototype.autoRsoToSo=async function(so,socf){
+ 	rSalesOrder.prototype.autoRsoToSo=async function(rso,rsocf,distId){
+ 		try{
+ 			var self=this;
+ 			const dbconn=this.getDb();
+ 			var LBL_SET_NETRATE=self.getInvMgtConfig('LBL_SET_NETRATE');
+ 			var ALLOW_GST_TRANSACTION=self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+ 			var SO_LBL_TAX_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
+ 			var SO_LBL_CURRENCY_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_CURRENCY_OPTION_ENABLE');
+ 			var isSoConverted=await self.isSoConverted(rso.salesorderid);
+ 			if(isSoConverted){
+ 				rsocf.cf_xrso_next_stage_name='';
+ 				rsocf.save();
+ 				rso.status='Processed';
+ 				rso.is_processed=2;
+ 				rso.save();
+ 				return true;
+ 			}
+ 			var convertToSo = false;
+ 			var nextStage= await self.getStageAction('Create SO');
+ 			if(nextStage.cf_workflowstage_business_logic=='Forward to SO'){
+ 				convertToSo=true;
+ 			}
+ 			if(!convertToSo){
+ 				rsocf.cf_xrso_next_stage_name=nextStage.cf_workflowstage_next_stage;
+ 				rsocf.save();
+ 				rso.status=nextStage.cf_workflowstage_next_content_status;
+ 				rso.save();
+ 				return true;
+ 			}
+ 			
+ 			var salesOrderId=await self.getCrmEntity('xSalesOrder');
+ 			//get Salesorder Object 
+ 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId);
+
+
+ 			so.save().then(()=>{
+ 				socf.save();
+ 			});
+ 			
+ 			soBillAds.save();
+ 			soShipAds.save();
+ 			return true;
+ 			
+ 		}catch(e){
+ 			console.log(e);
+ 		}
+ 	}
+ 	rSalesOrder.prototype.prepareSo=async function(soId,rso,rsocf,distId){
  		var self=this;
  		const dbconn=this.getDb();
  		const SalesOrder=dbconn.import('./../../models/salesorder');
- 		var LBL_SET_NETRATE=self.getInvMgtConfig('LBL_SET_NETRATE');
- 		var ALLOW_GST_TRANSACTION=self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
- 		var SO_LBL_TAX_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
- 		var SO_LBL_CURRENCY_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_CURRENCY_OPTION_ENABLE');
+ 		const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
+ 		const currentDateTime=moment().format('YYYY-MM-DD HH:mm:SS');
+ 		so=new SalesOrder();
+ 		so['salesorderid']=soId;
+ 		so['subject']=rso['subject'];
+ 		so['type']=rso['type'];
+ 		so['duedate']=rso['duedate'];
+ 		so['contactid']=rso['contactid'];
+ 		so['exciseduty']=rso['exciseduty'];
+ 		so['salescommission']=rso['salescommission'];
+ 		so['terms_conditions']=rso['terms_conditions'];
+ 		so['currency_id']=rso['currency_id'];
+ 		so['conversion_rate']=rso['conversion_rate'];
+ 		so['tracking_no']=rso['tracking_no'];
+		so['carrier']=rso['carrier'];
+		so['created_at']=currentDateTime;
+		so['modified_at']=currentDateTime;
+		so['deleted']=0;
+		//get the receive customer master - reference id for buyer id
+ 		var buyerId=await self.getCustomerRefId(rso['buyerid']);
+ 		
+ 		if(buyerId==false || typeof(buyerId)=='undefined'){
+ 			buyerId=rso['buyerid'];
+ 		}
+ 		
+ 		so['buyer_id']=buyerId;
+ 		so['requisition_no']=rso['requisition_no'];
+ 		so['tracking_no']=rso['tracking_no'];
+ 		so['adjustment']=rso['adjustment'];
+ 		so['total']=rso['total'];
+ 		so['taxtype']=rso['taxtype'];
+ 		so['discount_percent']=rso['discount_percent'];
+ 		so['discount_amount']=rso['discount_amount'];
+ 		so['s_h_amount']=rso['s_h_amount'];
+ 		so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
+ 		var soBillAds=await self.prepareBillAds(soId,buyerId);
+ 		soBillAds['created_at']=currentDateTime;
+		soBillAds['modified_at']=currentDateTime;
+		soBillAds['deleted']=0;
+ 		var soShipAds=await self.prepareShipAds(soId,buyerId);
+ 		soShipAds['created_at']=currentDateTime;
+		soShipAds['modified_at']=currentDateTime;
+		soShipAds['deleted']=0;
+ 		//preparing the socf table 
+ 		socf=new SalesOrderCf();
+ 		socf['salesorderid']=soId;
+ 		socf['cf_salesorder_sales_order_date']=rsocf['cf_salesorder_sales_order_date'];
+ 		socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
+ 		socf['cf_xsalesorder_sales_man']=rsocf['cf_xrso_sales_man'];
+ 		if(typeof(rsocf['cf_xrso_credit_term'])==null || rsocf['cf_xrso_credit_term']=='' ||rsocf['cf_xrso_credit_term']==null){
+ 			var creditTerm=await self.getCreditTerm(rso['buyerid']);
+ 			socf['cf_xsalesorder_credit_term']=creditTerm;
+ 		}
+ 		
+ 		socf['cf_salesinvoice_beat']=rsocf['cf_xrso_beat'];
+ 		socf['cf_xsalesorder_billing_address_pick']=soBillAds.xaddressid;
+ 		socf['cf_xsalesorder_shipping_address_pick']=soShipAds.xaddressid;
+ 		var nextStage= await self.getStageAction('Submit');
+ 		socf['cf_xsalesorder_next_stage_name'] = nextStage.cf_workflowstage_next_stage;
+        so['status'] = nextStage.cf_workflowstage_next_content_status;
+        socf['cf_xsalesorder_seller_id']=distId;
+        socf['cf_xsalesorder_buyer_id']=buyerId;
+        var xSeriesId = await self.getDefaultXSeries(distId,'Sales Order');
+        socf['cf_salesorder_transaction_number']=xSeriesId;
+        socf['created_at']=currentDateTime;
+		socf['modified_at']=currentDateTime;
+		socf['deleted']=0;
+ 		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
+ 	}
+ 	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			const XSeries=dbconn.import('./../../models/x-series');
+ 			const XSeriesCf=dbconn.import('./../../models/x-series-cf');
+ 			return XSeriesCf.findOne({
+ 				where:{
+ 					cf_xtransactionseries_transaction_type:type
+ 				},
+ 				
+ 				include:[{
+ 					model:XSeries,
+ 					required:true,
+ 					where:{xdistributorid:distId,deleted:0},
+ 					
+ 				}],
+ 			}).then(async function(series){
+ 				if(series){
+ 					try{
+ 						
+ 						const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
+ 						var nextValue=currentValue=minValue=0;
+ 						if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
+ 							if(diffFromLastXDate>0){
+ 								nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
+ 								minValue=1;
+ 							}
+ 							else{
+ 								currentValue =series.cf_xtransactionseries_current_value;
+ 								nextValue=currentValue= currentValue+1;
+ 							}
+ 						}
+ 						else{
+ 							if(diffFromLastXDate>0){
+ 								const fiscalFinanceMonth=moment(series.XSery.fiscal_finance).format('MM');
+ 								const currentMonth=moment().format('MM');
+ 								
+ 								if(fiscalFinanceMonth.isSameOrAfter(currentMonth) || diffFromLastXDate>1 ||series.XSery.fiscal_finance.length<=0){
+ 									nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
+ 									minValue = 1;
+ 								}
+ 								else{
+ 									currentValue =series.cf_xtransactionseries_current_value;
+ 									nextValue=currentValue= currentValue+1;
+ 								}
+ 							}
+ 							else{
+ 								const fiscalFinanceYearMonth=moment(series.XSery.fiscal_finance).format('YYYY-MM');
+ 								const currentYearMonth=moment().format('YYYY-MM');
+ 								const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
+ 								const fisMonthCurYear=moment([currentYearMonth.getYear('YYYY'),fiscalFinanceYearMonth.getMonth('MM')]).format('YYYY-MM');
+ 								if(currentYearMonth.isSameOrAfter(fisMonthCurYear) && LastDateUpdate.isBefore(fisMonthCurYear)){
+ 									nextValue=currentValue=series['cf_xtransactionseries_current_value'];
+ 									minValue=1;
+ 								}
+ 								else{
+ 									nextValue=currentValue=series['cf_xtransactionseries_current_value']+1;
+ 								}
+ 							}
+ 						}
+ 						if(increment==true){
+ 							if(minValue==1){
+ 								
+ 								series.cf_xtransactionseries_current_value=series.cf_xtransactionseries_minimum_value;
+ 								series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
+ 								series.save().then(()=>{
+ 									nextValue=currentValue=series.cf_xtransactionseries_current_value;
+
+ 								});
+								
+ 							}
+ 							else{
+ 								series.cf_xtransactionseries_current_value=Number(series.cf_xtransactionseries_current_value)+1;
+ 								series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
+ 								series.save().then(()=>{
+ 									nextValue=currentValue=series.cf_xtransactionseries_current_value;
+								});
+ 							}
+ 							
+ 						}
+ 						var xGenSeries='';
+ 						for( let key in series.rawAttributes ){
+ 						    if(key.includes('scheme') && series[key].length>0 ){
+ 						    	if(Number(key.substr(-2))){
+ 						    		var gen=await self.getNextValueForSeries(series[key],nextValue);
+ 						    		xGenSeries=xGenSeries+gen;
+ 						    	}
+ 						    	else{
+ 						    		xGenSeries=xGenSeries+series[key];
+ 						    	}
+ 						    	
+ 						    }
+ 						    
+ 						}
+ 						
+ 						return xGenSeries;
+ 						
+ 					}
+ 					catch(e){
+ 						return false;
+ 					}
+ 				}
+ 				else{
+ 					return false;
+ 				}
+ 				
+ 			}).catch(e=>{
+ 				return false;
+ 			});
+ 		}catch(e){
+ 			return false;
+ 		}
+ 	}
+
+ 	rSalesOrder.prototype.getDiffernceBtLastXDate= async function(trans){
+ 		
+ 		try{
+ 			if(trans.cf_xtransactionseries_last_fetch_date.length<=0){
+ 				return 1;
+ 			}
+ 			else{
+ 				const currentDate=moment();
+ 				const lastXDate=moment(trans.cf_xtransactionseries_last_fetch_date,'YYYY-MM-DD');
+ 				switch(trans.cf_xtransactionseries_cycle_frequency){
+ 					case 'Daily' :
+ 						return currentDate.diff(lastXDate,'days');
+ 					break;
+ 					case 'Monthly' :
+ 						return currentDate.diff(lastXDate,'months');
+ 					break;
+ 					default:
+ 						return currentDate.diff(lastXDate,'years');
+ 					break;
+ 				}
+ 			}
+ 			
+ 		}catch(e){
+ 			return 1;
+ 		}
+ 	}
+
+ 	rSalesOrder.prototype.getNextValueForSeries=async function(value,nextValue){
+
+ 		var str="";
+ 		switch (value) {
+ 		    case "DD":
+ 		        str = moment().format('DD').toString();
+ 		        break;
+ 		    case "MM":
+ 		        str = moment().format('MM').toString();
+ 		        break;
+ 		    case "MMM":
+ 		        str = moment().format('MMM').toString();
+ 		        break;
+ 		    case "YY":
+ 		        str = moment().format('YY').toString();
+ 		        break;
+ 		    case "YYYY":
+ 		        str = moment().format('YYYY').toString();
+ 		        break;
+ 		    case "HH":
+ 		        str = moment().format('HH').toString();
+ 		        break;
+ 		    case "mm":
+ 		        str = moment().format('mm').toString();
+ 		        break;
+ 		    case "SS":
+ 		        str = moment().format('SS').toString();
+ 		        break;
+ 		    default: 
+ 		    
+ 		       str = nextValue.padEnd(value.length,'0');
+ 		        break;
+ 		}
+ 		//console.log(value,str);
+ 		return str;
+ 		
+ 	}
+ 	rSalesOrder.prototype.getCreditTerm=async function(buyerId){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			const Retailer=dbconn.import('./../../models/retailer');
+ 			const RetailerCf=dbconn.import('./../../models/retailer-cf');
+ 			return RetailerCf.findOne({
+ 				where:{
+ 						xretailerid:buyerId,
+ 						cf_xretailer_status:'Approved',
+ 						cf_xretailer_active:'1',},
+ 				attributes:['cf_xretailer_creditdays','cf_xpayment_payment_mode'],
+ 				//,
+ 				include:[
+ 					{
+ 						model:Retailer,
+ 						required:true,
+ 						attributes:['xretailerid','customercode','customername']
+ 						
+ 					}
+ 				]
+ 			}).then(retailer=>{
+ 				return retailer.cf_xretailer_creditdays;
+ 			}).catch(e=>{
+ 				console.log(e);
+ 			});
+ 		}catch(e){
+ 			console.log(e);	
+ 		}
+ 	}
+ 	rSalesOrder.prototype.prepareBillAds=async function(soId,refId){
+ 		var self=this;
+ 		var dbconn=this.getDb();
+ 		const SoBillAds=dbconn.import('./../../models/so-bill-ads');
+ 		soBillAds=new SoBillAds();
+ 		var billAddress=await self.getAddress('Billing',refId);
+ 		console.log(billAddress);
+ 		soBillAds['sobilladdressid']=soId;
+ 		soBillAds['bill_street']=billAddress.AddressCf.cf_xaddress_address;
+ 		soBillAds['bill_pobox']=billAddress.AddressCf.cf_xaddress_po_box;
+ 		soBillAds['bill_city']=billAddress.AddressCf.cf_xaddress_city;
+ 		soBillAds['bill_state']=await self.getState(billAddress.xstateid);
+ 		soBillAds['bill_code']=billAddress.AddressCf.cf_xaddress_postal_code;
+ 		soBillAds['bill_country']=billAddress.AddressCf.cf_xaddress_country;
+ 		soBillAds['xaddressid']=billAddress.xaddressid;
+ 		return soBillAds;
+ 	}
+
+ 	rSalesOrder.prototype.prepareShipAds=async function(soId,refId){
+ 		var self=this;
+ 		var dbconn=this.getDb();
+ 		const SoShipAds=dbconn.import('./../../models/so-ship-ads');
+ 		soShipAds=new SoShipAds();
+ 		var shipAddress=await self.getAddress('Shipping',refId);
+ 		soShipAds['soshipaddressid']=soId;
+ 		soShipAds['ship_street']=shipAddress.AddressCf.cf_xaddress_address;
+ 		soShipAds['ship_pobox']=shipAddress.AddressCf.cf_xaddress_po_box;
+ 		soShipAds['ship_city']=shipAddress.AddressCf.cf_xaddress_city;
+ 		soShipAds['ship_state']=await self.getState(shipAddress.xstateid);
+ 		soShipAds['ship_code']=shipAddress.AddressCf.cf_xaddress_postal_code;
+ 		soShipAds['ship_country']=shipAddress.AddressCf.cf_xaddress_country;
+ 		soShipAds['gstinno']=shipAddress.gstinno;
+ 		soShipAds['xaddressid']=shipAddress.xaddressid;
+		
+		return soShipAds;
+ 	}
+
+ 	rSalesOrder.prototype.getCustomerRefId=async function(buyerId){
+ 		var self=this;
+ 		const dbconn=this.getDb();
+ 		const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
+ 		return RecCustMaster.findOne({
+ 				where:{xreceivecustomermasterid:buyerId},
+ 				attributes:['reference_id'],
+ 		}).then(cust=>{
+ 			if(cust){
+ 				return cust.reference_id;
+ 			}
+ 		}).catch(e=>{
+ 			return false;
+ 		})
  	}
  	rSalesOrder.prototype.getStageAction=async function(action){
  		try{
@@ -820,12 +1194,109 @@ const Op = Sequelize.Op
  		}
 
  	}
- 	rSalesOrder.prototype.getCrmEntity=async function(){
+ 	rSalesOrder.prototype.isSoConverted=async function(soid){
+ 		try{
+ 			const dbconn=this.getDb();
+ 			var self=this;
+ 			const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
+ 			return CrmEntityRel.findOne({
+ 					where:{
+ 						relmodule:'xSalesOrder',module:'xrSalesOrder',crmid:soid
+ 					}
+ 			}).then(res=>{
+ 				if(res){
+ 					return true;
+ 				}
+ 			}).catch(e=>{
+ 				return false;
+ 			});
+ 		}
+ 		catch(e){
+ 			return false;
+ 		}
+ 	}
+ 	rSalesOrder.prototype.getCrmEntityRel=async function(refId){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
+ 			return CrmEntityRel.findAll({
+ 					where:{crmid:refId,relmodule:'xAddress'},
+ 					attributes:['relcrmid']
+ 			}).then(entity=>{
+ 				if(entity){
+ 					var relCrmIds=entity.map(entity=>entity.relcrmid)
+ 					return relCrmIds;
+ 				}
+ 			}).catch(e=>{
+ 				return false;
+ 			})
+ 		}catch(e){
+ 			return false;
+ 		}
+ 	}
+ 	rSalesOrder.prototype.getState=async function(stateId){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			const State=dbconn.import('./../../models/state');
+ 			return State.findOne({
+ 					where:{xstateid:stateId},
+ 					attributes:['statename'],
+ 			}).then(state=>{
+ 				if(state){
+ 					return state.statename;
+ 				}
+ 			}).catch(e=>{
+ 				return false;
+ 			})
+ 		}catch(e){
+ 			return false;
+ 		}
+ 	}
+ 	rSalesOrder.prototype.getAddress=async function(type,refId){
+ 		try{
+
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			const AddressCf=dbconn.import('./../../models/address-cf');
+ 			const Address=dbconn.import('./../../models/address');
+ 			
+ 			const State=dbconn.import('./../../models/state');
+ 			var relCrmId=await self.getCrmEntityRel(refId);
+ 			console.log(relCrmId);
+ 			console.log(refId);
+ 			return Address.findOne({
+ 				attributes:['addresscode','gstinno','xstateid','xaddressid'],
+ 				include:[
+ 					{
+ 						model:AddressCf,
+ 						required:true,
+ 						where:{
+ 							cf_xaddress_address_type:type,
+ 							cf_xaddress_mark_as_default:1,
+ 							cf_xaddress_active:1,
+ 							xaddressid:{[Op.in]:relCrmId},
+ 						}
+ 					}
+ 				]
+ 			}).then(res=>{
+ 				if(res){
+ 					return res;
+ 				}
+ 			}).catch(e=>{
+ 				return false;
+ 			});		
+ 		}catch(e){
+ 			return false;
+ 		}
+ 	}
+ 	rSalesOrder.prototype.getCrmEntity=async function(module){
  		const dbconn=this.getDb();
  		const CrmEntity=dbconn.import('./../../models/crmentity');
  		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
  		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
- 		return Promise.all([VtigerTab.getTab('xrSalesOrder'),CrmEntitySeq.fnxtIncrement()]).then(res=>{
+ 		return Promise.all([VtigerTab.getTab(module),CrmEntitySeq.fnxtIncrement()]).then(res=>{
  			var [tab,id]=res;
  			var rsocrm=new CrmEntity({
  				crmid:id,

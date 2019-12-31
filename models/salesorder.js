@@ -114,26 +114,6 @@ module.exports=(sequelize,DataTypes)=>{
             type: DataTypes.DECIMAL(25,3),
             defaultValue:null,
         },
-        latitude:{
-            type: DataTypes.STRING(100),
-            defaultValue:null,
-        },
-        longitude:{
-            type: DataTypes.STRING(100),
-            defaultValue:null,
-        },
-        transaction_start_time:{
-            type: DataTypes.DATE,
-            defaultValue:null,
-        },
-        transaction_end_time:{
-            type: DataTypes.DATE,
-            defaultValue:null,
-        },
-        session_id:{
-            type: DataTypes.STRING(100),
-            defaultValue:null,
-        },
         customer_type:{
             type: DataTypes.INTEGER(11),
         },
@@ -166,19 +146,19 @@ module.exports=(sequelize,DataTypes)=>{
             defaultValue:0,
         },
         order_scheme_points:{
-            type:DataTypes:DECIMAL(25,6),
+            type:DataTypes.DECIMAL(25,6),
             defaultValue:null,
         },
         order_scheme_description:{
-            type:DataTypes:TEXT,
+            type:DataTypes.TEXT,
             
         },
         order_scheme_discount:{
-            type:DataTypes:DECIMAL(25,6),
+            type:DataTypes.DECIMAL(25,6),
             defaultValue:null,
         },
         so_lbl_save_pro_cate:{
-            type:DataTypes:STRING(25),
+            type:DataTypes.STRING(25),
         },
         trntaxtype:{
             type:DataTypes.STRING(25),
@@ -215,7 +195,7 @@ module.exports=(sequelize,DataTypes)=>{
 
 
     },{
-        tableName:'vtiger_xrso',
+        tableName:'vtiger_xsalesorder',
         timestamps:false,
         freezeTableName:true,
 
@@ -224,11 +204,7 @@ module.exports=(sequelize,DataTypes)=>{
     
        
 
-       /*var CrmEntitySeq=this.sequelize.models['CrmEntitySeq'];
-       Promise.all([vTigerTab.getSalesOrder(),CrmEntitySeq.fnxtIncrement()])
-           .then(res => {
-               var [tab, id]=res;
-               */
+       
     SalesOrder.afterSave((rso,options) => {});
     return SalesOrder;
 };

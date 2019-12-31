@@ -1,0 +1,187 @@
+var Retailer=require('./retailer');
+module.exports=(sequelize,DataTypes)=>{
+    const RetailerCf=sequelize.define('RetailerCf',{
+        xretailerid:{
+            type:DataTypes.INTEGER(11),
+            primaryKey: true,
+            references: {
+                model: Retailer,
+                key: 'xretailerid',
+            }
+        },
+        cf_xretailer_address_1:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_address_2:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_city:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_contact_person:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_email:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_phone:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_pin_code:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_mobile_no:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_sales_man:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_supply_chain_distributor:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_beat:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_distance:{
+            type:DataTypes.DECIMAL(11,6),
+            defaultValue:null,
+        },
+        cf_xretailer_confi_frieght_rate:{
+            type:DataTypes.DECIMAL(11,6),
+            defaultValue:null,
+        },
+        cf_xretailer_tin_number:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_state:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_outstanding_validation:{
+            type:DataTypes.STRING(3),
+            defaultValue:'0',
+        },
+        cf_xretailer_active:{
+            type:DataTypes.INTEGER(1),
+            defaultValue:0,
+        },
+        cf_xretailer_non_confi_frieght_rate:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_retailer_group:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_creditterm:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:null,
+        },
+        cf_xretailer_credit_limit:{
+            type:DataTypes.DECIMAL(20,6),
+            defaultValue:null,
+        },
+        cf_xpayment_payment_mode:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:null,
+        },
+        cf_registration_date:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_cash_discount:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_status:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_next_stage_name:{
+            type:DataTypes.STRING(100),
+            defaultValue:'',
+        },
+        cf_xretailer_geography:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_general_classification:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_value_classification:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_channel_type:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:0,
+        },
+        cf_xretailer_customer_group:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:null,
+        },
+        cf_xretailer_potential:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:null,
+        },
+        cf_xretailer_creditdays:{
+            type:DataTypes.BIGINT(20),
+            defaultValue:null,
+        },
+        cf_xretailer_creditbills:{
+            type:DataTypes.STRING(255),
+            defaultValue:null,
+        },
+        cf_xretailer_creditamount:{
+            type:DataTypes.STRING(255),
+            defaultValue:null,
+        },
+        cf_xretailer_parent_channel_type:{
+            type:DataTypes.BIGINT(20),
+        },
+        created_at:{
+            type:DataTypes.DATE,
+            defaultValue:null,
+        },
+        modified_at:{
+            type:DataTypes.DATE,
+            defaultValue:null,
+        },
+        deleted:{
+            type:DataTypes.INTEGER(1),
+            defaultValue:0,
+        },
+        
+    },{
+        tableName:'vtiger_xretailercf',
+        timestamps:false,
+        freezeTableName:true,
+         indexes: [ 
+            { fields: [ 'cf_xretailer_channel_type' ] },
+            { fields:['cf_xretailer_general_classification']},
+            { fields:['cf_xretailer_status']},
+            { fields:['cf_xretailer_value_classification']},
+            { fields:['cf_xretailer_potential']},
+            { fields:['cf_xretailer_active']},
+            { fields:['cf_xretailer_supply_chain_distributor']},
+            { fields:['cf_xretailer_customer_group']}  ],
+    });
+    RetailerCf.belongsTo(sequelize.models.Retailer,{
+        foreignKey:'xretailerid',
+        sourceKey:'xretailerid',
+    });
+    return RetailerCf;
+};

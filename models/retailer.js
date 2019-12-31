@@ -1,9 +1,11 @@
+var RetailerCf=require('./retailer-cf');
+console.log(RetailerCf);
 module.exports=(sequelize,DataTypes)=>{
     const Retailer=sequelize.define('Retailer',{
         xretailerid:{
             type:DataTypes.INTEGER(11),
             autoIncrement:true,
-              primaryKey: true,
+            primaryKey: true,
         },
         customername:{
             type:DataTypes.STRING(100),
@@ -329,7 +331,13 @@ module.exports=(sequelize,DataTypes)=>{
         tableName:'vtiger_xretailer',
         timestamps:false,
         freezeTableName:true,
-         indexes: [ { fields: [ 'distributor_id' ] },{fields:['customercode']},{fields:['unique_retailer_code']},{fields:['realignment_flag']} ],
+         indexes: [ { fields: [ 'distributor_id' ] },
+         {fields:['customercode']},
+         {fields:['unique_retailer_code']},
+         {fields:['realignment_flag']} ],
     });
+    /*Retailer.hasOne(sequelize.models.RetailerCf,{
+        foreignKey:'xretailerid',
+    });*/
     return Retailer;
 };

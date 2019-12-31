@@ -20,43 +20,43 @@ module.exports=(sequelize,DataTypes)=>{
             type: DataTypes.STRING(3),
             defaultValue:null,
         },
-        cf_xrso_sales_man: {
+        cf_xsalesorder_sales_man: {
             type: DataTypes.BIGINT(20),
             defaultValue:null,
         },
-        cf_xrso_beat: {
+        cf_xsalesorder_beat: {
             type: DataTypes.BIGINT(20),
             defaultValue:null,
         },
-        cf_xrso_credit_term: {
+        cf_xsalesorder_credit_term: {
             type: DataTypes.STRING(100),
             defaultValue:null,
         },
-        cf_xrso_type: {
+        cf_xsalesorder_type: {
             type: DataTypes.STRING(255),
             defaultValue:null,
         },
-        cf_xrso_next_stage_name: {
+        cf_xsalesorder_next_stage_name: {
             type: DataTypes.STRING(50),
             defaultValue:null,
         },
-        cf_xrso_buyer_id: {
+        cf_xsalesorder_buyer_id: {
             type: DataTypes.STRING(100),
             defaultValue:null,
         },
-        cf_xrso_seller_id: {
+        cf_xsalesorder_seller_id: {
             type: DataTypes.STRING(100),
             defaultValue:null,
         },
-        cf_xrsalesorder_billing_address_pick: {
+        cf_xsalesorder_billing_address_pick: {
             type: DataTypes.STRING(255),
             defaultValue:null,
         },
-        cf_xrsalesorder_shipping_address_pick: {
+        cf_xsalesorder_shipping_address_pick: {
             type: DataTypes.STRING(255),
             defaultValue:null,
         },
-        cf_xrsalesorder_reason: {
+        cf_xsalesorder_reason: {
             type: DataTypes.STRING(200),
             defaultValue:null,
         },
@@ -72,7 +72,7 @@ module.exports=(sequelize,DataTypes)=>{
             type: DataTypes.INTEGER(1),
         },
     },{
-        tableName:'vtiger_xrsocf',
+        tableName:'vtiger_xsalesordercf',
         timestamps:false,
         freezeTableName:true,
     });

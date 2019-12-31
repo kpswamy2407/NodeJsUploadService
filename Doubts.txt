@@ -1,0 +1,18 @@
+Doubts:
+
+1801 - customerno - editviewutils.php
+1805 - account_id - editviewutils.php
+1808 - purchaseorder - editviewutils.php
+1821 - description - editviewutils.php
+1835 - so_lbl_save_pro_cate - get the value from inv mgn table 
+
+1838 - so_focus->column_fields['customer_type'] -other than 1
+1851 - $type so/rsotoso
+
+9630 - getDefaultTransactionSeries("Sales Order") - common.php
+
+6960 - txtTax/txtAdjustment- common.php
+
+sobilladdressid - vtiger_sobillads
+soshipaddressid - vtiger_soshipads
+
