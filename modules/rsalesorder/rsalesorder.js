@@ -55,6 +55,8 @@ const Op = Sequelize.Op
  	};
  	rSalesOrder.prototype.import=async function(xml){
  		try{
+ 			this.getXrsoProdRel(222052);
+ 			return false;
  			this.saveXml(xml,'xrSalesOrder');
  			this.setLogFileName('app_sql_xrSalesOrder_'+moment().format('YYYY-MM-DD-HH-mm-ss.SSS')+'.txt');
  			this.importAssoc();
@@ -102,7 +104,6 @@ const Op = Sequelize.Op
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems);
  				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
- 				    				console.log('hello');
  				    				await self.autoRsoToSo(so,socf,distributorId);	
  				    			}
  				    			
@@ -504,6 +505,21 @@ const Op = Sequelize.Op
 
  			});
  	}
+ 	rSalesOrder.prototype.getXrsoProdRel=async function(soId){
+ 		try{
+ 			var dbconn=this.getDb();
+ 			const rSoProductRel=dbconn.import('./../../models/rso-productrel');
+ 			return rSoProductRel.findAll({
+ 				where:{id:soId}
+ 			}).then(prodRel=>{
+ 				return prodRel;
+ 			}).catch(e=>{
+ 				return false;
+ 			});
+ 		}catch(e){
+ 			return false;
+ 		}
+ 	}
  	
 	rSalesOrder.prototype.getBuyerId=async function(customerType,coll){
  		var dbconn=this.getDb();
@@ -822,14 +838,26 @@ const Op = Sequelize.Op
  			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId);
 
 
- 			so.save().then(()=>{
- 				socf.save();
+ 			so.save().then(async function(so){
+ 				socf.save().then(async function(socf){
+ 					await self.updateSoLineItems(so,socf,rso.salesorderid);
+ 				});
  			});
  			
  			soBillAds.save();
  			soShipAds.save();
  			return true;
  			
+ 		}catch(e){
+ 			console.log(e);
+ 		}
+ 	}
+ 	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId){
+ 		try{
+ 			var self=this;
+ 			const dbconn=this.getDb();
+ 			const SoProdRel=dbconn.import('./../../models/so-prod-rel');
+ 			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
  		}catch(e){
  			console.log(e);
  		}

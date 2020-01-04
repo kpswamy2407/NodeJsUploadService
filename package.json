@@ -17,6 +17,7 @@
     "nodemon": "^2.0.2",
     "rotating-file-stream": "^1.4.6",
     "sequelize": "^5.21.3",
+    "sequelize-cli": "^5.5.1",
     "simple-node-logger": "^18.12.23",
     "tslib": "^1.10.0",
     "xml-js": "^1.6.11"
