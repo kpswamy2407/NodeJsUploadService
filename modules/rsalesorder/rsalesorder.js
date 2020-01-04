@@ -858,6 +858,25 @@ const Op = Sequelize.Op
  			const dbconn=this.getDb();
  			const SoProdRel=dbconn.import('./../../models/so-prod-rel');
  			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
+ 			await xrsoProdLineItems.reduce(async (promise, item) => {
+ 				await promise;
+ 				var soProdRel=new SoProdRel();
+ 				soProdRel['id']=item['id'];
+ 				soProdRel['productid']=item['productid'];
+ 				soProdRel['productcode']=item['productcode'];
+ 				soProdRel['sequence_no']=item['sequence_no'];
+ 				soProdRel['quantity']=item['quantity'];
+ 				soProdRel['dispatchqty']=item['dispatchqty'];
+ 				soProdRel['siqty']=item['siqty'];
+ 				soProdRel['tuom']=item['tuom'];
+ 				soProdRel['listprice']=item['listprice'];
+ 				soProdRel['discount_percent']=item['discount_percent'];
+ 				soProdRel['xprodhierid']=item['xprodhierid'];
+ 				
+
+
+ 			
+ 			}, Promise.resolve());
  		}catch(e){
  			console.log(e);
  		}

@@ -14,7 +14,7 @@ module.exports=(sequelize,DataTypes)=>{
 		},
 		product_type: {
 			type: DataTypes.STRING(50),
-			defaultValue: null,
+			defaultValue: 'Main',
 		},
 		sequence_no: {
 			type: DataTypes.INTEGER(4),
