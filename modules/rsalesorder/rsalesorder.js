@@ -1063,9 +1063,9 @@ const Op = Sequelize.Op
         so['status'] = nextStage.cf_workflowstage_next_content_status;
         socf['cf_xsalesorder_seller_id']=distId;
         socf['cf_xsalesorder_buyer_id']=buyerId;
-        var xSeriesId = await self.getDefaultXSeries(distId,'Sales Order');
+        var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order');
         socf['cf_salesorder_transaction_number']=xSeriesId;
-        socf['cf_salesorder_transaction_series']=xSeriesId;
+        socf['cf_salesorder_transaction_series']=xtransactionseriesid;
         socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		socf['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		socf['deleted']=0;
@@ -1167,7 +1167,7 @@ const Op = Sequelize.Op
  						    
  						}
  						
- 						return xGenSeries;
+ 						return {xGenSeries:xGenSeries,xtransactionseriesid:series.XSery.xtransactionseriesid};
  						
  					}
  					catch(e){
