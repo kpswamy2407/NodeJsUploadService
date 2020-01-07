@@ -1089,6 +1089,7 @@ const Op = Sequelize.Op
  					
  				}],
  			}).then(async function(series){
+ 				console.log(series.dataValues);
  				if(series){
  					try{
  						
