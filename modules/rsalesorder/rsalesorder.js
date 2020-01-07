@@ -1089,7 +1089,7 @@ const Op = Sequelize.Op
  					
  				}],
  			}).then(async function(series){
- 				console.log(series.dataValues);
+ 				
  				if(series){
  					try{
  						
@@ -1107,7 +1107,7 @@ const Op = Sequelize.Op
  						}
  						else{
  							if(diffFromLastXDate>0){
- 								const fiscalFinanceMonth=moment(series.XSery.fiscal_finance).format('MM');
+ 								const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
  								const currentMonth=moment().format('MM');
  								
  								if(fiscalFinanceMonth.isSameOrAfter(currentMonth) || diffFromLastXDate>1 ||series.XSery.fiscal_finance.length<=0){
@@ -1120,11 +1120,11 @@ const Op = Sequelize.Op
  								}
  							}
  							else{
- 								const fiscalFinanceYearMonth=moment(series.XSery.fiscal_finance).format('YYYY-MM');
+ 								const fiscalFinanceYearMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('YYYY-MM');
  								const currentYearMonth=moment().format('YYYY-MM');
  								const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
- 								const fisMonthCurYear=moment([currentYearMonth.getYear('YYYY'),fiscalFinanceYearMonth.getMonth('MM')]).format('YYYY-MM');
- 								if(currentYearMonth.isSameOrAfter(fisMonthCurYear) && LastDateUpdate.isBefore(fisMonthCurYear)){
+ 								const fisMonthCurYear=moment([moment().format('YYYY'),moment().month('"'+series.XSery.fiscal_finance+'"').format('MM')]).format('YYYY-MM');
+ 								if(currentYearMonth>=fisMonthCurYear && LastDateUpdate<fisMonthCurYear){
  									nextValue=currentValue=series['cf_xtransactionseries_current_value'];
  									minValue=1;
  								}
@@ -1168,10 +1168,12 @@ const Op = Sequelize.Op
  						    
  						}
  						
- 						return {xGenSeries:xGenSeries,xtransactionseriesid:series.XSery.xtransactionseriesid};
+ 						
+ 						return {xGenSeries:xGenSeries,xtransactionseriesid:series.xtransactionseriesid};
  						
  					}
  					catch(e){
+ 						console.log(e);
  						return false;
  					}
  				}
