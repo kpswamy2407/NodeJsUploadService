@@ -55,8 +55,6 @@ const Op = Sequelize.Op
  	};
  	rSalesOrder.prototype.import=async function(xml){
  		try{
- 			this.getXrsoProdRel(222052);
- 			return false;
  			this.saveXml(xml,'xrSalesOrder');
  			this.setLogFileName('app_sql_xrSalesOrder_'+moment().format('YYYY-MM-DD-HH-mm-ss.SSS')+'.txt');
  			this.importAssoc();
@@ -342,6 +340,31 @@ const Op = Sequelize.Op
  			}).catch(e=>{
  				return false;
  			});
+ 	}
+ 	rSalesOrder.prototype.getProductTrackSerial=async function (productId){
+
+ 		var dbconn=this.getDb();
+ 		const Product=dbconn.import('./../../models/product');
+ 		return Product.findOne({
+ 			where:{xproductid:productId},
+ 			attributes:['track_serial_number']
+ 		}).then(product=>{
+ 			if(product){
+ 				if(product['track_serial_number'].toLowerCase()=='yes'){
+ 					return 1;
+ 				}
+ 				else{
+ 					return 0;
+ 				}
+ 			}
+ 			else{
+ 				return 0;
+ 			}
+
+ 		}).catch(e=>{
+ 			return 0;
+ 		});
+ 		
  	}
  	rSalesOrder.prototype.getProductId=async function(productCode){
  			var dbconn=this.getDb();
@@ -840,7 +863,7 @@ const Op = Sequelize.Op
 
  			so.save().then(async function(so){
  				socf.save().then(async function(socf){
- 					await self.updateSoLineItems(so,socf,rso.salesorderid);
+ 					await self.updateSoLineItems(so,socf,rso.salesorderid,distId);
  				});
  			});
  			
@@ -852,33 +875,93 @@ const Op = Sequelize.Op
  			console.log(e);
  		}
  	}
- 	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId){
+ 	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId,distId){
  		try{
  			var self=this;
  			const dbconn=this.getDb();
  			const SoProdRel=dbconn.import('./../../models/so-prod-rel');
+ 			const SaleXBatchInfo=dbconn.import('./../../models/sale-x-batch-info');
  			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
+ 			var i=1;
  			await xrsoProdLineItems.reduce(async (promise, item) => {
  				await promise;
+ 				const currentDateTime=moment().format('YYYY-MM-DD HH:mm:SS');
  				var soProdRel=new SoProdRel();
- 				soProdRel['id']=item['id'];
+ 				soProdRel['id']=so['salesorderid'];
  				soProdRel['productid']=item['productid'];
  				soProdRel['productcode']=item['productcode'];
- 				soProdRel['sequence_no']=item['sequence_no'];
+ 				soProdRel['sequence_no']=i;
  				soProdRel['quantity']=item['quantity'];
- 				soProdRel['dispatchqty']=item['dispatchqty'];
  				soProdRel['siqty']=item['siqty'];
  				soProdRel['tuom']=item['tuom'];
- 				soProdRel['listprice']=item['listprice'];
  				soProdRel['discount_percent']=item['discount_percent'];
  				soProdRel['xprodhierid']=item['xprodhierid'];
- 				
-
-
- 			
+ 				soProdRel['discount_amount']=item['discount_amount'];
+ 				soProdRel['baseqty']=item['baseqty'];
+ 				soProdRel['dispatchqty']=item['dispatchqty'];
+ 				soProdRel['listprice']=item['listprice'];
+ 				soProdRel['comment']=item['comment'];
+ 				soProdRel['description']=item['description'];
+ 				soProdRel['incrementondel']=item['incrementondel'];
+ 				soProdRel['tax1']=item['tax1'];
+ 				soProdRel['tax2']=item['tax2'];
+ 				soProdRel['tax3']=item['tax3'];
+ 				soProdRel['ptr']=item['ptr'];
+ 				soProdRel['mrp']=item['mrp'];
+ 				soProdRel['created_at']=currentDateTime;
+				soProdRel['modified_at']=currentDateTime;
+				soProdRel['deleted']=0;
+ 				i++;
+ 				soProdRel.save().then(async function(soRel){
+ 					var sxbinfo=new SaleXBatchInfo();
+ 						sxbinfo['transaction_id']=soRel['id'];
+ 						sxbinfo['trans_line_id']=soRel['lineitem_id'];
+ 						sxbinfo['product_id']=soRel['productid'];
+ 						sxbinfo['pkd']='';
+ 						sxbinfo['expiry']='';
+ 						sxbinfo['transaction_type']='SO';
+ 						sxbinfo['sqty']=soRel['quantity'];
+ 						sxbinfo['sfqty']=0.000000;
+ 						sxbinfo['ptr']=soRel['ptr'];
+ 						sxbinfo['pts']=0.000000;
+ 						sxbinfo['mrp']=soRel['mrp'];
+ 						sxbinfo['ecp']=0.000000;
+ 						sxbinfo['distributor_id']=distId;
+ 						var trackSerial=await self.getProductTrackSerial(soRel['productid']);
+ 						sxbinfo['track_serial']=trackSerial;
+ 						sxbinfo['created_at']=currentDateTime;
+						sxbinfo['modified_at']=currentDateTime;
+						sxbinfo['deleted']=0;
+ 						sxbinfo.save().then(async function(sxBatchInfo){
+ 							await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId);	
+ 						});
+ 				}).catch(e=>{
+ 					console.log(e);
+ 				})
  			}, Promise.resolve());
  		}catch(e){
  			console.log(e);
+ 		}
+ 	}
+ 	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId){
+ 		var self=this;
+ 		const dbconn=this.getDb();
+ 		const ALLOW_GST_TRANSACTION=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+ 		if(ALLOW_GST_TRANSACTION){
+ 			 var netTotal = 0;
+              if(Number(sorel['listprice']) > 0 && Number(sorel['quantity']) > 0){
+              		netTotal=Number(sorel['listprice'])*Number(sorel['quantity']);
+              }
+              if(Number(sorel['discount_amount'])>0 && netTotal>=Number(sorel['discount_amount'])){
+              		netTotal=netTotal-sorel['discount_amount'];
+              }
+              if(Number(sorel['discount_percent'])>0 && netTotal>=Number(sorel['discount_percent']) && Number(sorel['discount_percent'])<100) {
+              		netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
+              }
+              else if (Number(sorel['discount_percent'])>0 && Number(sorel['discount_percent'])>=100){
+              		netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
+              }
+              
  		}
  	}
  	rSalesOrder.prototype.prepareSo=async function(soId,rso,rsocf,distId){
@@ -919,6 +1002,9 @@ const Op = Sequelize.Op
  		so['discount_percent']=rso['discount_percent'];
  		so['discount_amount']=rso['discount_amount'];
  		so['s_h_amount']=rso['s_h_amount'];
+ 		so['is_taxfiled']=0;
+		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+ 		so['trntaxtype']=(TAX_TYPE?'GST':'VAT');
  		so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
  		var soBillAds=await self.prepareBillAds(soId,buyerId);
  		soBillAds['created_at']=currentDateTime;
@@ -1169,7 +1255,7 @@ const Op = Sequelize.Op
  		const SoBillAds=dbconn.import('./../../models/so-bill-ads');
  		soBillAds=new SoBillAds();
  		var billAddress=await self.getAddress('Billing',refId);
- 		console.log(billAddress);
+ 		
  		soBillAds['sobilladdressid']=soId;
  		soBillAds['bill_street']=billAddress.AddressCf.cf_xaddress_address;
  		soBillAds['bill_pobox']=billAddress.AddressCf.cf_xaddress_po_box;
