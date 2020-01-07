@@ -127,6 +127,7 @@ const Op = Sequelize.Op
  		catch(e){
  			return  Promise.reject(e.error);
  		}
+ 		
  		return Promise.resolve(this.updateStatus(self.isFailure));
 
  	};
@@ -863,6 +864,7 @@ const Op = Sequelize.Op
 
  			so.save().then(async function(so){
  				socf.save().then(async function(socf){
+ 					await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder');
  					await self.updateSoLineItems(so,socf,rso.salesorderid,distId);
  				});
  			});
@@ -872,8 +874,20 @@ const Op = Sequelize.Op
  			return true;
  			
  		}catch(e){
- 			console.log(e);
+ 			return false;
  		}
+ 	}
+ 	rSalesOrder.prototype.updateCrmRelEntity=async function(crmId,module,relCrmId,relModule){
+ 		var self=this;
+ 		const dbconn=this.getDb();
+ 		const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
+ 		var crmEntityRel=new CrmEntityRel();
+ 			crmEntityRel['crmid']=crmId;
+ 			crmEntityRel['module']=module;
+ 			crmEntityRel['relcrmid']=relCrmId;
+ 			crmEntityRel['relmodule']=relModule;
+ 			crmEntityRel.save();
+ 			return true;
  	}
  	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId,distId){
  		try{
@@ -936,11 +950,11 @@ const Op = Sequelize.Op
  							await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId);	
  						});
  				}).catch(e=>{
- 					console.log(e);
+ 					return false;
  				})
  			}, Promise.resolve());
  		}catch(e){
- 			console.log(e);
+ 			return false;
  		}
  	}
  	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId){
@@ -953,7 +967,7 @@ const Op = Sequelize.Op
               		netTotal=Number(sorel['listprice'])*Number(sorel['quantity']);
               }
               if(Number(sorel['discount_amount'])>0 && netTotal>=Number(sorel['discount_amount'])){
-              		netTotal=netTotal-sorel['discount_amount'];
+              		netTotal=netTotal-Number(sorel['discount_amount']);
               }
               if(Number(sorel['discount_percent'])>0 && netTotal>=Number(sorel['discount_percent']) && Number(sorel['discount_percent'])<100) {
               		netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
@@ -961,6 +975,9 @@ const Op = Sequelize.Op
               else if (Number(sorel['discount_percent'])>0 && Number(sorel['discount_percent'])>=100){
               		netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
               }
+              so['total']=netTotal;
+              so['sub_total']=netTotal;
+              so.save();
               
  		}
  	}
