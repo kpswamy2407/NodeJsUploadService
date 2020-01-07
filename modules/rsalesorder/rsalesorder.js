@@ -863,6 +863,7 @@ const Op = Sequelize.Op
 
 
  			so.save().then(async function(so){
+
  				socf.save().then(async function(socf){
  					await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder');
  					await self.updateSoLineItems(so,socf,rso.salesorderid,distId);
@@ -899,7 +900,6 @@ const Op = Sequelize.Op
  			var i=1;
  			await xrsoProdLineItems.reduce(async (promise, item) => {
  				await promise;
- 				const currentDateTime=moment().format('YYYY-MM-DD HH:mm:SS');
  				var soProdRel=new SoProdRel();
  				soProdRel['id']=so['salesorderid'];
  				soProdRel['productid']=item['productid'];
@@ -922,11 +922,12 @@ const Op = Sequelize.Op
  				soProdRel['tax3']=item['tax3'];
  				soProdRel['ptr']=item['ptr'];
  				soProdRel['mrp']=item['mrp'];
- 				soProdRel['created_at']=currentDateTime;
-				soProdRel['modified_at']=currentDateTime;
-				soProdRel['deleted']=0;
- 				i++;
- 				soProdRel.save().then(async function(soRel){
+ 				soProdRel['deleted']=0;
+ 				soProdRel.created_at=moment().format('YYYY-MM-DD HH:mm:SS');
+				soProdRel.modified_at=moment().format('YYYY-MM-DD HH:mm:SS');
+				
+				soProdRel.save().then(async function(soRel){
+ 					
  					var sxbinfo=new SaleXBatchInfo();
  						sxbinfo['transaction_id']=soRel['id'];
  						sxbinfo['trans_line_id']=soRel['lineitem_id'];
@@ -938,20 +939,21 @@ const Op = Sequelize.Op
  						sxbinfo['sfqty']=0.000000;
  						sxbinfo['ptr']=soRel['ptr'];
  						sxbinfo['pts']=0.000000;
- 						sxbinfo['mrp']=soRel['mrp'];
+ 						sxbinfo['mrp']=0.000000;
  						sxbinfo['ecp']=0.000000;
  						sxbinfo['distributor_id']=distId;
  						var trackSerial=await self.getProductTrackSerial(soRel['productid']);
  						sxbinfo['track_serial']=trackSerial;
- 						sxbinfo['created_at']=currentDateTime;
-						sxbinfo['modified_at']=currentDateTime;
+ 						sxbinfo['created_at']=moment().format('YYYY-MM-DD HH:mm:SS');;
+						sxbinfo['modified_at']=moment().format('YYYY-MM-DD HH:mm:SS');;
 						sxbinfo['deleted']=0;
  						sxbinfo.save().then(async function(sxBatchInfo){
  							await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId);	
  						});
  				}).catch(e=>{
+ 					
  					return false;
- 				})
+ 				});
  			}, Promise.resolve());
  		}catch(e){
  			return false;
@@ -986,7 +988,7 @@ const Op = Sequelize.Op
  		const dbconn=this.getDb();
  		const SalesOrder=dbconn.import('./../../models/salesorder');
  		const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
- 		const currentDateTime=moment().format('YYYY-MM-DD HH:mm:SS');
+ 		
  		so=new SalesOrder();
  		so['salesorderid']=soId;
  		so['subject']=rso['subject'];
@@ -1000,8 +1002,8 @@ const Op = Sequelize.Op
  		so['conversion_rate']=rso['conversion_rate'];
  		so['tracking_no']=rso['tracking_no'];
 		so['carrier']=rso['carrier'];
-		so['created_at']=currentDateTime;
-		so['modified_at']=currentDateTime;
+		so['created_at']=moment().format('YYYY-MM-DD HH:mm:SS');
+		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:SS');
 		so['deleted']=0;
 		//get the receive customer master - reference id for buyer id
  		var buyerId=await self.getCustomerRefId(rso['buyerid']);
@@ -1024,15 +1026,15 @@ const Op = Sequelize.Op
  		so['trntaxtype']=(TAX_TYPE?'GST':'VAT');
  		so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
  		var soBillAds=await self.prepareBillAds(soId,buyerId);
- 		soBillAds['created_at']=currentDateTime;
-		soBillAds['modified_at']=currentDateTime;
+ 		soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:SS');
+		soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:SS');
 		soBillAds['deleted']=0;
  		var soShipAds=await self.prepareShipAds(soId,buyerId);
- 		soShipAds['created_at']=currentDateTime;
-		soShipAds['modified_at']=currentDateTime;
+ 		soShipAds['created_at']=moment().format('YYYY-MM-DD HH:mm:SS');
+		soShipAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:SS');
 		soShipAds['deleted']=0;
  		//preparing the socf table 
- 		socf=new SalesOrderCf();
+ 		var socf=new SalesOrderCf();
  		socf['salesorderid']=soId;
  		socf['cf_salesorder_sales_order_date']=rsocf['cf_salesorder_sales_order_date'];
  		socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
@@ -1052,8 +1054,8 @@ const Op = Sequelize.Op
         socf['cf_xsalesorder_buyer_id']=buyerId;
         var xSeriesId = await self.getDefaultXSeries(distId,'Sales Order');
         socf['cf_salesorder_transaction_number']=xSeriesId;
-        socf['created_at']=currentDateTime;
-		socf['modified_at']=currentDateTime;
+        /*socf['created_at']=moment().format('YYYY-MM-DD HH:mm:SS');
+		socf['modified_at']=moment().format('YYYY-MM-DD HH:mm:SS');*/
 		socf['deleted']=0;
  		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
  	}
@@ -1260,10 +1262,10 @@ const Op = Sequelize.Op
  			}).then(retailer=>{
  				return retailer.cf_xretailer_creditdays;
  			}).catch(e=>{
- 				console.log(e);
+ 				
  			});
  		}catch(e){
- 			console.log(e);	
+ 				
  		}
  	}
  	rSalesOrder.prototype.prepareBillAds=async function(soId,refId){
@@ -1414,8 +1416,6 @@ const Op = Sequelize.Op
  			
  			const State=dbconn.import('./../../models/state');
  			var relCrmId=await self.getCrmEntityRel(refId);
- 			console.log(relCrmId);
- 			console.log(refId);
  			return Address.findOne({
  				attributes:['addresscode','gstinno','xstateid','xaddressid'],
  				include:[

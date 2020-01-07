@@ -7,7 +7,7 @@ const dbconn=new Sequelize(database,null,null,{
     timezone:'+05:30',
     logging:msg=>baseModule.sqlLog(msg),
     //logging:console.log,
-    benchmark:true,
+    //benchmark:true,
     port:process.env.FNXT_MYSQLPORT,
     replication:{
         read:[

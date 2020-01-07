@@ -25,5 +25,6 @@ module.exports=(sequelize,DataTypes)=>{
             foreignKey:'xaddressid',
             targetKey:'relcrmid',
     });
+    CrmEntityRel.removeAttribute('id');
     return CrmEntityRel;
 };

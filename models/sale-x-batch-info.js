@@ -50,7 +50,7 @@ module.exports=(sequelize,DataTypes)=>{
 		},
 		dqty: {
 			type: DataTypes.DECIMAL(25,6),
-			defaultValue: null,
+			defaultValue: 0,
 		},
 		dqty_st: {
 			type: DataTypes.ENUM('S','SF','D','DF','QVR','Expired','Shortage',''),
@@ -58,7 +58,7 @@ module.exports=(sequelize,DataTypes)=>{
 		},
 		dfqty: {
 			type: DataTypes.DECIMAL(25,6),
-			defaultValue: null,
+			defaultValue: 0,
 		},
 		dfqty_st: {
 			type: DataTypes.ENUM('S','SF','D','DF','QVR','Expired','Shortage',''),
@@ -72,6 +72,7 @@ module.exports=(sequelize,DataTypes)=>{
 		},
 		mrp: {
 			type: DataTypes.DECIMAL(25,6),
+			defaultValue:0.000000,
 		},
 		ecp: {
 			type: DataTypes.DECIMAL(25,6),

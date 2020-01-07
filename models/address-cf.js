@@ -1,6 +1,5 @@
 var Address=require('./address');
 var CrmEntityRel=require('./crmentity-rel');
-console.log(CrmEntityRel);  
 module.exports=(sequelize,DataTypes)=>{
     const AddressCf=sequelize.define('AddressCf',{
         xaddressid:{

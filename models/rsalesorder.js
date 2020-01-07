@@ -157,7 +157,7 @@ module.exports=(sequelize,DataTypes)=>{
             type: DataTypes.STRING(20),
             set(val) {
                 const invMgtConf=sequelize.models.InvMgtConfig;
-                console.log(invMgtConf);
+                
                   this.setDataValue('lbl_rso_save_pro_cate',true);
             }
         },

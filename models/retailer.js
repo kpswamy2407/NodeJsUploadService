@@ -1,5 +1,4 @@
 var RetailerCf=require('./retailer-cf');
-console.log(RetailerCf);
 module.exports=(sequelize,DataTypes)=>{
     const Retailer=sequelize.define('Retailer',{
         xretailerid:{

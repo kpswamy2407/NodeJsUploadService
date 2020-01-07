@@ -122,6 +122,5 @@ module.exports=(sequelize,DataTypes)=>{
         {fields:['tuom']},
         {fields:['product_type']}]
     });
-    SoProdRel.removeAttribute('id');
     return SoProdRel;
 };
