@@ -47,7 +47,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/',require('./routes/index'));
 
 // invalid routes
-/*app.all('*',function(req,res,next){
+app.all('*',function(req,res,next){
     var fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     console.log(fullUrl);
     res.status(404).json({
@@ -55,7 +55,7 @@ app.use('/',require('./routes/index'));
         msg:'Invalid URL',
         data:null,
     });
-});*/
+});
 
 // error handling
 app.use(function(err,req,res,next){
