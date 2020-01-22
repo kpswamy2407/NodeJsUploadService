@@ -48,6 +48,7 @@ app.use('/',require('./routes/index'));
 
 // invalid routes
 app.all('*',function(req,res,next){
+    console.log(req.url);
     res.status(404).json({
         status:'0',
         msg:'Invalid URL',
