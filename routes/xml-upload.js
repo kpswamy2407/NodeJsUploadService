@@ -20,7 +20,10 @@ function post(req,res,next){
             data:null,
         });
     })
-    .catch( err => next(err));
+    .catch( err => {
+        console.log(err);
+        res.end('end');
+    });
 }
 module.exports=exports={
     post,
