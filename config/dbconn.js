@@ -6,6 +6,11 @@ const dbconn=new Sequelize(database,null,null,{
     dialect: 'mysql',
     timezone:'+05:30',
     logging:msg=>baseModule.sqlLog(msg),
+    pool: {
+        max: 151,
+        min: 1,
+        idle: 500
+    },
     //logging:console.log,
     //benchmark:true,
     port:process.env.FNXT_MYSQLPORT,

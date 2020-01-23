@@ -125,6 +125,7 @@ const Op = Sequelize.Op
  			
  		}
  		catch(e){
+ 			console.log("in hello",e);
  			return  Promise.reject(e.error);
  		}
  		
@@ -1464,9 +1465,10 @@ const Op = Sequelize.Op
  		const CrmEntity=dbconn.import('./../../models/crmentity');
  		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
  		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
- 		return Promise.all([VtigerTab.getTab(module),CrmEntitySeq.fnxtIncrement()]).then(res=>{
- 			var [tab,id]=res;
- 			var rsocrm=new CrmEntity({
+ 		var id=await CrmEntitySeq.fnxtIncrement();
+ 		console.log('id=>',id,'\n')
+ 		var tab=await VtigerTab.getTab(module);
+ 		var rsocrm=new CrmEntity({
  				crmid:id,
  				smcreatorid:0,
  				smownerid:0,
@@ -1487,11 +1489,9 @@ const Op = Sequelize.Op
  				return rsocrm.save().then(crm=>{
  					return crm.crmid;
  				}).catch(e=>{
+ 					console.log(e,'iam');
  					throw new Error('Unable to create CRM entity for rSalesOrder.');
- 				});
- 			}).catch(e=>{
- 			throw new Error('Unable to create CRM entity f or rSalesOrder');
- 		});
+ 			});
 
  	}
  	return rSalesOrder;

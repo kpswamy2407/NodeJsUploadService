@@ -1,0 +1,80 @@
+Executing (5256bdb5-7cc4-4df2-a62b-f1f33bf224d6): START TRANSACTION;
+Executing (b4cc8c86-6606-42fc-b6cd-3be6ed89b23a): START TRANSACTION;
+Executing (5256bdb5-7cc4-4df2-a62b-f1f33bf224d6): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (97446272-0b07-4d6a-b882-2bfd329e293f): START TRANSACTION;
+Executing (4ce1dc78-0a20-4490-9c26-ea57de09ce23): START TRANSACTION;
+Executing (56a8705d-6b04-41ca-8da2-080471285646): START TRANSACTION;
+Executing (97446272-0b07-4d6a-b882-2bfd329e293f): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (44c8fe55-27e8-4195-a0ab-d45ce5117487): START TRANSACTION;
+Executing (44c8fe55-27e8-4195-a0ab-d45ce5117487): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (9194ce58-6e96-460c-9506-884ec9ca666a): START TRANSACTION;
+Executing (56a8705d-6b04-41ca-8da2-080471285646): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (b4cc8c86-6606-42fc-b6cd-3be6ed89b23a): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (c2b88f17-7d37-45b9-991b-549883a3aaeb): START TRANSACTION;
+Executing (9194ce58-6e96-460c-9506-884ec9ca666a): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (c2b88f17-7d37-45b9-991b-549883a3aaeb): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (4ce1dc78-0a20-4490-9c26-ea57de09ce23): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (79ba84d6-4b45-4a4d-971f-c1a2150a04b5): START TRANSACTION;
+Executing (56a6994d-6913-4719-9404-98d35d6df43f): START TRANSACTION;
+Executing (56a6994d-6913-4719-9404-98d35d6df43f): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (79ba84d6-4b45-4a4d-971f-c1a2150a04b5): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (5256bdb5-7cc4-4df2-a62b-f1f33bf224d6): ROLLBACK;
+Executing (28c41c39-12c3-428e-83b9-fa95915fc0cd): START TRANSACTION;
+Executing (28c41c39-12c3-428e-83b9-fa95915fc0cd): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (56a8705d-6b04-41ca-8da2-080471285646): ROLLBACK;
+Executing (60d1fc62-019a-47f5-9509-7088d3d015fc): START TRANSACTION;
+Executing (60d1fc62-019a-47f5-9509-7088d3d015fc): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (b4cc8c86-6606-42fc-b6cd-3be6ed89b23a): ROLLBACK;
+Executing (97446272-0b07-4d6a-b882-2bfd329e293f): ROLLBACK;
+Executing (ce3a12ca-f392-457c-9a36-bf1b2479ef94): START TRANSACTION;
+Executing (44c8fe55-27e8-4195-a0ab-d45ce5117487): ROLLBACK;
+Executing (9194ce58-6e96-460c-9506-884ec9ca666a): ROLLBACK;
+Executing (a35edeaa-f3a5-4530-82b6-7ea50283dc69): START TRANSACTION;
+Executing (ce3a12ca-f392-457c-9a36-bf1b2479ef94): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222173
+Executing (0ce85615-d0c1-49bc-b7f3-30b4d4647db7): START TRANSACTION;
+Executing (a35edeaa-f3a5-4530-82b6-7ea50283dc69): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (c2b88f17-7d37-45b9-991b-549883a3aaeb): COMMIT;
+Executing (e7b5fffb-b5d2-43ab-9032-bdb20643d84e): START TRANSACTION;
+Executing (0ce85615-d0c1-49bc-b7f3-30b4d4647db7): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (0049f209-5ab4-4810-b3b2-f2bd07a690f1): START TRANSACTION;
+Executing (e7b5fffb-b5d2-43ab-9032-bdb20643d84e): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (0049f209-5ab4-4810-b3b2-f2bd07a690f1): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (4ce1dc78-0a20-4490-9c26-ea57de09ce23): ROLLBACK;
+Executing (219a355f-7265-4988-9745-ac1dc7979901): START TRANSACTION;
+Executing (219a355f-7265-4988-9745-ac1dc7979901): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (56a6994d-6913-4719-9404-98d35d6df43f): ROLLBACK;
+Executing (ff8b08c1-c675-4647-bf4d-4cb22e4f7b4f): START TRANSACTION;
+Executing (79ba84d6-4b45-4a4d-971f-c1a2150a04b5): ROLLBACK;
+Executing (ff8b08c1-c675-4647-bf4d-4cb22e4f7b4f): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (3b6406b0-0f6e-4400-b08d-9d15dd7da1f6): START TRANSACTION;
+Executing (3b6406b0-0f6e-4400-b08d-9d15dd7da1f6): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (28c41c39-12c3-428e-83b9-fa95915fc0cd): ROLLBACK;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222173
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222173
+Executing (60d1fc62-019a-47f5-9509-7088d3d015fc): COMMIT;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222174
+Executing (ce3a12ca-f392-457c-9a36-bf1b2479ef94): COMMIT;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222174
+Executing (a35edeaa-f3a5-4530-82b6-7ea50283dc69): COMMIT;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222174
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222174
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222174
+Executing (e7b5fffb-b5d2-43ab-9032-bdb20643d84e): COMMIT;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222174
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222174
+Executing (219a355f-7265-4988-9745-ac1dc7979901): COMMIT;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (0ce85615-d0c1-49bc-b7f3-30b4d4647db7): COMMIT;
+Executing (3b6406b0-0f6e-4400-b08d-9d15dd7da1f6): COMMIT;
+Executing (0049f209-5ab4-4810-b3b2-f2bd07a690f1): COMMIT;
+Executing (ff8b08c1-c675-4647-bf4d-4cb22e4f7b4f): COMMIT;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
+Executing (default): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
