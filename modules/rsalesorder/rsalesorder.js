@@ -1466,7 +1466,6 @@ const Op = Sequelize.Op
  		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
  		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
  		var id=await CrmEntitySeq.fnxtIncrement();
- 		console.log('id=>',id,'\n')
  		var tab=await VtigerTab.getTab(module);
  		var rsocrm=new CrmEntity({
  				crmid:id,
@@ -1489,7 +1488,6 @@ const Op = Sequelize.Op
  				return rsocrm.save().then(crm=>{
  					return crm.crmid;
  				}).catch(e=>{
- 					console.log(e,'iam');
  					throw new Error('Unable to create CRM entity for rSalesOrder.');
  			});
 

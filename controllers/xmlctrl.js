@@ -1,6 +1,5 @@
 const { Base, BaseError, BaseCollection }=require('./../core');
 const { __extends }=require('tslib');
-console.log(BaseError);
 /**
  * 
  * @see 
@@ -41,33 +40,10 @@ var XmlCtrl=(function(){
         }
         return Promise.resolve(true);
     }
-    XmlCtrl.prototype.crmIncrement=async function(){
-        try{
-            var dbConn=this.getDb();
-            const CrmEntitySeq=dbConn.import('./../models/crmentityseq');
-            var seq=CrmEntitySeq.fnxtIncrement();
-            console.log(seq);
-            /*await this.updateIncrement(seq);*/
-            return true;
-        }catch(e){
-            console.log(e.error);
-        }
-    }
-    XmlCtrl.prototype.updateIncrement=async function(id){
-        var dbConn=this.getDb();
-            const CrmEntitySeq=dbConn.import('./../models/crmentityseq');
-        CrmEntitySeq.update(
-                {id: id+1},
-                {where: {id:id}}
-            ).then().catch(e=>{
-                console.log(e);
-            });
-    }
-    XmlCtrl.prototype.import=function(){
+   XmlCtrl.prototype.import=function(){
         try{
 
             var collc=new BaseCollection(this.xmljs);
-            console.log("hello");
             var name=collc.documentType();
             switch(name){
                  case 'xrSalesOrder':
