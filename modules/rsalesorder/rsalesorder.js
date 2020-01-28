@@ -160,9 +160,9 @@ const Op = Sequelize.Op
  			 	 //default related module for buyerid is xRetailer
  			 		switch(field.columnname){
  			 			case 'buyerid':
- 			 			console.log(coll.customer_type._text);
+ 			 			
  			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll);
- 			 			console.log(buyerid);
+ 			 			
  			 			if(buyerid){
  			 				rso[field.columnname]=buyerid;
  			 				rsocf[field.columnname]=buyerid;

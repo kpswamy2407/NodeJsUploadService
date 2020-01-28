@@ -5,8 +5,7 @@ const baseModule=new BaseModule();
 const dbconn=new Sequelize(database,null,null,{
     dialect: 'mysql',
     timezone:'+05:30',
-    //logging:msg=>baseModule.sqlLog(msg),
-    logging:console.log,
+    logging:msg=>baseModule.sqlLog(msg),
     port:process.env.FNXT_MYSQLPORT,
     replication:{
         read:[
