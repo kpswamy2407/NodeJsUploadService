@@ -547,6 +547,7 @@ const Op = Sequelize.Op
  	}
  	
 	rSalesOrder.prototype.getBuyerId=async function(customerType,coll){
+		console.log(customerType)
  		var dbconn=this.getDb();
  		const Retailer=dbconn.import('./../../models/retailer');
  		const SubRetailer=dbconn.import('./../../models/sub-retailer');
@@ -583,7 +584,7 @@ const Op = Sequelize.Op
  					return false;
  				});
  				break;
- 				default:
+ 				case 0:
  				return Retailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xretailerid']
