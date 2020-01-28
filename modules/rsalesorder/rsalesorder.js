@@ -548,14 +548,13 @@ const Op = Sequelize.Op
  	}
  	
 	rSalesOrder.prototype.getBuyerId=async function(customerType,coll){
-		console.log(customerType)
- 		var dbconn=this.getDb();
+		var dbconn=this.getDb();
  		const Retailer=dbconn.import('./../../models/retailer');
  		const SubRetailer=dbconn.import('./../../models/sub-retailer');
  		const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
 
  		switch(customerType){
- 			case 1:
+ 			case '1':
  				return  RecCustMaster.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xreceivecustomermasterid']
@@ -570,7 +569,7 @@ const Op = Sequelize.Op
  					return false;
  				});
  				break;
- 				case 2:
+ 				case '2':
  				await SubRetailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xsubretailerid']
@@ -585,7 +584,7 @@ const Op = Sequelize.Op
  					return false;
  				});
  				break;
- 				case 0:
+ 				case '0':
  				return Retailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xretailerid']
