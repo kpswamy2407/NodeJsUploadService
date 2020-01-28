@@ -161,7 +161,7 @@ const Op = Sequelize.Op
  			 		switch(field.columnname){
  			 			case 'buyerid':
  			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll);
- 			 			
+ 			 			console.log(buyerid);
  			 			if(buyerid){
  			 				rso[field.columnname]=buyerid;
  			 				rsocf[field.columnname]=buyerid;
@@ -1062,6 +1062,7 @@ const Op = Sequelize.Op
  		var nextStage= await self.getStageAction('Submit');
  		socf['cf_xsalesorder_next_stage_name'] = nextStage.cf_workflowstage_next_stage;
         so['status'] = nextStage.cf_workflowstage_next_content_status;
+        so['salesorder_status']='Open Order';
         socf['cf_xsalesorder_seller_id']=distId;
         socf['cf_xsalesorder_buyer_id']=buyerId;
         var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order');
