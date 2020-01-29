@@ -39,11 +39,6 @@ function get(req,res,next){
             data:null,
         });
     
-    })/*.catch( err =>{
-        console.log(err);
-    })*/.
-    finally(()=>{
-        dbconn.close();
     });
    
 }
