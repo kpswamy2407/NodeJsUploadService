@@ -56,7 +56,6 @@ const Op = Sequelize.Op
  	rSalesOrder.prototype.import=async function(xml){
  		try{
  			this.saveXml(xml,'xrSalesOrder');
- 			this.setLogFileName('app_sql_xrSalesOrder_'+moment().format('YYYY-MM-DD-HH-mm-ss.SSS')+'.txt');
  			this.importAssoc();
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);
@@ -767,7 +766,7 @@ const Op = Sequelize.Op
  			 							xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
  			 						}
  			 						catch(e){
- 			 							
+ 			 							console.log("error update lineitems",e);	
  			 						}
  			 					break;
  			 				}
@@ -776,6 +775,7 @@ const Op = Sequelize.Op
  			 			xrsoProdRel.save().then(res=>{
  			 				
  			 			}).catch(e=>{
+ 			 				console.log('exception in saving prod rel',e);
  			 				self.isFailure=true;
  			 			});
  			 		

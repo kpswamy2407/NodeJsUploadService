@@ -24,7 +24,7 @@ var XmlCtrl=(function(){
             enumerable:true,
         });
     }
-    XmlCtrl.SAVE_XML_TO_FS=true;
+    XmlCtrl.SAVE_XML_TO_FS=false;
     XmlCtrl.prototype.saveXml=function(modl){
         if(XmlCtrl.SAVE_XML_TO_FS){
             const XmlFile=require('./../utils/xml-file');
@@ -59,7 +59,7 @@ var XmlCtrl=(function(){
             return this.saveXml(name).then(() => modl.import(this.xmlstr));
             
         }catch(e){
-            console.log(e);
+            console.log('catch block in controller',e);
         }
     }
     return XmlCtrl;

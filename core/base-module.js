@@ -45,7 +45,7 @@ var BaseModule=(function(){
         return XmlStat.create({
             service_name:serviceName,
             status:0,
-            context:xml,
+            context:xml.replace(/\n/g, " "),
             start_time:moment().format('YYYY-MM-DD HH:mm:ss'),
             end_time:moment().format('YYYY-MM-DD HH:mm:ss')
         })

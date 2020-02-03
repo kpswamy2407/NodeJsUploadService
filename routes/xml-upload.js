@@ -21,7 +21,9 @@ function post(req,res,next){
             data:null,
         });
     })
-    .catch( err => next('err'));
+    .catch( err=>{
+        console.log('error in route',err);
+    });
 }
 function get(req,res,next){
     var app=req.app;
