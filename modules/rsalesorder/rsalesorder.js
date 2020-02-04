@@ -124,7 +124,7 @@ const Op = Sequelize.Op
  			
  		}
  		catch(e){
- 			console.log("in hello",e);
+ 			/*console.log("in hello",e);*/
  			return  Promise.reject(e.error);
  		}
  		
@@ -756,8 +756,7 @@ const Op = Sequelize.Op
  			 							xrsoProdRel['baseqty']=lineItem.baseqty._text;
  			 						}
  			 						catch(e){
- 			 							console.log(e);
- 			 							console.log(lineItem);
+
  			 							xrsoProdRel['baseqty']=Number(lineItem.quantity._text);
  			 						}
  			 						
@@ -765,10 +764,12 @@ const Op = Sequelize.Op
  			 					break;
  			 					default:
  			 						try{
- 			 							xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
+ 			 							if(lineItem[field.columnname]!=='undefined' && lineItem[field.columnname]!==null && Object.keys(lineItem[field.columnname]).length>0){
+ 			 								xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
+										}
  			 						}
  			 						catch(e){
- 			 							console.log("error update lineitems",e);	
+ 			 								
  			 						}
  			 					break;
  			 				}
@@ -777,7 +778,6 @@ const Op = Sequelize.Op
  			 			xrsoProdRel.save().then(res=>{
  			 				
  			 			}).catch(e=>{
- 			 				console.log('exception in saving prod rel',e);
  			 				self.isFailure=true;
  			 			});
  			 		
@@ -1178,7 +1178,7 @@ const Op = Sequelize.Op
  						
  					}
  					catch(e){
- 						console.log(e);
+ 						//console.log(e);
  						return false;
  					}
  				}
