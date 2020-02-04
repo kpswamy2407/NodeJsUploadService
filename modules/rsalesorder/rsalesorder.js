@@ -756,6 +756,8 @@ const Op = Sequelize.Op
  			 							xrsoProdRel['baseqty']=lineItem.baseqty._text;
  			 						}
  			 						catch(e){
+ 			 							console.log(e);
+ 			 							console.log(lineItem);
  			 							xrsoProdRel['baseqty']=Number(lineItem.quantity._text);
  			 						}
  			 						
