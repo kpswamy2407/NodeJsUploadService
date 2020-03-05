@@ -24,7 +24,7 @@ var XmlCtrl=(function(){
             enumerable:true,
         });
     }
-    XmlCtrl.SAVE_XML_TO_FS=false;
+    XmlCtrl.SAVE_XML_TO_FS=true;
     XmlCtrl.prototype.saveXml=function(modl){
         if(XmlCtrl.SAVE_XML_TO_FS){
             const XmlFile=require('./../utils/xml-file');

@@ -2,3 +2,4 @@ node_modules
 *.diff
 package-lock.json
 public/logs
+config/env
