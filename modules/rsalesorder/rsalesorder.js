@@ -98,7 +98,7 @@ const Op = Sequelize.Op
  				  return await rso.save({transaction: t}).then(async (so) => {
  				    return await rsocf.save({transaction:t}).then(async (socf)=>{
  				    	if(t.commit()){
- 				    			await self.updateBillShipAds(socf.salesorderid);
+ 				    			//await self.updateBillShipAds(socf.salesorderid);
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems);
  				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
