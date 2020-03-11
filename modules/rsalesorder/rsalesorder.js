@@ -98,7 +98,7 @@ const Op = Sequelize.Op
  				  return await rso.save({transaction: t}).then(async (so) => {
  				    return await rsocf.save({transaction:t}).then(async (socf)=>{
  				    	if(t.commit()){
- 				    			//await self.updateBillShipAds(socf.salesorderid);
+ 				    			await self.updateBillShipAds(socf.salesorderid);
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems);
  				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
@@ -301,10 +301,14 @@ const Op = Sequelize.Op
  		
  		var rsoBillAds=new RsoBillAds();
  			rsoBillAds['sobilladdressid']=soId;
- 			rsoBillAds.save().then().catch();
+ 			rsoBillAds.save().then().catch(e=>{
+ 				console.log(e);
+ 			});
  		var rsoShipAds=new RsoShipAds();
  			rsoShipAds['soshipaddressid']=soId;
- 			rsoShipAds.save().then().catch();
+ 			rsoShipAds.save().then().catch(e=>{
+ 				console.log(e);
+ 			});
  		return true;
  	}
  	rSalesOrder.prototype.getTransRel=async function(){
@@ -444,7 +448,7 @@ const Op = Sequelize.Op
  			
  					
  	}
- 	rSalesOrder.prototype.save=function(soId){
+ 	rSalesOrder.prototype.save=async function(soId){
  		
  			var dbconn=this.getDb();
  			const CrmEntity=dbconn.import('./../../models/crmentity');
