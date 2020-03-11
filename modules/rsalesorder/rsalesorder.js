@@ -98,6 +98,7 @@ const Op = Sequelize.Op
  				  return await rso.save({transaction: t}).then(async (so) => {
  				    return await rsocf.save({transaction:t}).then(async (socf)=>{
  				    	if(t.commit()){
+ 				    			await self.updateBillShipAds(socf.salesorderid);
  				    			await self.save(socf.salesorderid);
  				    			await self.updateLineItems(so,audit,coll.lineitems);
  				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
@@ -293,6 +294,19 @@ const Op = Sequelize.Op
  				return e.error;
  			});
  	}
+ 	rSalesOrder.prototype.updateBillShipAds=async function (soId){
+ 		const dbconn=this.getDb();
+ 		const RsoBillAds=dbconn.import('./../../models/rso-bill-ads');
+ 		const RsoShipAds=dbconn.import('./../../models/rso-ship-ads');
+ 		
+ 		var rsoBillAds=new RsoBillAds();
+ 			rsoBillAds['sobilladdressid']=soId;
+ 			rsoBillAds.save().then().catch();
+ 		var rsoShipAds=new RsoShipAds();
+ 			rsoShipAds['soshipaddressid']=soId;
+ 			rsoShipAds.save().then().catch();
+ 		return true;
+ 	}
  	rSalesOrder.prototype.getTransRel=async function(){
  			const dbconn=this.getDb();
  			const TransRel=dbconn.import('./../../models/trans-rel');
@@ -437,6 +451,9 @@ const Op = Sequelize.Op
  			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
  			const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
  			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
+ 			const rsoBillAds=dbconn.import('./../../models/rso-bill-ads');
+ 			const rsoShipAds=dbconn.import('./../../models/rso-ship-ads');
+
  			CrmEntity.update(
  				{
  					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -463,6 +480,20 @@ const Op = Sequelize.Op
  			XrsoProdRel.update(
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
  				{where: {id:soId}}
+ 			).then().catch();
+ 			rsoBillAds.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: {sobilladdressid:soId}}
+ 			).then().catch();
+ 			rsoShipAds.update(
+ 				{
+ 					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+ 					deleted:0},
+ 				{where: {soshipaddressid:soId}}
  			).then().catch();		
  	}
  	rSalesOrder.prototype.updateSubject= function(soId,subject){
