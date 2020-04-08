@@ -53,6 +53,7 @@ var XmlFile=(function(){
 	XmlFile.prototype.fileName=null;
 	XmlFile.prototype.date=null;
 	XmlFile.prototype.absPath=function(){
+		
 		return `${this.basedir}/${this.module}/${this.date}/${this.fileName}.xml`;
 	};
 	XmlFile.prototype.validateBase=function(){
@@ -106,6 +107,18 @@ var XmlFile=(function(){
 			});
 		});
 	};
+	XmlFile.prototype.logDir=function(){
+		this.validateBase();
+		return this.mkDirs()
+		.then(()=>{
+			return true;
+		}).catch(e=>{
+			return e.message;
+		});
+	};
+	XmlFile.prototype.getLogDir=function(){
+		return `${this.basedir}/${this.module}/${this.date}`;
+	}
 	XmlFile.prototype.fetch=function(){
 		// not needed as per the current requirement
 	};

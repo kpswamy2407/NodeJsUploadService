@@ -2,6 +2,8 @@ const { BaseModule }=require('../../core');
 const { __extends }=require('tslib');
 const CollecReader=require('./collec-reader');
 const Audit=require('../../utils/audit');
+const Log=require('../../utils/log');
+const XmlFile=require('../../utils/xml-file');
 var Sequelize = require("sequelize");
 var moment = require('moment');
 const Op = Sequelize.Op
@@ -55,10 +57,23 @@ const Op = Sequelize.Op
  	};
  	rSalesOrder.prototype.import=async function(xml){
  		try{
+ 			
+ 			var xmlf=new XmlFile();
+ 			xmlf.setLog(this.getLog());
+            xmlf.basedir='./public/uploads';
+            xmlf.module='xrSalesOrder';
+            
+            xmlf.fileName=moment().format('YYYYMMDDHHmmss.SSS');
+            xmlf.date=moment().format('YYYY-MM-DD');
+ 			xmlf.logDir();
+ 			var log_path=xmlf.getLogDir();
  			this.saveXml(xml,'xrSalesOrder');
  			this.importAssoc();
+ 			
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);
+ 			var log=new Log(log_path+'/'+crdr.transactionId()+'-'+moment().format('HHmmss.SSS')+'-log.log');
+ 			log.info("Start time:"+moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
  			var audit=new Audit();
  				audit.docName=crdr.transactionId();
  				audit.distCode=crdr.fromId();
@@ -125,7 +140,7 @@ const Op = Sequelize.Op
  			
  		}
  		catch(e){
- 			/*console.log("in hello",e);*/
+ 			console.log("in hello",e);
  			return  Promise.reject(e.error);
  		}
  		

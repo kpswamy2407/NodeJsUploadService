@@ -5,12 +5,13 @@ const baseModule=new BaseModule();
 const dbconn=new Sequelize(database,null,null,{
     dialect: 'mysql',
     timezone:'+05:30',
-   /* logging:msg=>baseModule.sqlLog(msg),*/
+    logging:false,
     pool: {
         max: 15,
         min: 5,
         idle: 10000
     },
+    logQueryParameters:false,
     port:process.env.FNXT_MYSQLPORT,
     replication:{
         read:[

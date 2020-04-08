@@ -44,6 +44,7 @@ var Base=(function(){
     Base.prototype.fatal=function(msg){
         this.getLog().fatal(msg);
     }
+    Base.prototype.req_log_file_path=null;
     return Base;
 })();
 module.exports=exports=Base;
