@@ -72,7 +72,7 @@ const Op = Sequelize.Op
  			
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);
- 			var log=new Log(log_path+'/'+crdr.transactionId()+'-'+moment().format('HHmmss.SSS')+'-log.log');
+ 			var log=new Log(log_path+'/'+crdr.transactionId()+'-'+moment().format('HHmmss.SSS')+'-log.txt');
  				log.setLogger();
  			log.info("=========================RSO Start==================")
  			log.info("Module Name: xrSalesOrder");
