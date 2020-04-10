@@ -68,6 +68,14 @@ var BaseCollection=(function(){
             throw new Error('Unable to get the from id from the collection');
         }
     }
+    BaseCollection.prototype.prkey=function(){
+        try{
+            return this.__data.collections.prkey._text;
+        }
+        catch(e){
+            throw new Error('Unable to get the from id from the collection');
+        }
+    }
 
     BaseCollection.prototype.createdDate=function(){
         try{

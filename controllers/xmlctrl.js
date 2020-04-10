@@ -25,6 +25,7 @@ var XmlCtrl=(function(){
         });
     }
     XmlCtrl.SAVE_XML_TO_FS=true;
+    XmlCtrl.prototype.XML_FILE_NAME=null;
     XmlCtrl.prototype.saveXml=function(modl){
         if(XmlCtrl.SAVE_XML_TO_FS){
             const XmlFile=require('./../utils/xml-file');
@@ -36,7 +37,9 @@ var XmlCtrl=(function(){
             xmlf.content=this.xmlstr;
             xmlf.fileName=moment.format('YYYYMMDDHHmmss.SSS');
             xmlf.date=moment.format('YYYY-MM-DD');
-            return xmlf.save();
+            return xmlf.save().then(file=>{
+                this.XML_FILE_NAME=file;
+            });
         }
         return Promise.resolve(true);
     }
@@ -56,7 +59,7 @@ var XmlCtrl=(function(){
             var modl=new Module(this.xmljs);
             modl.setDb(this.getDb());
             modl.setLog(this.getLog());
-            return this.saveXml(name).then(() => modl.import(this.xmlstr));
+            return this.saveXml(name).then(() => modl.import(this.xmlstr,this.XML_FILE_NAME));
             
         }catch(e){
             console.log('catch block in controller',e);

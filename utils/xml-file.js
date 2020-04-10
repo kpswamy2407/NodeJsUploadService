@@ -101,7 +101,7 @@ var XmlFile=(function(){
 						this.fatal(err.message);
 						rj(new BaseError('Unable to save file in the file system.'));
 					} else{
-						rs(true);
+						rs(this.absPath());
 					}
 				});
 			});

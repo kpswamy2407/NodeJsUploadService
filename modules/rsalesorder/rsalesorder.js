@@ -55,7 +55,7 @@ const Op = Sequelize.Op
  		this.models['CrmEntitySeq']=CrmEntitySeq;
  		return this;
  	};
- 	rSalesOrder.prototype.import=async function(xml){
+ 	rSalesOrder.prototype.import=async function(xml,xmlFile){
  		try{
  			
  			var xmlf=new XmlFile();
@@ -73,7 +73,10 @@ const Op = Sequelize.Op
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);
  			var log=new Log(log_path+'/'+crdr.transactionId()+'-'+moment().format('HHmmss.SSS')+'-log.log');
- 			log.info("Start time:"+moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
+ 				log.setLogger();
+ 			log.info("=========================RSO Start==================")
+ 			log.info("Module Name: xrSalesOrder");
+ 			log.info("XML File : "+xmlFile);
  			var audit=new Audit();
  				audit.docName=crdr.transactionId();
  				audit.distCode=crdr.fromId();
@@ -82,6 +85,14 @@ const Op = Sequelize.Op
  				audit.docCreatedDate=crdr.createdDate();
  				audit.destination=crdr.destApplication();
  				audit.docType=crdr.docType();
+ 				log.info("************* Document Information - start ***************");
+ 				log.info("TransactionId: "+crdr.transactionId());
+ 				log.info("fromId: "+crdr.fromId());
+ 				log.info("prkey: "+crdr.prkey());
+ 				log.info("docType: "+crdr.docType());
+ 				log.info("************* Document Information - end ***************");
+
+
  			var rSalesOrder=this.models['rSalesOrder'];
  			var rSalesOrderCf=this.models['rSalesOrderCf'];
  			var VtigerField=this.models['VtigerField'];
@@ -94,7 +105,9 @@ const Op = Sequelize.Op
  			var Beat=this.models['Beat'];
  			var Salesman=this.models['Salesman'];
  			var XSeries=this.models['XSeries'];
- 			var fields=await this.getFields();
+ 			log.info("************* Transaction -vtiger_xrso- start ***************");
+
+ 			var fields=await this.getFields(log);
  			var baseColl=await crdr.xrso();
  			var LBL_AUTO_RSO_TO_SO=await this.getInvMgtConfig('LBL_AUTO_RSO_TO_SO');
  			var LBL_RSO_SUB_RETAILER_CONVERT= await this.getInvMgtConfig('LBL_RSO_SUB_RETAILER_CONVERT');
@@ -108,16 +121,23 @@ const Op = Sequelize.Op
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
  				const distributorId=coll.distributor_id._text;
- 				const {rso, rsocf} = await self.prepareValues(coll,fields,audit);
+ 				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log);
  				await dbconn.transaction().then(async (t) => {
- 				  return await rso.save({transaction: t}).then(async (so) => {
- 				    return await rsocf.save({transaction:t}).then(async (socf)=>{
+ 				  return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
+ 				    return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
  				    	if(t.commit()){
- 				    			await self.updateBillShipAds(socf.salesorderid);
- 				    			await self.save(socf.salesorderid);
- 				    			await self.updateLineItems(so,audit,coll.lineitems);
+ 				    			await self.updateBillShipAds(socf.salesorderid,log);
+ 				    			await self.save(socf.salesorderid,log);
+ 				    			log.info("************* Transaction -vtiger_xrso- end ***************");
+ 				    			
+ 				    			await self.updateLineItems(so,audit,coll.lineitems,log);
+ 				    			
  				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
- 				    				await self.autoRsoToSo(so,socf,distributorId);	
+ 				    				log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
+ 				    				log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
+ 				    				log.info("*********** RSO to SO conversion start ************")
+ 				    				await self.autoRsoToSo(so,socf,distributorId,log);	
+ 				    				log.info("*********** RSO to SO conversion end ***************")
  				    			}
  				    			
  				    	}
@@ -130,24 +150,26 @@ const Op = Sequelize.Op
 	 					audit.reason=err.message;
 	 					audit.status='Failed';
 	 					audit.subject=rso.subject;
-	 					audit.saveLog(dbconn);
+	 					audit.saveLog(dbconn,log);
 	 					self.isFailure=true;
  				    	return await t.rollback();
  					});
  				});
  			
  			}, Promise.resolve());
- 			
+
+ 			log.info("=========================RSO End==================")
  		}
  		catch(e){
+ 			log.error(e)
  			console.log("in hello",e);
- 			return  Promise.reject(e.error);
+ 			return  Promise.reject(e);
  		}
  		
  		return Promise.resolve(this.updateStatus(self.isFailure));
 
  	};
- 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit){
+ 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log){
  		var self=this;
  		var dbconn=this.getDb();
  		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
@@ -156,16 +178,24 @@ const Op = Sequelize.Op
  		var rso=new rSalesOrder();
  		var rsocf=new rSalesOrderCf();
  		var salesorderid=await self.getCrmEntity('xrSalesOrder');
-
+ 		log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
  		rso.salesorderid=salesorderid;
  		rsocf.salesorderid=salesorderid;
  		await fields.reduce(async (promise, field) => {
  		    await promise;
+ 		    
 			switch(field.uitype){
  				case 117:
  			 		await CurrencyInfo.findOne({
  			 			where:{currency_code:coll.currency_id.currency_code._text},
+ 			 			logging:(msg)=>{
+ 			 				log.info("currency code: "+coll.currency_id.currency_code._text);
+ 			 				log.debug(msg);
+ 			 			 }
  			 			}).then(currency=>{
+ 			 				log.info(field.columnname+" : "+currency.id+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
+ 			 						rso[field.columnname]=beatId;
+ 			 					    rsocf[field.columnname]=beatId;
  			 				rso[field.columnname]=currency.id;
  			 		}).catch(e=>{
  			 			throw new Error('Unable to get the currency id for sales order');
@@ -176,57 +206,67 @@ const Op = Sequelize.Op
  			 		switch(field.columnname){
  			 			case 'buyerid':
  			 			
- 			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll);
+ 			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log);
  			 			
  			 			if(buyerid){
+ 			 				log.info(field.columnname+" : "+buyerid+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
+ 			 						rso[field.columnname]=beatId;
+ 			 					    rsocf[field.columnname]=beatId;
+ 			 				
  			 				rso[field.columnname]=buyerid;
  			 				rsocf[field.columnname]=buyerid;
  			 			}
  			 			else{
+ 			 				log.error("unable to get the buye id");
  			 				audit.statusCode='FN8200';
  				 			audit.statusMsg="Due to Invalid data, we are unable to get the buyer id";
  				 			audit.reason="Error while getting the related module data";
  				 			audit.status='Failed';
  							audit.subject=coll.subject._text;
- 							audit.saveLog(dbconn);
+ 							audit.saveLog(dbconn,log);
  							self.isFailure=true;
  			 			}
  			 			break;
 
  			 			case 'cf_xrso_beat':
- 			 				var beatId=await self.getBeat(coll);
+ 			 				var beatId=await self.getBeat(coll,log);
  			 					if(beatId){
+ 			 						log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
  			 						rso[field.columnname]=beatId;
  			 					    rsocf[field.columnname]=beatId;
  			 					}
  			 					else{
+ 			 						log.error("Unable to get the beat info");
  			 						audit.statusCode='FN8216';
  				 					audit.statusMsg="Invalid Beat";
  				 					audit.reason="Error while getting the related module data";
  				 					audit.status='Failed';
  								 	audit.subject=coll.subject._text;
- 								 	audit.saveLog(dbconn);
+ 								 	audit.saveLog(dbconn,log);
  								 	self.isFailure=true;
  			 					 }
  			 			break;
  			 			case 'cf_xrso_sales_man':
  			 				try{
+ 			 					log.info(field.columnname+" : "+coll.cf_xrso_sales_man.salesmanid._text+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
  								rso[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
  			 					rsocf[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
  			 				}
  			 				catch(e){
- 								audit.statusCode='FN8210';
+ 			 					log.error("Unable to get the salesman info");
+								audit.statusCode='FN8210';
  				 				audit.statusMsg="Invalid Salesman code";
  				 				audit.reason="Error while getting the related module data";
  				 				audit.status='Failed';
  								audit.subject=coll.subject._text;
- 								audit.saveLog(dbconn);
+ 								audit.saveLog(dbconn,log);
  								self.isFailure=true;
  			 				}
  			 					               	
 			            break;
 			            case 'cf_salesorder_transaction_series':
-			            	var transSeries=await self.getTransactionSeries(coll);  
+			            	var transSeries=await self.getTransactionSeries(coll,log);
+			            	log.info(field.columnname+" : "+transSeries);  
 			            	rso[field.columnname]= transSeries;
 			               	rsocf[field.columnname]=transSeries;
 			            break;
@@ -237,16 +277,18 @@ const Op = Sequelize.Op
 	 		                         //console.log(field.columnname,'=>',coll[field.columnname]);
 	 		            if(field.typeofdata.includes('M')){
 	 		            	if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		            		log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
 	 		            		rso[field.columnname]= coll[field.columnname]._text;
 	 		            	    rsocf[field.columnname]= coll[field.columnname]._text;
 	 		            	 }
 	 		            	 else{
+	 		            	 	log.error(ield.columnname+" is required");
 	 		            	 	audit.statusCode='FN8210';
  				 				audit.statusMsg=field.columnname+" is required";
  				 				audit.reason=field.columnname+" is required";
  				 				audit.status='Failed';
  								audit.subject=coll.subject._text;
- 								audit.saveLog(dbconn);
+ 								audit.saveLog(dbconn,log);
  								self.isFailure=true;
 	 		            	 } 
 	 		            }
@@ -254,18 +296,20 @@ const Op = Sequelize.Op
 	 		            	if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
 
 	 		            	    if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		            	    	log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
 	 		            	    	rso[field.columnname]= coll[field.columnname]._text;
 	 		            	        rsocf[field.columnname]= coll[field.columnname]._text;
 	 		            	     } 
 	 		            	}
 	 		            }
-	 		            if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
+	 		            /*if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
 
 	 		                if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		                	log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata);
 	 		                	rso[field.columnname]= coll[field.columnname]._text;
 	 		                    rsocf[field.columnname]= coll[field.columnname]._text;
 	 		                   } 
-	 		            }
+	 		            }*/
 	 		         break;
 	 		    }
 	 		         
@@ -276,24 +320,27 @@ const Op = Sequelize.Op
  		return {rso:rso,rsocf: rsocf}; 
  	}
 
- 	rSalesOrder.prototype.getFields=async function (){
+ 	rSalesOrder.prototype.getFields=async function (log){
  		const dbconn=this.getDb();
  		const VtigerField=dbconn.import('./../../models/vtiger-field');
  		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
  		const VtigerTab=dbconn.import('./../../models/vtiger-tab')
-
+ 		log.info("Module table Names: "+rSalesOrder.tableName+","+rSalesOrder.tableName+'cf');
  		return VtigerField.findAll({
  			where:{
  				tablename:[rSalesOrder.tableName,rSalesOrder.tableName+'cf'],xmlreceivetable:1},
  				attributes: ['fieldid','columnname','typeofdata','uitype','tabid'],
  				include:[{model:VtigerTab,required:true,attributes:['tabid','name']}],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  			}).then(fields => {
  				return fields;
  			}).catch(e=>{
  				return e.error;
  			});
  	}
- 	rSalesOrder.prototype.getTransGridFields=async function (tableName){
+ 	rSalesOrder.prototype.getTransGridFields=async function (tableName,log){
  		const dbconn=this.getDb();
  		const XGridField=dbconn.import('./../../models/x-grid-field');
  		
@@ -301,7 +348,9 @@ const Op = Sequelize.Op
  			where:{
  				tablename:tableName,xmlreceivetable:1},
  				attributes: ['columnname'],
- 				
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  			}).then(fields => {
  				return fields;
  			}).catch(e=>{
@@ -309,29 +358,32 @@ const Op = Sequelize.Op
  				return e.error;
  			});
  	}
- 	rSalesOrder.prototype.updateBillShipAds=async function (soId){
+ 	rSalesOrder.prototype.updateBillShipAds=async function (soId,log){
  		const dbconn=this.getDb();
  		const RsoBillAds=dbconn.import('./../../models/rso-bill-ads');
  		const RsoShipAds=dbconn.import('./../../models/rso-ship-ads');
  		
  		var rsoBillAds=new RsoBillAds();
  			rsoBillAds['sobilladdressid']=soId;
- 			rsoBillAds.save().then().catch(e=>{
+ 			rsoBillAds.save({logging:(msg)=>{log.debug(msg)}}).then().catch(e=>{
  				console.log(e);
  			});
  		var rsoShipAds=new RsoShipAds();
  			rsoShipAds['soshipaddressid']=soId;
- 			rsoShipAds.save().then().catch(e=>{
+ 			rsoShipAds.save({logging:(msg)=>{log.debug(msg)}}).then().catch(e=>{
  				console.log(e);
  			});
  		return true;
  	}
- 	rSalesOrder.prototype.getTransRel=async function(){
+ 	rSalesOrder.prototype.getTransRel=async function(log){
  			const dbconn=this.getDb();
  			const TransRel=dbconn.import('./../../models/trans-rel');
  			return TransRel.findOne({
  				where:{'transaction_name':'xrSalesOrder'},
- 				attributes:['transaction_rel_table','profirldname','relid','uom','categoryid','receive_pro_by_cate']
+ 				attributes:['transaction_rel_table','profirldname','relid','uom','categoryid','receive_pro_by_cate'],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  			}).then(relation=>{
  				return relation;
  			}).catch(e=>{
@@ -340,12 +392,15 @@ const Op = Sequelize.Op
  			});
  	}
 
- 	rSalesOrder.prototype.getBeat=async function(coll){
+ 	rSalesOrder.prototype.getBeat=async function(coll,log){
  			var dbconn=this.getDb();
  			const Beat=dbconn.import('./../../models/beat');
  			return Beat.findOne({
  				where:{beatcode:coll.cf_xrso_beat.beatcode._text,deleted:0},
- 				attributes:['xbeatid']
+ 				attributes:['xbeatid'],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  			}).then(beat=>{
  				if(beat){
  					return beat.xbeatid;
@@ -376,13 +431,16 @@ const Op = Sequelize.Op
  				return false;
  			});
  	}
- 	rSalesOrder.prototype.getProductTrackSerial=async function (productId){
+ 	rSalesOrder.prototype.getProductTrackSerial=async function (productId,log){
 
  		var dbconn=this.getDb();
  		const Product=dbconn.import('./../../models/product');
  		return Product.findOne({
  			where:{xproductid:productId},
- 			attributes:['track_serial_number']
+ 			attributes:['track_serial_number'],
+ 			logging:(msg)=>{
+ 				log.debug(msg);
+ 			}
  		}).then(product=>{
  			if(product){
  				if(product['track_serial_number'].toLowerCase()=='yes'){
@@ -401,12 +459,15 @@ const Op = Sequelize.Op
  		});
  		
  	}
- 	rSalesOrder.prototype.getProductId=async function(productCode){
+ 	rSalesOrder.prototype.getProductId=async function(productCode,log){
  			var dbconn=this.getDb();
  			const Product=dbconn.import('./../../models/product');
  			return Product.findOne({
  				where:{productcode:productCode},
- 				attributes:['xproductid']
+ 				attributes:['xproductid'],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  			}).then(product=>{
  				if(product){
  					return product.xproductid;
@@ -419,12 +480,15 @@ const Op = Sequelize.Op
  				return false;
  			});
  	}
- 	rSalesOrder.prototype.getUomId=async function(uomName){
+ 	rSalesOrder.prototype.getUomId=async function(uomName,log){
  			var dbconn=this.getDb();
  			const Uom=dbconn.import('./../../models/uom');
  			return Uom.findOne({
  				where:{uomname:uomName},
- 				attributes:['uomid']
+ 				attributes:['uomid'],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  			}).then(uom=>{
  				if(uom){
  					return uom.uomid;
@@ -437,7 +501,7 @@ const Op = Sequelize.Op
  				return false;
  			});
  	}
- 	rSalesOrder.prototype.trash=function(soId){
+ 	rSalesOrder.prototype.trash=function(soId,log){
  			var dbconn=this.getDb();
  			const CrmEntity=dbconn.import('./../../models/crmentity');
  			const rSalesOrder=dbconn.import('./../../models/rsalesorder');
@@ -445,25 +509,33 @@ const Op = Sequelize.Op
  			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
  			CrmEntity.update(
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
- 				{where: {crmid:soId}}
+ 				{where: {crmid:soId},logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  			rSalesOrder.update(
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
- 				{where: {salesorderid:soId}}
+ 				{where: {salesorderid:soId},logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  			rSalesOrderCf.update(
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
- 				{where: {salesorderid:soId}}
+ 				{where: {salesorderid:soId},logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
 
  			XrsoProdRel.update(
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
- 				{where: {id:soId}}
+ 				{where: {id:soId},logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  			
  					
  	}
- 	rSalesOrder.prototype.save=async function(soId){
+ 	rSalesOrder.prototype.save=async function(soId,log){
  		
  			var dbconn=this.getDb();
  			const CrmEntity=dbconn.import('./../../models/crmentity');
@@ -479,50 +551,71 @@ const Op = Sequelize.Op
  					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					deleted:0},
  				{where: 
- 					{crmid:soId}}
+ 					{crmid:soId}},
+ 				{logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  			rSalesOrder.update(
  				{
  					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					deleted:0},
- 				{where: {salesorderid:soId}}
+ 				{where: {salesorderid:soId}},
+ 				{logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  			rSalesOrderCf.update(
  				{
  					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					deleted:0},
- 				{where: {salesorderid:soId}}
+ 				{where: {salesorderid:soId}},
+ 				{logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
 
  			XrsoProdRel.update(
  				{modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),deleted:1},
- 				{where: {id:soId}}
+ 				{where: {id:soId}},
+ 				{logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  			rsoBillAds.update(
  				{
  					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					deleted:0},
- 				{where: {sobilladdressid:soId}}
+ 				{where: {sobilladdressid:soId}},
+ 				{logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  			rsoShipAds.update(
  				{
  					modified_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
  					deleted:0},
- 				{where: {soshipaddressid:soId}}
+ 				{where: {soshipaddressid:soId}},
+ 				{logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();		
  	}
- 	rSalesOrder.prototype.updateSubject= function(soId,subject){
+ 	rSalesOrder.prototype.updateSubject= function(soId,subject,log){
  		var dbconn=this.getDb();
  		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
  		rSalesOrder.update(
  				{
  					subject:subject
  				},
- 				{where: {salesorderid:soId}}
+ 				{where: {salesorderid:soId}},
+ 				{logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}
  			).then().catch();
  		
  	}
@@ -557,13 +650,16 @@ const Op = Sequelize.Op
  				{where: {id:soId}}
  			).then().catch();		
  	}
- 	rSalesOrder.prototype.getTransactionSeries=async function(coll){
+ 	rSalesOrder.prototype.getTransactionSeries=async function(coll,log){
  			var dbconn=this.getDb();
  			const XSeries=dbconn.import('./../../models/x-series');
  			return XSeries.findOne({
  				where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriescode._text,
  					deleted:0,
  					xdistributorid:coll.distributor_id._text,
+ 					logging:(msg)=>{
+ 						log.debug(msg)
+ 					}
  					},
  				attributes:['xtransactionseriesid']
  			}).then(series=>{
@@ -596,17 +692,20 @@ const Op = Sequelize.Op
  		}
  	}
  	
-	rSalesOrder.prototype.getBuyerId=async function(customerType,coll){
+	rSalesOrder.prototype.getBuyerId=async function(customerType,coll,log){
 		var dbconn=this.getDb();
  		const Retailer=dbconn.import('./../../models/retailer');
  		const SubRetailer=dbconn.import('./../../models/sub-retailer');
  		const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
-
+ 		log.info("Customer type: "+ customerType)
  		switch(customerType){
  			case '1':
  				return  RecCustMaster.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
- 					attributes:['xreceivecustomermasterid']
+ 					attributes:['xreceivecustomermasterid'],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
  				}).then(retailer=>{
  					if(retailer){
  						return retailer.xreceivecustomermasterid;
@@ -621,7 +720,10 @@ const Op = Sequelize.Op
  				case '2':
  				await SubRetailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
- 					attributes:['xsubretailerid']
+ 					attributes:['xsubretailerid'],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
  				}).then(retailer=>{
  					if(retailer){
  						return retailer.xsubretailerid;
@@ -636,7 +738,10 @@ const Op = Sequelize.Op
  				case '0':
  				return Retailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
- 					attributes:['xretailerid']
+ 					attributes:['xretailerid'],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
  				}).then(retailer=>{
  					if(retailer){
  						return retailer.xretailerid;
@@ -650,15 +755,15 @@ const Op = Sequelize.Op
  		}
  	}
  	
- 	rSalesOrder.prototype.updateLineItems=async function(so,audit,coll){
+ 	rSalesOrder.prototype.updateLineItems=async function(so,audit,coll,log){
  		
  				
- 					
+ 					log.info("*********************** vtiger_xrso - lineItems update start **************")
  			 		var self=this;
  			 		var dbconn=this.getDb();
  			 		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
- 			 		var transRel=await self.getTransRel();
- 			 		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table);
+ 			 		var transRel=await self.getTransRel(log);
+ 			 		var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table,log);
  			 		if(Object.getPrototypeOf( coll[transRel.transaction_rel_table]) === Object.prototype){
  			 			
  			 			var lineItems=[coll[transRel.transaction_rel_table]]
@@ -692,7 +797,8 @@ const Op = Sequelize.Op
  			 					break;
  			 					case transRel.profirldname :
  			 						if(is_process==1){
- 			 							var productId=await self.getProductId(lineItem.productcode._text);
+ 			 							log.info("====== product details ==============")
+ 			 							var productId=await self.getProductId(lineItem.productcode._text,log);
  			 							if(productId==false){
  			 								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
  			 									audit.statusCode='FN8212';
@@ -700,9 +806,9 @@ const Op = Sequelize.Op
  				 								audit.reason="Product Is Not Availabale with provided input"+lineItem.productcode._text;
  				 								audit.status='Failed';
  				 								audit.subject=so.subject;
- 								 				audit.saveLog(dbconn);
- 								 				self.trash(so.salesorderid);
- 								 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 				audit.saveLog(dbconn,log);
+ 								 				self.trash(so.salesorderid,log);
+ 								 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
  								 				self.isFailure=true;
  								 				continue lineItemsIteration;
  			 								}
@@ -721,21 +827,22 @@ const Op = Sequelize.Op
  			 					break;
  			 					case transRel.uom :
  			 						if(is_process==1){
- 			 							var uomId=await self.getUomId(lineItem.tuom.uomname._text);
+ 			 							log.info("====== uom details ==============")
+ 			 							var uomId=await self.getUomId(lineItem.tuom.uomname._text,log);
  			 							if(uomId==false){
  			 									audit.statusCode='FN8213';
  				 								audit.statusMsg="Invalid UOM - "+lineItem.tuom.uomname._text;
  				 								audit.reason="UOM Is Not Availabale with provided input "+lineItem.tuom.uomname._text;
  				 								audit.status='Failed';
  				 								audit.subject=so.subject;
- 								 				audit.saveLog(dbconn);
- 								 				self.trash(so.salesorderid);
- 								 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 				audit.saveLog(dbconn,log);
+ 								 				self.trash(so.salesorderid,log);
+ 								 				self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
  								 				self.isFailure=true;
  								 				continue lineItemsIteration;
 
  			 							}else{
- 			 								var isProdUomMapped= await self.isProdUomMap(xrsoProdRel['productid'],uomId);
+ 			 								var isProdUomMapped= await self.isProdUomMap(xrsoProdRel['productid'],uomId,log);
  			 								if(!isProdUomMapped){
  			 									
  			 									if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase() == 'true'){
@@ -744,9 +851,9 @@ const Op = Sequelize.Op
  					 								audit.reason= "product id :"+ productId+" & uom id: "+uomId+" are Not Mapped";
  					 								audit.status='Failed';
  					 								audit.subject=so.subject;
- 									 				audit.saveLog(dbconn);
- 									 				self.trash(so.salesorderid);
- 								 					self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 									 				audit.saveLog(dbconn,log);
+ 									 				self.trash(so.salesorderid,log);
+ 								 					self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
  								 					self.isFailure=true;
  													continue lineItemsIteration;
 
@@ -761,6 +868,7 @@ const Op = Sequelize.Op
  			 						try{
  			 							var tax1=lineItem.tax1._text;
  			 							xrsoProdRel['tax1']=tax1
+ 			 							log.info("tax1: "+tax1);
  			 						}
  			 						catch(e){
  			 							xrsoProdRel['tax1']='0';
@@ -773,30 +881,32 @@ const Op = Sequelize.Op
  			 						try{
  			 							var quantity=Number(lineItem.quantity._text);
  			 							if(quantity>0){
+ 			 								log.info("quantity: "+ quantity);
  			 								xrsoProdRel['quantity']=quantity;
  			 							}
  			 							else{
- 			 							
+ 			 								log.error("Invalid Quantity");
  			 								audit.statusCode='FN8213';
  				 							audit.statusMsg="Invalid Quantity";
  				 							audit.reason="quantity Is Not Availabale";
  				 							audit.status='Failed';
  				 							audit.subject=so.subject;
- 								 			audit.saveLog(dbconn);
- 								 			self.trash(so.salesorderid);
- 								 			self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 			audit.saveLog(dbconn,log);
+ 								 			self.trash(so.salesorderid,log);
+ 								 			self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
  								 			self.isFailure=true;
  											continue lineItemsIteration;
  			 							}
  			 						}catch(e){
+ 			 							log.error("Invalid Quantity");
  			 							audit.statusCode='FN8214';
  				 						audit.statusMsg="Invalid Quantity";
  				 						audit.reason="quantity Is Not Availabale";
  				 						audit.status='Failed';
  				 						audit.subject=so.subject;
- 								 		audit.saveLog(dbconn);
- 								 		self.trash(so.salesorderid);
- 								 		self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid);
+ 								 		audit.saveLog(dbconn,log);
+ 								 		self.trash(so.salesorderid,log);
+ 								 		self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
  								 		self.isFailure=true;
  								 		continue lineItemsIteration;
  			 						}
@@ -815,6 +925,7 @@ const Op = Sequelize.Op
  			 					default:
  			 						try{
  			 							if(lineItem[field.columnname]!=='undefined' && lineItem[field.columnname]!==null && Object.keys(lineItem[field.columnname]).length>0){
+ 			 								log.info(field.columnname+" : "+lineItem[field.columnname]._text);
  			 								xrsoProdRel[field.columnname]=lineItem[field.columnname]._text;
 										}
  			 						}
@@ -825,19 +936,21 @@ const Op = Sequelize.Op
  			 				}
  			 			}
  			 			
- 			 			xrsoProdRel.save().then(res=>{
+ 			 			xrsoProdRel.save({logging:(msg)=>{
+ 			 				log.debug(msg);
+ 			 			}}).then(res=>{
  			 				
  			 			}).catch(e=>{
  			 				self.isFailure=true;
  			 			});
  			 		
  			 		}
- 			 		
+ 			 		log.info("****************** vtiger_xrso lineitems update -end *********************")
  			 		return Promise.resolve(true);
  			 	
  		
  	}
- 	rSalesOrder.prototype.isProdUomMap=async function(productId,uomId){
+ 	rSalesOrder.prototype.isProdUomMap=async function(productId,uomId,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const Product=dbconn.import('./../../models/product');
@@ -851,6 +964,9 @@ const Op = Sequelize.Op
  				attributes:prodUomCusFields,
  				include:[{model:Product,required:true,attributes:prodUomFields}],
  				raw: true,
+ 				logging:(msg)=>{
+ 					log.debug(msg)
+ 				}
  			}).then(uoms => {
  				return Object.values(uoms).includes(uomId);
  			}).catch(e=>{
@@ -881,7 +997,7 @@ const Op = Sequelize.Op
  			});
 
  	}
- 	rSalesOrder.prototype.autoRsoToSo=async function(rso,rsocf,distId){
+ 	rSalesOrder.prototype.autoRsoToSo=async function(rso,rsocf,distId,log){
  		try{
  			var self=this;
  			const dbconn=this.getDb();
@@ -889,38 +1005,51 @@ const Op = Sequelize.Op
  			var ALLOW_GST_TRANSACTION=self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
  			var SO_LBL_TAX_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
  			var SO_LBL_CURRENCY_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_CURRENCY_OPTION_ENABLE');
- 			var isSoConverted=await self.isSoConverted(rso.salesorderid);
+ 			var isSoConverted=await self.isSoConverted(rso.salesorderid,log);
+ 			log.info("isSoConverted : "+isSoConverted);
  			if(isSoConverted){
  				rsocf.cf_xrso_next_stage_name='';
- 				rsocf.save();
+ 				rsocf.save({logging:(msg)=>{
+ 					log.debug(msg);
+ 				}});
  				rso.status='Processed';
  				rso.is_processed=2;
- 				rso.save();
+ 				rso.save({logging:(msg)=>{
+ 					log.debug(msg);
+ 				}});
  				return true;
  			}
  			var convertToSo = false;
- 			var nextStage= await self.getStageAction('Create SO');
+ 			var nextStage= await self.getStageAction('Create SO',log);
  			if(nextStage.cf_workflowstage_business_logic=='Forward to SO'){
  				convertToSo=true;
  			}
  			if(!convertToSo){
  				rsocf.cf_xrso_next_stage_name=nextStage.cf_workflowstage_next_stage;
- 				rsocf.save();
+ 				rsocf.save({logging:(msg)=>{
+ 					log.debug(msg);
+ 				}});
  				rso.status=nextStage.cf_workflowstage_next_content_status;
- 				rso.save();
+ 				rso.save({logging:(msg)=>{
+ 					log.debug(msg);
+ 				}});
  				return true;
  			}
  			
  			var salesOrderId=await self.getCrmEntity('xSalesOrder');
  			//get Salesorder Object 
+ 			log.info("xSalesOrder crmentity id :"+salesOrderId)
+ 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,log);
  			
- 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId);
- 			
- 			so.save().then(async function(so){
+ 			so.save({logging:(msg)=>{
+ 				log.debug(msg);
+ 			}}).then(async function(so){
 
- 				socf.save().then(async function(socf){
- 					await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder');
- 					await self.updateSoLineItems(so,socf,rso.salesorderid,distId);
+ 				socf.save({logging:(msg)=>{
+ 				log.debug(msg);
+ 			}}).then(async function(socf){
+ 					await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log);
+ 					await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
  				}).catch(e=>{
  					
  				});
@@ -928,10 +1057,14 @@ const Op = Sequelize.Op
  				
  			});
  			
- 			soBillAds.save().then().catch(e=>{
+ 			soBillAds.save({logging:(msg)=>{
+ 				log.debug(msg);
+ 			}}).then().catch(e=>{
  				
  			});
- 			soShipAds.save().then().catch(e=>{
+ 			soShipAds.save({logging:(msg)=>{
+ 				log.debug(msg);
+ 			}}).then().catch(e=>{
  				
  			});
  			return true;
@@ -940,7 +1073,7 @@ const Op = Sequelize.Op
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.updateCrmRelEntity=async function(crmId,module,relCrmId,relModule){
+ 	rSalesOrder.prototype.updateCrmRelEntity=async function(crmId,module,relCrmId,relModule,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
@@ -949,10 +1082,12 @@ const Op = Sequelize.Op
  			crmEntityRel['module']=module;
  			crmEntityRel['relcrmid']=relCrmId;
  			crmEntityRel['relmodule']=relModule;
- 			crmEntityRel.save();
+ 			crmEntityRel.save({logging:(msg)=>{
+ 				log.debug(msg);
+ 			}});
  			return true;
  	}
- 	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId,distId){
+ 	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId,distId,log){
  		try{
  			var self=this;
  			const dbconn=this.getDb();
@@ -988,7 +1123,9 @@ const Op = Sequelize.Op
  				soProdRel.created_at=moment().format('YYYY-MM-DD HH:mm:ss');
 				soProdRel.modified_at=moment().format('YYYY-MM-DD HH:mm:ss');
 				
-				soProdRel.save().then(async function(soRel){
+				soProdRel.save({logging:(msg)=>{
+ 					log.debug(msg);
+ 					}}).then(async function(soRel){
  					
  					var sxbinfo=new SaleXBatchInfo();
  						sxbinfo['transaction_id']=soRel['id'];
@@ -1004,13 +1141,15 @@ const Op = Sequelize.Op
  						sxbinfo['mrp']=0.000000;
  						sxbinfo['ecp']=0.000000;
  						sxbinfo['distributor_id']=distId;
- 						var trackSerial=await self.getProductTrackSerial(soRel['productid']);
+ 						var trackSerial=await self.getProductTrackSerial(soRel['productid'],log);
  						sxbinfo['track_serial']=trackSerial;
  						sxbinfo['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');;
 						sxbinfo['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');;
 						sxbinfo['deleted']=0;
- 						sxbinfo.save().then(async function(sxBatchInfo){
- 							await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId);	
+ 						sxbinfo.save({logging:(msg)=>{
+ 							log.debug(msg);
+ 						}}).then(async function(sxBatchInfo){
+ 							await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);	
  						}).catch(e=>{
  							
  						});
@@ -1023,7 +1162,7 @@ const Op = Sequelize.Op
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId){
+ 	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const ALLOW_GST_TRANSACTION=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
@@ -1043,11 +1182,13 @@ const Op = Sequelize.Op
               }
               so['total']=netTotal;
               so['sub_total']=netTotal;
-              so.save();
+              so.save({logging:(msg)=>{
+ 				log.debug(msg);
+ 			}});
               
  		}
  	}
- 	rSalesOrder.prototype.prepareSo=async function(soId,rso,rsocf,distId){
+ 	rSalesOrder.prototype.prepareSo=async function(soId,rso,rsocf,distId,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const SalesOrder=dbconn.import('./../../models/salesorder');
@@ -1068,7 +1209,8 @@ const Op = Sequelize.Op
 		so['carrier']=rso['carrier'];
 		so['deleted']=0;
 		//get the receive customer master - reference id for buyer id
- 		var buyerId=await self.getCustomerRefId(rso['buyerid']);
+ 		var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
+ 		log.info("Buyer Id in so :"+buyerId);
  		if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
  			buyerId=rso['buyerid'];
  			so['buyerid']=rso['buyerid'];
@@ -1090,11 +1232,11 @@ const Op = Sequelize.Op
 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
  		so['trntaxtype']=(TAX_TYPE?'GST':'VAT');
  		so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
- 		var soBillAds=await self.prepareBillAds(soId,buyerId);
+ 		var soBillAds=await self.prepareBillAds(soId,buyerId,log);
  		soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soBillAds['deleted']=0;
- 		var soShipAds=await self.prepareShipAds(soId,buyerId);
+ 		var soShipAds=await self.prepareShipAds(soId,buyerId,log);
  		soShipAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soShipAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soShipAds['deleted']=0;
@@ -1105,20 +1247,20 @@ const Op = Sequelize.Op
  		socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
  		socf['cf_xsalesorder_sales_man']=rsocf['cf_xrso_sales_man'];
  		if(typeof(rsocf['cf_xrso_credit_term'])==null || rsocf['cf_xrso_credit_term']=='' ||rsocf['cf_xrso_credit_term']==null){
- 			var creditTerm=await self.getCreditTerm(rso['buyerid']);
+ 			var creditTerm=await self.getCreditTerm(rso['buyerid'],log);
  			socf['cf_xsalesorder_credit_term']=creditTerm;
  		}
  		
  		socf['cf_salesinvoice_beat']=rsocf['cf_xrso_beat'];
  		socf['cf_xsalesorder_billing_address_pick']=soBillAds.xaddressid;
  		socf['cf_xsalesorder_shipping_address_pick']=soShipAds.xaddressid;
- 		var nextStage= await self.getStageAction('Submit');
+ 		var nextStage= await self.getStageAction('Submit',log);
  		socf['cf_xsalesorder_next_stage_name'] = nextStage.cf_workflowstage_next_stage;
         so['status'] = nextStage.cf_workflowstage_next_content_status;
         so['salesorder_status']='Open Order';
         socf['cf_xsalesorder_seller_id']=distId;
         socf['cf_xsalesorder_buyer_id']=buyerId;
-        var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order');
+        var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',log);
        	socf['cf_salesorder_transaction_number']=xGenSeries;
         socf['cf_salesorder_transaction_series']=xtransactionseriesid;
         socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
@@ -1126,7 +1268,7 @@ const Op = Sequelize.Op
 		socf['deleted']=0;
 		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
  	}
- 	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true){
+ 	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
  		try{
  			var self=this;
  			var dbconn=this.getDb();
@@ -1143,6 +1285,9 @@ const Op = Sequelize.Op
  					where:{xdistributorid:distId,deleted:0},
  					
  				}],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  			}).then(async function(series){
  				
  				if(series){
@@ -1308,7 +1453,7 @@ const Op = Sequelize.Op
  		return str;
  		
  	}
- 	rSalesOrder.prototype.getCreditTerm=async function(buyerId){
+ 	rSalesOrder.prototype.getCreditTerm=async function(buyerId,log){
  		try{
  			var self=this;
  			var dbconn=this.getDb();
@@ -1328,7 +1473,10 @@ const Op = Sequelize.Op
  						attributes:['xretailerid','customercode','customername']
  						
  					}
- 				]
+ 				],
+ 				logging:(msg)=>{
+ 					log.debug(msg)
+ 				}
  			}).then(retailer=>{
  				return retailer.cf_xretailer_creditdays;
  			}).catch(e=>{
@@ -1338,35 +1486,35 @@ const Op = Sequelize.Op
  				
  		}
  	}
- 	rSalesOrder.prototype.prepareBillAds=async function(soId,refId){
+ 	rSalesOrder.prototype.prepareBillAds=async function(soId,refId,log){
  		var self=this;
  		var dbconn=this.getDb();
  		const SoBillAds=dbconn.import('./../../models/so-bill-ads');
  		soBillAds=new SoBillAds();
- 		var billAddress=await self.getAddress('Billing',refId);
+ 		var billAddress=await self.getAddress('Billing',refId,log);
  		
  		soBillAds['sobilladdressid']=soId;
  		soBillAds['bill_street']=billAddress.AddressCf.cf_xaddress_address;
  		soBillAds['bill_pobox']=billAddress.AddressCf.cf_xaddress_po_box;
  		soBillAds['bill_city']=billAddress.AddressCf.cf_xaddress_city;
- 		soBillAds['bill_state']=await self.getState(billAddress.xstateid);
+ 		soBillAds['bill_state']=await self.getState(billAddress.xstateid,log);
  		soBillAds['bill_code']=billAddress.AddressCf.cf_xaddress_postal_code;
  		soBillAds['bill_country']=billAddress.AddressCf.cf_xaddress_country;
  		soBillAds['xaddressid']=billAddress.xaddressid;
  		return soBillAds;
  	}
 
- 	rSalesOrder.prototype.prepareShipAds=async function(soId,refId){
+ 	rSalesOrder.prototype.prepareShipAds=async function(soId,refId,log){
  		var self=this;
  		var dbconn=this.getDb();
  		const SoShipAds=dbconn.import('./../../models/so-ship-ads');
  		soShipAds=new SoShipAds();
- 		var shipAddress=await self.getAddress('Shipping',refId);
+ 		var shipAddress=await self.getAddress('Shipping',refId,log);
  		soShipAds['soshipaddressid']=soId;
  		soShipAds['ship_street']=shipAddress.AddressCf.cf_xaddress_address;
  		soShipAds['ship_pobox']=shipAddress.AddressCf.cf_xaddress_po_box;
  		soShipAds['ship_city']=shipAddress.AddressCf.cf_xaddress_city;
- 		soShipAds['ship_state']=await self.getState(shipAddress.xstateid);
+ 		soShipAds['ship_state']=await self.getState(shipAddress.xstateid,log);
  		soShipAds['ship_code']=shipAddress.AddressCf.cf_xaddress_postal_code;
  		soShipAds['ship_country']=shipAddress.AddressCf.cf_xaddress_country;
  		soShipAds['gstinno']=shipAddress.gstinno;
@@ -1375,13 +1523,16 @@ const Op = Sequelize.Op
 		return soShipAds;
  	}
 
- 	rSalesOrder.prototype.getCustomerRefId=async function(buyerId){
+ 	rSalesOrder.prototype.getCustomerRefId=async function(buyerId,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
  		return RecCustMaster.findOne({
  				where:{xreceivecustomermasterid:buyerId},
  				attributes:['reference_id'],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  		}).then(cust=>{
  			if(cust){
  				return cust.reference_id;
@@ -1393,7 +1544,7 @@ const Op = Sequelize.Op
  			return buyerId;
  		})
  	}
- 	rSalesOrder.prototype.getStageAction=async function(action){
+ 	rSalesOrder.prototype.getStageAction=async function(action,log){
  		try{
  			const dbconn=this.getDb();
  			var self=this;
@@ -1406,6 +1557,9 @@ const Op = Sequelize.Op
  				},
  				include:[{model:WFStageCf,required:true,where:{cf_workflowstage_user_role:'Distributor',
  					cf_workflowstage_possible_action:action}}],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  				
  			}).then(res=>{
  				if(res.dataValues.WFStageCfs[0].dataValues){
@@ -1419,7 +1573,7 @@ const Op = Sequelize.Op
  		}
 
  	}
- 	rSalesOrder.prototype.isSoConverted=async function(soid){
+ 	rSalesOrder.prototype.isSoConverted=async function(soid,log){
  		try{
  			const dbconn=this.getDb();
  			var self=this;
@@ -1427,6 +1581,9 @@ const Op = Sequelize.Op
  			return CrmEntityRel.findOne({
  					where:{
  						relmodule:'xSalesOrder',module:'xrSalesOrder',crmid:soid
+ 					},
+ 					logging:(msg)=>{
+ 						log.debug(msg)
  					}
  			}).then(res=>{
  				if(res){
@@ -1460,7 +1617,7 @@ const Op = Sequelize.Op
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.getState=async function(stateId){
+ 	rSalesOrder.prototype.getState=async function(stateId,log){
  		try{
  			var self=this;
  			var dbconn=this.getDb();
@@ -1468,6 +1625,9 @@ const Op = Sequelize.Op
  			return State.findOne({
  					where:{xstateid:stateId},
  					attributes:['statename'],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
  			}).then(state=>{
  				if(state){
  					return state.statename;
@@ -1479,7 +1639,7 @@ const Op = Sequelize.Op
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.getAddress=async function(type,refId){
+ 	rSalesOrder.prototype.getAddress=async function(type,refId,log){
  		try{
 
  			var self=this;
@@ -1502,7 +1662,10 @@ const Op = Sequelize.Op
  							xaddressid:{[Op.in]:relCrmId},
  						}
  					}
- 				]
+ 				],
+ 				logging:(msg)=>{
+ 					log.debug(msg)
+ 				}
  			}).then(res=>{
  				if(res){
  					return res;

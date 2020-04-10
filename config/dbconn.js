@@ -11,7 +11,7 @@ const dbconn=new Sequelize(database,null,null,{
         min: 5,
         idle: 10000
     },
-    logQueryParameters:false,
+    logQueryParameters:true,
     port:process.env.FNXT_MYSQLPORT,
     replication:{
         read:[
