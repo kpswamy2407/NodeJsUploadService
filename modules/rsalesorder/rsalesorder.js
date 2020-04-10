@@ -131,7 +131,7 @@ const Op = Sequelize.Op
  				    			log.info("************* Transaction -vtiger_xrso- end ***************");
  				    			
  				    			await self.updateLineItems(so,audit,coll.lineitems,log);
- 				    			
+ 				    			log.info("****************** vtiger_xrso lineitems update -end *********************")
  				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
  				    				log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
  				    				log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
@@ -945,7 +945,7 @@ const Op = Sequelize.Op
  			 			});
  			 		
  			 		}
- 			 		log.info("****************** vtiger_xrso lineitems update -end *********************")
+ 			 		
  			 		return Promise.resolve(true);
  			 	
  		
