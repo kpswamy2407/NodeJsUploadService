@@ -126,10 +126,11 @@ const Op = Sequelize.Op
  				  return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  				    return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
  				    	if(t.commit()){
+ 				    			log.info("============ Related Modules: Bill Ads, Ship Ads ===============")
  				    			await self.updateBillShipAds(socf.salesorderid,log);
  				    			await self.save(socf.salesorderid,log);
  				    			log.info("************* Transaction -vtiger_xrso- end ***************");
- 				    			
+ 				    			log.info("*********************** vtiger_xrso - lineItems update start **************")
  				    			await self.updateLineItems(so,audit,coll.lineitems,log);
  				    			log.info("****************** vtiger_xrso lineitems update -end *********************")
  				    			if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
@@ -186,6 +187,7 @@ const Op = Sequelize.Op
  		    
 			switch(field.uitype){
  				case 117:
+ 					log.info("=========== Related Module: Currency ================")
  			 		await CurrencyInfo.findOne({
  			 			where:{currency_code:coll.currency_id.currency_code._text},
  			 			logging:(msg)=>{
@@ -205,7 +207,7 @@ const Op = Sequelize.Op
  			 	 //default related module for buyerid is xRetailer
  			 		switch(field.columnname){
  			 			case 'buyerid':
- 			 			
+ 			 			log.info("=========== Related Module: Customer ================")
  			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log);
  			 			
  			 			if(buyerid){
@@ -229,6 +231,8 @@ const Op = Sequelize.Op
  			 			break;
 
  			 			case 'cf_xrso_beat':
+ 			 			log.info("=========== Related Module: Beat ================")
+
  			 				var beatId=await self.getBeat(coll,log);
  			 					if(beatId){
  			 						log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
@@ -247,6 +251,8 @@ const Op = Sequelize.Op
  			 					 }
  			 			break;
  			 			case 'cf_xrso_sales_man':
+ 			 			log.info("=========== Related Module: Salesman ================")
+
  			 				try{
  			 					log.info(field.columnname+" : "+coll.cf_xrso_sales_man.salesmanid._text+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
  								rso[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
@@ -265,6 +271,8 @@ const Op = Sequelize.Op
  			 					               	
 			            break;
 			            case 'cf_salesorder_transaction_series':
+ 			 			log.info("=========== Related Module: Transaction series ================")
+
 			            	var transSeries=await self.getTransactionSeries(coll,log);
 			            	log.info(field.columnname+" : "+transSeries);  
 			            	rso[field.columnname]= transSeries;
@@ -341,6 +349,7 @@ const Op = Sequelize.Op
  			});
  	}
  	rSalesOrder.prototype.getTransGridFields=async function (tableName,log){
+ 		log.info("======== Related Module: sify_tr_grid_field ================")
  		const dbconn=this.getDb();
  		const XGridField=dbconn.import('./../../models/x-grid-field');
  		
@@ -376,6 +385,7 @@ const Op = Sequelize.Op
  		return true;
  	}
  	rSalesOrder.prototype.getTransRel=async function(log){
+ 			log.info("======== Related Module: sify_tr_rel ======================")
  			const dbconn=this.getDb();
  			const TransRel=dbconn.import('./../../models/trans-rel');
  			return TransRel.findOne({
@@ -700,6 +710,7 @@ const Op = Sequelize.Op
  		log.info("Customer type: "+ customerType)
  		switch(customerType){
  			case '1':
+ 				log.info("=========== Related sub-module: ReceiveCustomerMaster ================")
  				return  RecCustMaster.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xreceivecustomermasterid'],
@@ -718,6 +729,7 @@ const Op = Sequelize.Op
  				});
  				break;
  				case '2':
+ 				log.info("=========== Related sub-module: SubRetailer ================")
  				await SubRetailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xsubretailerid'],
@@ -736,6 +748,7 @@ const Op = Sequelize.Op
  				});
  				break;
  				case '0':
+ 				log.info("=========== Related sub-module: Retailer ================")
  				return Retailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0},
  					attributes:['xretailerid'],
@@ -758,7 +771,7 @@ const Op = Sequelize.Op
  	rSalesOrder.prototype.updateLineItems=async function(so,audit,coll,log){
  		
  				
- 					log.info("*********************** vtiger_xrso - lineItems update start **************")
+ 					
  			 		var self=this;
  			 		var dbconn=this.getDb();
  			 		const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
@@ -957,6 +970,7 @@ const Op = Sequelize.Op
  		const ProductCf=dbconn.import('./../../models/product-cf');
  		var prodUomFields=await self.getProductUomFields('vtiger_xproduct');
  		var prodUomCusFields=await self.getProductUomFields('vtiger_xproductcf');
+ 		log.info("========== checking if the product and uom mapped ================")
  		return ProductCf.findOne({
  				where:{
  					xproductid:productId,
