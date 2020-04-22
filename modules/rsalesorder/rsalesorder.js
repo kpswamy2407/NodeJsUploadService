@@ -178,7 +178,7 @@ const Op = Sequelize.Op
  		const CurrencyInfo=dbconn.import('./../../models/currency-info');
  		var rso=new rSalesOrder();
  		var rsocf=new rSalesOrderCf();
- 		var salesorderid=await self.getCrmEntity('xrSalesOrder');
+ 		var salesorderid=await self.getCrmEntity('xrSalesOrder',log);
  		log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
  		rso.salesorderid=salesorderid;
  		rsocf.salesorderid=salesorderid;
@@ -1049,7 +1049,7 @@ const Op = Sequelize.Op
  				return true;
  			}
  			
- 			var salesOrderId=await self.getCrmEntity('xSalesOrder');
+ 			var salesOrderId=await self.getCrmEntity('xSalesOrder',log);
  			//get Salesorder Object 
  			log.info("xSalesOrder crmentity id :"+salesOrderId)
  			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,log);
@@ -1610,14 +1610,17 @@ const Op = Sequelize.Op
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.getCrmEntityRel=async function(refId){
+ 	rSalesOrder.prototype.getCrmEntityRel=async function(refId,log){
  		try{
  			var self=this;
  			var dbconn=this.getDb();
  			const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
  			return CrmEntityRel.findAll({
  					where:{crmid:refId,relmodule:'xAddress'},
- 					attributes:['relcrmid']
+ 					attributes:['relcrmid'],
+ 					logging:(msg)=>{
+ 						log.debug(msg)
+ 					}
  			}).then(entity=>{
  				if(entity){
  					var relCrmIds=entity.map(entity=>entity.relcrmid)
@@ -1661,7 +1664,7 @@ const Op = Sequelize.Op
  			const Address=dbconn.import('./../../models/address');
  			
  			const State=dbconn.import('./../../models/state');
- 			var relCrmId=await self.getCrmEntityRel(refId);
+ 			var relCrmId=await self.getCrmEntityRel(refId,log);
  			return Address.findOne({
  				attributes:['addresscode','gstinno','xstateid','xaddressid'],
  				include:[
@@ -1690,13 +1693,13 @@ const Op = Sequelize.Op
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.getCrmEntity=async function(module){
+ 	rSalesOrder.prototype.getCrmEntity=async function(module,log){
  		const dbconn=this.getDb();
  		const CrmEntity=dbconn.import('./../../models/crmentity');
  		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
  		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
- 		var id=await CrmEntitySeq.fnxtIncrement();
- 		var tab=await VtigerTab.getTab(module);
+ 		var id=await CrmEntitySeq.fnxtIncrement(log);
+ 		var tab=await VtigerTab.getTab(module,log);
  		var rsocrm=new CrmEntity({
  				crmid:id,
  				smcreatorid:0,
@@ -1715,7 +1718,9 @@ const Op = Sequelize.Op
  				sendstatus:null,
  				terms_conditions:null,
  			});
- 				return rsocrm.save().then(crm=>{
+ 				return rsocrm.save({logging:(msg)=>{
+ 					log.debug(msg);
+ 				}}).then(crm=>{
  					return crm.crmid;
  				}).catch(e=>{
  					throw new Error('Unable to create CRM entity for rSalesOrder.');
