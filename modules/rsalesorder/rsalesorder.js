@@ -121,7 +121,7 @@ const Op = Sequelize.Op
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
  				const distributorId=coll.distributor_id._text;
- 				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log);
+ 				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId);
  				await dbconn.transaction().then(async (t) => {
  				  return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  				    return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
@@ -170,7 +170,7 @@ const Op = Sequelize.Op
  		return Promise.resolve(this.updateStatus(self.isFailure));
 
  	};
- 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log){
+ 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId){
  		var self=this;
  		var dbconn=this.getDb();
  		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
@@ -196,9 +196,9 @@ const Op = Sequelize.Op
  			 			 }
  			 			}).then(currency=>{
  			 				log.info(field.columnname+" : "+currency.id+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
- 			 						rso[field.columnname]=beatId;
- 			 					    rsocf[field.columnname]=beatId;
- 			 				rso[field.columnname]=currency.id;
+ 			 						rso[field.columnname]=currency.id;
+ 			 					    rsocf[field.columnname]=currency.id;
+ 			 				
  			 		}).catch(e=>{
  			 			throw new Error('Unable to get the currency id for sales order');
  			 		});
@@ -208,12 +208,11 @@ const Op = Sequelize.Op
  			 		switch(field.columnname){
  			 			case 'buyerid':
  			 			log.info("=========== Related Module: Customer ================")
- 			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log);
+ 			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log,distId);
  			 			
  			 			if(buyerid){
  			 				log.info(field.columnname+" : "+buyerid+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
- 			 						rso[field.columnname]=beatId;
- 			 					    rsocf[field.columnname]=beatId;
+ 			 						
  			 				
  			 				rso[field.columnname]=buyerid;
  			 				rsocf[field.columnname]=buyerid;
@@ -233,7 +232,7 @@ const Op = Sequelize.Op
  			 			case 'cf_xrso_beat':
  			 			log.info("=========== Related Module: Beat ================")
 
- 			 				var beatId=await self.getBeat(coll,log);
+ 			 				var beatId=await self.getBeat(coll,log,distId);
  			 					if(beatId){
  			 						log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
  			 						rso[field.columnname]=beatId;
@@ -402,11 +401,11 @@ const Op = Sequelize.Op
  			});
  	}
 
- 	rSalesOrder.prototype.getBeat=async function(coll,log){
+ 	rSalesOrder.prototype.getBeat=async function(coll,log,distId){
  			var dbconn=this.getDb();
  			const Beat=dbconn.import('./../../models/beat');
  			return Beat.findOne({
- 				where:{beatcode:coll.cf_xrso_beat.beatcode._text,deleted:0},
+ 				where:{beatcode:coll.cf_xrso_beat.beatcode._text,deleted:0,cf_xbeat_distirbutor_id:distId},
  				attributes:['xbeatid'],
  				logging:(msg)=>{
  					log.debug(msg);
@@ -702,7 +701,7 @@ const Op = Sequelize.Op
  		}
  	}
  	
-	rSalesOrder.prototype.getBuyerId=async function(customerType,coll,log){
+	rSalesOrder.prototype.getBuyerId=async function(customerType,coll,log,distId){
 		var dbconn=this.getDb();
  		const Retailer=dbconn.import('./../../models/retailer');
  		const SubRetailer=dbconn.import('./../../models/sub-retailer');
@@ -712,7 +711,7 @@ const Op = Sequelize.Op
  			case '1':
  				log.info("=========== Related sub-module: ReceiveCustomerMaster ================")
  				return  RecCustMaster.findOne({
- 					where:{customercode:coll.buyerid.customercode._text,deleted:0},
+ 					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
  					attributes:['xreceivecustomermasterid'],
  					logging:(msg)=>{
  						log.debug(msg);
@@ -731,7 +730,7 @@ const Op = Sequelize.Op
  				case '2':
  				log.info("=========== Related sub-module: SubRetailer ================")
  				await SubRetailer.findOne({
- 					where:{customercode:coll.buyerid.customercode._text,deleted:0},
+ 					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
  					attributes:['xsubretailerid'],
  					logging:(msg)=>{
  						log.debug(msg);
@@ -750,7 +749,7 @@ const Op = Sequelize.Op
  				case '0':
  				log.info("=========== Related sub-module: Retailer ================")
  				return Retailer.findOne({
- 					where:{customercode:coll.buyerid.customercode._text,deleted:0},
+ 					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
  					attributes:['xretailerid'],
  					logging:(msg)=>{
  						log.debug(msg);
