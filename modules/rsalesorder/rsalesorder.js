@@ -736,6 +736,7 @@ const Op = Sequelize.Op
  						log.debug(msg);
  					}
  				}).then(retailer=>{
+ 					console.log(retailer);
  					if(retailer){
  						return retailer.xsubretailerid;
  					}
@@ -743,6 +744,7 @@ const Op = Sequelize.Op
  						return false;
  					}
  				}).catch(e=>{
+ 					log.error(e.message);
  					return false;
  				});
  				break;
