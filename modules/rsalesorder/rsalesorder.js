@@ -218,7 +218,7 @@ const Op = Sequelize.Op
  			 				rsocf[field.columnname]=buyerid;
  			 			}
  			 			else{
- 			 				log.error("unable to get the buye id");
+ 			 				log.error("unable to get the buye id :"+buyerid);
  			 				audit.statusCode='FN8200';
  				 			audit.statusMsg="Due to Invalid data, we are unable to get the buyer id";
  				 			audit.reason="Error while getting the related module data";
