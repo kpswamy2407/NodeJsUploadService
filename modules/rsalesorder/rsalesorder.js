@@ -729,20 +729,20 @@ const Op = Sequelize.Op
  				break;
  				case '2':
  				log.info("=========== Related sub-module: SubRetailer ================")
- 				await SubRetailer.findOne({
+ 				return await SubRetailer.findOne({
  					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
  					attributes:['xsubretailerid'],
  					logging:(msg)=>{
  						log.debug(msg);
  					}
  				}).then(subretailer=>{
- 					console.log(subretailer);
+ 					
  					if(subretailer){
- 						console.log("I am in");
+ 						
  						return subretailer.xsubretailerid;
  					}
  					else{
- 						console.log('hello');
+ 						
  						return false;
  					}
  				}).catch(e=>{
