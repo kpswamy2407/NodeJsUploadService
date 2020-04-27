@@ -735,12 +735,14 @@ const Op = Sequelize.Op
  					logging:(msg)=>{
  						log.debug(msg);
  					}
- 				}).then(retailer=>{
- 					console.log(retailer);
- 					if(retailer){
- 						return retailer.xsubretailerid;
+ 				}).then(subretailer=>{
+ 					console.log(subretailer);
+ 					if(subretailer){
+ 						console.log("I am in");
+ 						return subretailer.xsubretailerid;
  					}
  					else{
+ 						console.log('hello');
  						return false;
  					}
  				}).catch(e=>{
