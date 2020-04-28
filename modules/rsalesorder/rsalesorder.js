@@ -121,7 +121,7 @@ const Op = Sequelize.Op
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
  				const distributorId=coll.distributor_id._text;
- 				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId);
+ 				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
  				await dbconn.transaction().then(async (t) => {
  				  return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  				    return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
@@ -162,15 +162,14 @@ const Op = Sequelize.Op
  			log.info("=========================RSO End==================")
  		}
  		catch(e){
- 			log.error(e)
- 			console.log("in hello",e);
+ 			
  			return  Promise.reject(e);
  		}
  		
  		return Promise.resolve(this.updateStatus(self.isFailure));
 
  	};
- 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId){
+ 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId,prkey){
  		var self=this;
  		var dbconn=this.getDb();
  		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
@@ -208,7 +207,7 @@ const Op = Sequelize.Op
  			 		switch(field.columnname){
  			 			case 'buyerid':
  			 			log.info("=========== Related Module: Customer ================")
- 			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log,distId);
+ 			 			var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log,distId,prkey);
  			 			
  			 			if(buyerid){
  			 				log.info(field.columnname+" : "+buyerid+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
@@ -752,9 +751,18 @@ const Op = Sequelize.Op
  				break;
  				case '0':
  				log.info("=========== Related sub-module: Retailer ================")
+ 				if(prkey.includes('unique_retailer_code')){
+ 					var column='unique_retailer_code';
+ 					var value=coll.buyerid.unique_retailer_code._text;
+ 				}
+ 				else{
+ 					var column='customercode';
+ 					var value=coll.buyerid.customercode._text;
+ 				}
+ 				console.log(column,value);
  				console.log(coll.buyerid);
  				return Retailer.findOne({
- 					where:{unique_retailer_code:coll.buyerid.unique_retailer_code._text,deleted:0,distributor_id:distId},
+ 					where:{column:value,deleted:0,distributor_id:distId},
  					attributes:['xretailerid'],
  					logging:(msg)=>{
  						log.debug(msg);
