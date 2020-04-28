@@ -752,8 +752,9 @@ const Op = Sequelize.Op
  				break;
  				case '0':
  				log.info("=========== Related sub-module: Retailer ================")
+ 				console.log(coll.buyerid);
  				return Retailer.findOne({
- 					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
+ 					where:{unique_retailer_code:coll.buyerid.unique_retailer_code._text,deleted:0,distributor_id:distId},
  					attributes:['xretailerid'],
  					logging:(msg)=>{
  						log.debug(msg);
