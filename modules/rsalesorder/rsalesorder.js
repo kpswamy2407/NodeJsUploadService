@@ -700,7 +700,7 @@ const Op = Sequelize.Op
  		}
  	}
  	
-	rSalesOrder.prototype.getBuyerId=async function(customerType,coll,log,distId){
+	rSalesOrder.prototype.getBuyerId=async function(customerType,coll,log,distId,prkey){
 		var dbconn=this.getDb();
  		const Retailer=dbconn.import('./../../models/retailer');
  		const SubRetailer=dbconn.import('./../../models/sub-retailer');
