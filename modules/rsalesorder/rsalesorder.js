@@ -1317,6 +1317,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
  	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
  		try{
+ 			console.log("I am here getDefaultXSeries ")
  			var self=this;
  			var dbconn=this.getDb();
  			const XSeries=dbconn.import('./../../models/x-series');
@@ -1420,7 +1421,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						
  					}
  					catch(e){
- 						//console.log(e);
+ 						console.log(e);
  						return false;
  					}
  				}
@@ -1432,6 +1433,7 @@ rSalesOrder.prototype.getFields=async function (log){
  				return false;
  			});
  		}catch(e){
+ 			console.log("error in default trans",e);
  			return false;
  		}
  	}
