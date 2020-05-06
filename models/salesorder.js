@@ -56,7 +56,7 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.INTEGER(2),
             allowNull: false,
             defaultValue:0,
-        }
+        },
         total:{
             type: DataTypes.DECIMAL(25,3),
             defaultValue:null,

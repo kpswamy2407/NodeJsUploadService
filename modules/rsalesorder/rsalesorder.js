@@ -1079,7 +1079,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			//get Salesorder Object 
  			log.info("xSalesOrder crmentity id :"+salesOrderId)
  			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,log);
- 			
+ 			console.log(so);
  			so.save({logging:(msg)=>{
  				log.debug(msg);
  			}}).then(async function(so){
