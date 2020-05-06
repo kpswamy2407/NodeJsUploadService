@@ -49,7 +49,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         adjustment:{
             type: DataTypes.STRING(25),
-            defaultValue:null,
+            defaultValue:'0',
         },
         total:{
             type: DataTypes.DECIMAL(25,3),
@@ -65,11 +65,11 @@ module.exports=(sequelize,DataTypes)=>{
         },
         discount_percent:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         discount_amount:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         s_h_amount:{
             type: DataTypes.DECIMAL(25,3),
@@ -108,11 +108,11 @@ module.exports=(sequelize,DataTypes)=>{
         },
         salescommission:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         exciseduty:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         latitude:{
             type: DataTypes.STRING(100),

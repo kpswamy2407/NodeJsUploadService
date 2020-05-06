@@ -49,7 +49,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         adjustment:{
             type: DataTypes.STRING(25),
-            defaultValue:null,
+            defaultValue:0,
         },
         total:{
             type: DataTypes.DECIMAL(25,3),
@@ -65,7 +65,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         discount_percent:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         discount_amount:{
             type: DataTypes.DECIMAL(25,3),
@@ -108,11 +108,11 @@ module.exports=(sequelize,DataTypes)=>{
         },
         salescommission:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         exciseduty:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         customer_type:{
             type: DataTypes.INTEGER(11),
@@ -135,11 +135,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         lbl_rso_save_pro_cate:{
             type: DataTypes.STRING(20),
-            set(val) {
-                const invMgtConf=sequelize.models.InvMgtConfig;
-                
-                  this.setDataValue('lbl_rso_save_pro_cate',true);
-            }
+            defaultValue:0,
         },
         conversion_version:{
             type:DataTypes.INTEGER(11),
@@ -186,7 +182,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         xproductgroupid:{
             type:DataTypes.INTEGER(11),
-            defaultValue:null,
+            defaultValue:0,
         },
         billing_at:{
             type:DataTypes.STRING(25),
