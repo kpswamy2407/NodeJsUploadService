@@ -1093,7 +1093,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					
  				});
  			}).catch(e=>{
- 				
+ 				console.log(e);	
  			});
  			
  			soBillAds.save({logging:(msg)=>{
