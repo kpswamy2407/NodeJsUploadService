@@ -142,10 +142,6 @@ module.exports=(sequelize,DataTypes)=>{
             type: DataTypes.INTEGER(1),
             defaultValue:0,
         },
-        lbl_rso_save_pro_cate:{
-            type: DataTypes.STRING(20),
-            defaultValue:0,
-        },
         conversion_version:{
             type:DataTypes.INTEGER(11),
             defaultValue:0,
