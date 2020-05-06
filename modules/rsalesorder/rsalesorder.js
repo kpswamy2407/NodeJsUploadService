@@ -1080,9 +1080,10 @@ rSalesOrder.prototype.getFields=async function (log){
  			log.info("xSalesOrder crmentity id :"+salesOrderId)
  			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,log);
  			console.log(so);
- 			so.save({logging:(msg)=>{
- 				log.debug(msg);
+ 			await so.save({logging:(msg)=>{
+ 				
  			}}).then(async function(so){
+ 					console.log(so.dataValues);
 
  				socf.save({logging:(msg)=>{
  					log.debug(msg);
@@ -1096,12 +1097,12 @@ rSalesOrder.prototype.getFields=async function (log){
  				console.log(e);	
  			});
  			
- 			soBillAds.save({logging:(msg)=>{
+ 			await soBillAds.save({logging:(msg)=>{
  				log.debug(msg);
  			}}).then().catch(e=>{
  				
  			});
- 			soShipAds.save({logging:(msg)=>{
+ 			await soShipAds.save({logging:(msg)=>{
  				log.debug(msg);
  			}}).then().catch(e=>{
  				
@@ -1109,6 +1110,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			return true;
  			
  		}catch(e){
+ 			console.log(e);
  			return false;
  		}
  	}
