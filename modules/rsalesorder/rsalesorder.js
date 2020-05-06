@@ -1269,8 +1269,10 @@ rSalesOrder.prototype.getFields=async function (log){
 		so['s_h_amount']=rso['s_h_amount'];
 		so['is_taxfiled']=0;
 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+		console.log('TAX_TYPE',TAX_TYPE);
 		so['trntaxtype']=(TAX_TYPE?'GST':'VAT');
 		so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
+		console.log('SO_LBL_SAVE_PRO_CATE',await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE'));
 		var soBillAds=await self.prepareBillAds(soId,buyerId,log);
 		soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
