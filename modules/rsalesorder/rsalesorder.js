@@ -1239,8 +1239,8 @@ rSalesOrder.prototype.getFields=async function (log){
  		so['type']=rso['type'];
  		so['duedate']=rso['duedate'];
  		so['contactid']=rso['contactid'];
- 		so['exciseduty']=rso['exciseduty'];
- 		so['salescommission']=rso['salescommission'];
+ 		so['exciseduty']=Number(rso['exciseduty']);
+ 		so['salescommission']=Number(rso['salescommission']);
  		so['terms_conditions']=rso['terms_conditions'];
  		so['currency_id']=rso['currency_id'];
  		so['conversion_rate']=rso['conversion_rate'];
@@ -1261,14 +1261,16 @@ rSalesOrder.prototype.getFields=async function (log){
 
 		so['requisition_no']=rso['requisition_no'];
 		so['tracking_no']=rso['tracking_no'];
-		so['adjustment']=rso['adjustment'];
+		so['adjustment']=Number(rso['adjustment']);
 		so['total']=rso['total'];
 		so['taxtype']=rso['taxtype'];
-		so['discount_percent']=rso['discount_percent'];
+		so['discount_percent']=Number(rso['discount_percent']);
 		so['discount_amount']=rso['discount_amount'];
 		so['s_h_amount']=rso['s_h_amount'];
 		so['is_taxfiled']=0;
 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+		console.log(TAX_TYPE.toLowerCase());
+		console.log(Number(TAX_TYPE));
 		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
 			so['trntaxtype']='GST';
 		}

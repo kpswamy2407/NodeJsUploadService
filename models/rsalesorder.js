@@ -49,7 +49,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         adjustment:{
             type: DataTypes.STRING(25),
-            defaultValue:'0',
+            defaultValue:'0.0000',
         },
         total:{
             type: DataTypes.DECIMAL(25,3),
@@ -112,7 +112,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         exciseduty:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:0,
+            defaultValue:0.000,
         },
         latitude:{
             type: DataTypes.STRING(100),

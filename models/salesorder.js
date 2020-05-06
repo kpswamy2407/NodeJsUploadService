@@ -49,8 +49,14 @@ module.exports=(sequelize,DataTypes)=>{
         },
         adjustment:{
             type: DataTypes.STRING(25),
-            defaultValue:0,
+            allowNull: false,
+            defaultValue:'0.000',
         },
+        is_taxfiled:{
+            type:DataTypes.INTEGER(2),
+            allowNull: false,
+            defaultValue:0,
+        }
         total:{
             type: DataTypes.DECIMAL(25,3),
             defaultValue:null,
@@ -65,7 +71,8 @@ module.exports=(sequelize,DataTypes)=>{
         },
         discount_percent:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:0,
+            allowNull: false,
+            defaultValue:0.000,
         },
         discount_amount:{
             type: DataTypes.DECIMAL(25,3),
@@ -108,11 +115,13 @@ module.exports=(sequelize,DataTypes)=>{
         },
         salescommission:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:0,
+            allowNull: false,
+            defaultValue:0.000,
         },
         exciseduty:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:0,
+            allowNull: false,
+            defaultValue:0.000,
         },
         customer_type:{
             type: DataTypes.INTEGER(11),
@@ -182,6 +191,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         xproductgroupid:{
             type:DataTypes.INTEGER(11),
+            allowNull: false,
             defaultValue:0,
         },
         billing_at:{
