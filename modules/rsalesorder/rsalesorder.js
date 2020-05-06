@@ -425,7 +425,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			var dbconn=this.getDb();
 			const InvMgtConfig=dbconn.import('./../../models/inv-mgt-config');
 			return InvMgtConfig.findOne({
-				where:{key:key,treatment:'sap'},
+				where:{key:key},
 				attributes:['value']
 			}).then(config=>{
 				if(config){
