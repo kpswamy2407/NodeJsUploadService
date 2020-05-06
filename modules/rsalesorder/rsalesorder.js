@@ -1079,12 +1079,10 @@ rSalesOrder.prototype.getFields=async function (log){
  			//get Salesorder Object 
  			log.info("xSalesOrder crmentity id :"+salesOrderId)
  			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,log);
- 			console.log(so);
+ 			
  			await so.save({logging:(msg)=>{
- 				
+ 				log.debug(msg);
  			}}).then(async function(so){
- 					console.log(so.dataValues);
-
  				socf.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(socf){
@@ -1222,7 +1220,7 @@ rSalesOrder.prototype.getFields=async function (log){
  				netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
  			}
  			so['total']=netTotal;
- 			so['sub_total']=netTotal;
+ 			so['subtotal']=netTotal;
  			so.save({logging:(msg)=>{
  				log.debug(msg);
  			}});
@@ -1260,7 +1258,8 @@ rSalesOrder.prototype.getFields=async function (log){
 			so['buyerid']=buyerId;
 		}
 
-
+		so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		so['requisition_no']=rso['requisition_no'];
 		so['tracking_no']=rso['tracking_no'];
 		so['adjustment']=Number(rso['adjustment']);
@@ -1271,8 +1270,7 @@ rSalesOrder.prototype.getFields=async function (log){
 		so['s_h_amount']=rso['s_h_amount'];
 		so['is_taxfiled']=0;
 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
-		console.log(TAX_TYPE.toLowerCase());
-		console.log(Number(TAX_TYPE));
+		
 		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
 			so['trntaxtype']='GST';
 		}
@@ -1309,6 +1307,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		socf['cf_xsalesorder_seller_id']=distId;
  		socf['cf_xsalesorder_buyer_id']=buyerId;
  		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',log);
+ 		console.log(xGenSeries,xtransactionseriesid);
  		socf['cf_salesorder_transaction_number']=xGenSeries;
  		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
  		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
