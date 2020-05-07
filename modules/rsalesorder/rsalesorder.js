@@ -1270,15 +1270,12 @@ rSalesOrder.prototype.getFields=async function (log){
 		so['discount_amount']=rso['discount_amount'];
 		so['s_h_amount']=rso['s_h_amount'];
 		so['is_taxfiled']=0;
-		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
-		
-		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
-			so['trntaxtype']='GST';
-		}
-		else{
-			so['trntaxtype']="VAT";
-		}
+
 		so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
+		var SO_LBL_TAX_OPTION_ENABLE= await self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
+		if(SO_LBL_TAX_OPTION_ENABLE.toLowerCase()!="true"){
+			so['taxtype']='individual';
+		}
 		var soBillAds=await self.prepareBillAds(soId,buyerId,log);
 		soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
@@ -1287,6 +1284,8 @@ rSalesOrder.prototype.getFields=async function (log){
 		soShipAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soShipAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soShipAds['deleted']=0;
+
+
  		//preparing the socf table 
  		var socf=new SalesOrderCf();
  		socf['salesorderid']=soId;
@@ -1308,13 +1307,44 @@ rSalesOrder.prototype.getFields=async function (log){
  		socf['cf_xsalesorder_seller_id']=distId;
  		socf['cf_xsalesorder_buyer_id']=buyerId;
  		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
- 		console.log(xGenSeries,xtransactionseriesid);
  		socf['cf_salesorder_transaction_number']=xGenSeries;
  		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
  		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  		socf['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  		socf['deleted']=0;
+ 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+		
+		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
+			so['trntaxtype']='GST';
+			var buyerGstStateInfo=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
+		}
+		else{
+			so['trntaxtype']="VAT";
+		}
  		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
+ 	}
+ 	rSalesOrder.prototype.getBuyerGSTStateInfo=async function(xaddressid,buyerid,log){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			var gstStateInfo=await sequelize.dbconn("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
+ 				{ type: QueryTypes.SELECT,replacements:[xaddressid], logging:(msg)=>{log.debug(msg)}});
+ 			if(gstStateInfo){
+ 				console.log(gstStateInfo);
+ 			}
+ 			else{
+ 				var gstStateInfo=await dbconn.select("SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?",{
+ 					type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
+ 				});
+ 				if(gstStateInfo){
+ 					console.log("else",gstStateInfo);
+ 				}
+ 			}
+ 		}
+ 		catch(e){
+ 			log.error(e.message);
+ 			return false;
+ 		}
  	}
  	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
  		try{
@@ -1338,7 +1368,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					log.debug(msg);
  				}
  			}).then(async function(series){
- 				console.log(series.dataValues);
+ 				
  				if(series){
  					try{
  						
@@ -1417,12 +1447,11 @@ rSalesOrder.prototype.getFields=async function (log){
 
  						}
  						
- 						
  						return {xGenSeries:xGenSeries,xtransactionseriesid:series.xtransactionseriesid};
  						
  					}
  					catch(e){
- 						console.log(e);
+ 						log.error(e.message);
  						return false;
  					}
  				}
@@ -1431,10 +1460,11 @@ rSalesOrder.prototype.getFields=async function (log){
  				}
  				
  			}).catch(e=>{
+ 				log.error(e.message);
  				return false;
  			});
  		}catch(e){
- 			console.log("error in default trans",e);
+ 			log.error(e.message)
  			return false;
  		}
  	}
