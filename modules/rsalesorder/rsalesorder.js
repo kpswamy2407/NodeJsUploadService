@@ -1085,7 +1085,12 @@ rSalesOrder.prototype.getFields=async function (log){
  					return await socf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
- 							await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
+ 							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
+ 							so['total']=netTotal;
+ 							so['subtotal']=netTotal;
+ 							so.save({logging:(msg)=>{
+ 								log.debug(msg)
+ 							}});
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1164,8 +1169,9 @@ rSalesOrder.prototype.getFields=async function (log){
  		crmEntityRel['relmodule']=relModule;
  		crmEntityRel.save({logging:(msg)=>{
  			log.debug(msg);
+ 			return true;
  		}});
- 		return true;
+ 		
  	}
  	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId,distId,log){
  		try{
@@ -1175,7 +1181,8 @@ rSalesOrder.prototype.getFields=async function (log){
  			const SaleXBatchInfo=dbconn.import('./../../models/sale-x-batch-info');
  			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
  			var i=1;
- 			await xrsoProdLineItems.reduce(async (promise, item) => {
+ 			var netTotalValue=0;
+ 			return await xrsoProdLineItems.reduce(async (promise, item) => {
  				await promise;
  				var soProdRel=new SoProdRel();
  				soProdRel['id']=so['salesorderid'];
@@ -1229,7 +1236,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					sxbinfo.save({logging:(msg)=>{
  						log.debug(msg);
  					}}).then(async function(sxBatchInfo){
- 						await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);	
+ 						netTotalValue= netTotalValue + await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);	
  					}).catch(e=>{
 
  					});
@@ -1237,7 +1244,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					
  					return false;
  				});
- 			}, Promise.resolve());
+ 			}, Promise.resolve(netTotalValue));
  		}catch(e){
  			return false;
  		}
@@ -1261,11 +1268,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			else if (Number(sorel['discount_percent'])>0 && Number(sorel['discount_percent'])>=100){
  				netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
  			}
- 			so['total']=netTotal;
- 			so['subtotal']=netTotal;
- 			so.save({logging:(msg)=>{
- 				log.debug(msg);
- 			}});
+ 			return netTotal;
 
  		}
  	}
