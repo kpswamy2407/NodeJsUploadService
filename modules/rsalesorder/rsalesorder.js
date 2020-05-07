@@ -1317,12 +1317,36 @@ rSalesOrder.prototype.getFields=async function (log){
 		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
 			so['trntaxtype']='GST';
 			var {gstinno,statecode}=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
-			console.log('res', {gstinno,statecode})
+			so['buyer_gstinno']=gstinno;
+			so['buyer_state']=statecode;
+			var {sellerGstinNo,sellerStateCode}=await self.getSellerGstStateInfo(distId,log);
+			so['seller_gstinno']=sellerGstinNo;
+			so['seller_state']=sellerStateCode;
+
 		}
 		else{
 			so['trntaxtype']="VAT";
 		}
  		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
+ 	}
+ 	rSalesOrder.prototype.getSellerGstStateInfo= async function (distId, log){
+ 		try{
+ 			var self=this.
+ 			var dbconn=this.getDb();
+ 			return await dbconn.query("SELECT xDis.gstinno,xState.statecode from vtiger_xdistributor xDis						INNER JOIN vtiger_xdistributorcf xDiscf on xDiscf.xdistributorid=xDis.xdistributorid						INNER JOIN vtiger_xstate xState on xState.xstateid=xDiscf.cf_xdistributor_state where xDis.xdistributorid=?",{
+ 				type:QueryTypes.SELECT,
+ 				replacements:[distId],
+ 				logging:(msg)=>{
+ 					log.debug(msg)
+ 				}
+ 			}).spread((info)=>{
+ 				return {sellerGstinNo:info.gstinno,sellerStateCode:info.statecode};
+ 			})
+ 		}
+ 		catch(e){
+ 			log.error(e.message);
+ 			return {sellerGstinNo:'',sellerStateCode:''};
+ 		}
  	}
  	rSalesOrder.prototype.getBuyerGSTStateInfo=async function(xaddressid,buyerid,log){
  		try{
@@ -1342,7 +1366,7 @@ rSalesOrder.prototype.getFields=async function (log){
  							
  						}
  						else{
- 							console.log({gstinno:info.gstinno,statecode:info.statecode})
+ 							
  							return {gstinno:info.gstinno,statecode:info.statecode}
  						}
  					}
@@ -1350,7 +1374,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						return await dbconn.query("SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?",{
  					type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
  					}).spread((info)=>{
- 							console.log('hel',{gstinno:info.gstinno,statecode:info.statecode});
+ 							
  							return {gstinno:info.gstinno,statecode:info.statecode}
  						})
  					}
