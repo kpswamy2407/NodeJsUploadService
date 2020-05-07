@@ -1330,8 +1330,9 @@ rSalesOrder.prototype.getFields=async function (log){
  			var dbconn=this.getDb();
  			var gstStateInfo=await dbconn.query("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
  				{ type: QueryTypes.SELECT,replacements:[xaddressid], logging:(msg)=>{log.debug(msg)}});
+ 			console.log(gstStateInfo);
  			if(gstStateInfo){
- 				console.log(gstStateInfo);
+ 				
  			}
  			else{
  				var gstStateInfo=await dbconn.query("SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?",{
@@ -1343,6 +1344,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			}
  		}
  		catch(e){
+ 			console.log(e);
  			log.error(e.message);
  			return false;
  		}
