@@ -1316,7 +1316,8 @@ rSalesOrder.prototype.getFields=async function (log){
 		
 		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
 			so['trntaxtype']='GST';
-			var buyerGstStateInfo=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
+			var {gstinno,statecode}=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
+			console.log('res', {gstinno,statecode})
 		}
 		else{
 			so['trntaxtype']="VAT";
@@ -1328,25 +1329,42 @@ rSalesOrder.prototype.getFields=async function (log){
  			console.log("hello I am here with get Buyer GST");
  			var self=this;
  			var dbconn=this.getDb();
- 			var gstStateInfo=await dbconn.query("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
- 				{ type: QueryTypes.SELECT,replacements:[xaddressid], logging:(msg)=>{log.debug(msg)}});
- 			console.log(gstStateInfo);
- 			if(gstStateInfo){
- 				
- 			}
- 			else{
- 				var gstStateInfo=await dbconn.query("SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?",{
+ 			return await dbconn.query("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
+ 				{ type: QueryTypes.SELECT,replacements:[xaddressid], logging:(msg)=>{log.debug(msg)}}).spread(async (info)=>{
+ 					if(info){
+ 						if(typeof(info.gstinno)=='undefined' || info.gstinno==''){
+
+ 							return await dbconn.query('SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?',{
+ 							type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
+ 							}).spread((info)=>{
+ 									return {gstinno:info.gstinno,statecode:info.statecode}
+ 								})
+ 							
+ 						}
+ 						else{
+ 							console.log({gstinno:info.gstinno,statecode:info.statecode})
+ 							return {gstinno:info.gstinno,statecode:info.statecode}
+ 						}
+ 					}
+ 					else{
+ 						return await dbconn.query("SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?",{
  					type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
+ 					}).spread((info)=>{
+ 							console.log('hel',{gstinno:info.gstinno,statecode:info.statecode});
+ 							return {gstinno:info.gstinno,statecode:info.statecode}
+ 						})
+ 					}
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					console.log(e);
+ 					return {gstinno:'',statecode:''}
  				});
- 				if(gstStateInfo){
- 					console.log("else",gstStateInfo);
- 				}
- 			}
+ 			
  		}
  		catch(e){
  			console.log(e);
  			log.error(e.message);
- 			return false;
+ 			return {gstinno:'',statecode:''}
  		}
  	}
  	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
