@@ -1079,32 +1079,33 @@ rSalesOrder.prototype.getFields=async function (log){
  			//get Salesorder Object 
  			log.info("xSalesOrder crmentity id :"+salesOrderId)
  			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,log);
- 			
- 			await so.save({logging:(msg)=>{
- 				log.debug(msg);
- 			}}).then(async function(so){
- 				socf.save({logging:(msg)=>{
- 					log.debug(msg);
- 				}}).then(async function(socf){
- 					await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log);
- 					await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 				}).catch(e=>{
- 					
+
+ 			await dbconn.transaction().then(async (t) => {
+ 				return await so.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
+ 					return await socf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
+ 						if(t.commit()){
+ 							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
+ 							await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
+ 							await soBillAds.save({logging:(msg)=>{
+ 								log.debug(msg);
+ 							}}).then().catch(e=>{
+ 								log.error(e.message)
+ 							});
+ 							await soShipAds.save({logging:(msg)=>{
+ 								log.debug(msg);
+ 							}}).then().catch(e=>{
+ 								log.error(e.message)
+ 							});							
+ 						}
+ 					});
+ 				}).then(async (t) => {
+
+ 				}).catch(async (err) => {
+ 					log.error(err.message);
+ 					return await t.rollback();
  				});
- 			}).catch(e=>{
- 				console.log(e);	
  			});
  			
- 			await soBillAds.save({logging:(msg)=>{
- 				log.debug(msg);
- 			}}).then().catch(e=>{
- 				
- 			});
- 			await soShipAds.save({logging:(msg)=>{
- 				log.debug(msg);
- 			}}).then().catch(e=>{
- 				
- 			});
  			return true;
  			
  		}catch(e){
@@ -1306,7 +1307,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		so['salesorder_status']='Open Order';
  		socf['cf_xsalesorder_seller_id']=distId;
  		socf['cf_xsalesorder_buyer_id']=buyerId;
- 		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',log);
+ 		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
  		console.log(xGenSeries,xtransactionseriesid);
  		socf['cf_salesorder_transaction_number']=xGenSeries;
  		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
@@ -1337,7 +1338,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					log.debug(msg);
  				}
  			}).then(async function(series){
- 				
+ 				console.log(series.dataValues);
  				if(series){
  					try{
  						
