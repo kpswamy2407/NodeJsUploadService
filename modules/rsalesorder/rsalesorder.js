@@ -1325,9 +1325,10 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
  	rSalesOrder.prototype.getBuyerGSTStateInfo=async function(xaddressid,buyerid,log){
  		try{
+ 			console.log("hello I am here with get Buyer GST");
  			var self=this;
  			var dbconn=this.getDb();
- 			var gstStateInfo=await sequelize.dbconn("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
+ 			var gstStateInfo=await dbconn.dbconn("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
  				{ type: QueryTypes.SELECT,replacements:[xaddressid], logging:(msg)=>{log.debug(msg)}});
  			if(gstStateInfo){
  				console.log(gstStateInfo);
