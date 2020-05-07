@@ -1113,6 +1113,46 @@ rSalesOrder.prototype.getFields=async function (log){
  			return false;
  		}
  	}
+ 	rSalesOrder.prototype.getSeqNumberForModule=async function(mod,seqModule,reqStr='',reqNo='',log){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			//select tabid from vtiger_tab where name=
+ 			return await dbconn.query("select prefix from vtiger_modentity_num where semodule=? and active = 1",{
+ 				type:QueryTypes.SELECT,
+ 				replacements:[seqModule],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
+ 			}).spread(async (modentity)=>{
+ 				var prefix=modentity.prefix;
+ 				var tabid=await dbconn.query('select tabid from vtiger_tab where name=?',{
+ 					type:QueryTypes.SELECT,
+ 					replacements:[seqModule],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread((tab)=>{
+ 					return tab.tabid;
+ 				});
+ 				var code= await dbconn.query("SELECT count(1) as `cnt` FROM vtiger_crmentity where setype_id=?",{
+ 					type:QueryTypes.SELECT,
+ 					replacements:[tabid],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread((countRes)=>{
+ 					return countRes.cnt+1;
+ 				});
+ 				return prefix+code;
+ 			});
+ 			
+ 		}
+ 		catch(e){
+ 			log.error(e.message);
+ 			return false;
+ 		}
+ 	}
  	rSalesOrder.prototype.updateCrmRelEntity=async function(crmId,module,relCrmId,relModule,log){
  		var self=this;
  		const dbconn=this.getDb();
@@ -1202,6 +1242,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			return false;
  		}
  	}
+
  	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId,log){
  		var self=this;
  		const dbconn=this.getDb();
@@ -1235,6 +1276,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
  		
  		so=new SalesOrder();
+ 		so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
  		so['salesorderid']=soId;
  		so['subject']=rso['subject'];
  		so['type']=rso['type'];
