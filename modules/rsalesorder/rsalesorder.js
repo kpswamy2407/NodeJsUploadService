@@ -7,7 +7,7 @@ const XmlFile=require('../../utils/xml-file');
 var Sequelize = require("sequelize");
 var moment = require('moment');
 const Op = Sequelize.Op
-
+const { QueryTypes } = require('sequelize');
 /**
  * 
  * @see 
