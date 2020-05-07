@@ -1331,7 +1331,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
  	rSalesOrder.prototype.getSellerGstStateInfo= async function (distId, log){
  		try{
- 			var self=this.
+ 			var self=this;
  			var dbconn=this.getDb();
  			return await dbconn.query("SELECT xDis.gstinno,xState.statecode from vtiger_xdistributor xDis						INNER JOIN vtiger_xdistributorcf xDiscf on xDiscf.xdistributorid=xDis.xdistributorid						INNER JOIN vtiger_xstate xState on xState.xstateid=xDiscf.cf_xdistributor_state where xDis.xdistributorid=?",{
  				type:QueryTypes.SELECT,
