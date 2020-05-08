@@ -1233,8 +1233,10 @@ rSalesOrder.prototype.getFields=async function (log){
  						log.debug(msg);
  					}}).then(async function(sxBatchInfo){
  						netTotalValue= netTotalValue + await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);
- 						console.log(netTotalValue);
+ 						console.log('netTotalValue',netTotalValue);
  						log.info("===================== tax calucation - start ==========")
+ 						console.log(so['buyerid'])
+ 						console.log("so,",so);
  						await self.updateProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
  						log.info("===================== tax calucation - end ==========")
  					}).catch(e=>{
@@ -1250,6 +1252,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		}
  	}
  	rSalesOrder.prototype.updateProductTax=async function(productId,module,distId,buyerId,shippingAddressId,transactionDate,log,lineItemId){
+ 		console.log("buyerId",buyerId);
  		try{
  			var self=this;
  			var dbconn=this.getDb();
