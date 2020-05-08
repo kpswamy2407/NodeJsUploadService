@@ -1270,10 +1270,10 @@ rSalesOrder.prototype.getFields=async function (log){
 	 					return false;
 	 				});
 	 			if(transactionDate!=''){
-	 				var txnDate=moment(transactionDate,'YY-MM-DD');
+	 				var txnDate=transactionDate;
 	 			}
 	 			else{
-	 				var txnDate=moment().format('YY-MM-DD');
+	 				var txnDate=moment().format('YYYY-MM-DD');
 	 			}
 	 			var productTaxType=await dbconn.query("SELECT producttaxtype FROM vtiger_xproduct where 	producttaxtype='Taxable' AND xproductid=?",{
 
@@ -1355,6 +1355,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 					return false;
 	 				});
 	 			if(distStateId!=false && retailerStateId!=false){
+	 				console.log("hello");
 	 				//AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL)
 	 				if(distStateId==retailerStateId){
 	 					var taxTypeToApply='LST';
