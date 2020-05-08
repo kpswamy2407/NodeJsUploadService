@@ -1086,11 +1086,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							so['total']=netTotal;
- 							so['subtotal']=netTotal;
- 							so.save({logging:(msg)=>{
- 								log.debug(msg)
- 							}});
+ 							console.log('netTotal',netTotal);
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1236,20 +1232,145 @@ rSalesOrder.prototype.getFields=async function (log){
  					sxbinfo.save({logging:(msg)=>{
  						log.debug(msg);
  					}}).then(async function(sxBatchInfo){
- 						netTotalValue= netTotalValue + await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);	
+ 						netTotalValue= netTotalValue + await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);
+ 						console.log(netTotalValue);
+ 						log.info("===================== tax calucation - start ==========")
+ 						await self.updateProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
+ 						log.info("===================== tax calucation - end ==========")
  					}).catch(e=>{
-
+ 						console.log(e);
  					});
  				}).catch(e=>{
  					
  					return false;
  				});
- 			}, Promise.resolve(netTotalValue));
+ 			}, Promise.resolve());
  		}catch(e){
  			return false;
  		}
  	}
+ 	rSalesOrder.prototype.updateProductTax=async function(productId,module,distId,buyerId,shippingAddressId,transactionDate,log,lineItemId){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			var ALLOW_GST_TRANSACTION= await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+ 			if(Number(ALLOW_GST_TRANSACTION)==1 || ALLOW_GST_TRANSACTION.toLowerCase()=='true'){
+	 			var retailerTaxType=await dbconn.query("SELECT vtiger_xretailer.retailertaxtype FROM vtiger_xretailer where vtiger_xretailer.xretailerid=? and vtiger_xretailer.deleted=0",{
+	 					type:QueryTypes.SELECT,
+	 					replacements:[buyerid],
+	 					logging:(msg)=>{
+	 						log.debug(msg);
+	 					}
+	 				}).spread((retailer)=>{
+	 					return retailer.retailertaxtype;
+	 				}).catch(e=>{
+	 					log.error(e.message);
+	 					return false;
+	 				});
+	 			if(transactionDate!=''){
+	 				var txnDate=moment(transactionDate,'YY-MM-DD');
+	 			}
+	 			else{
+	 				var txnDate=moment().format('YY-MM-DD');
+	 			}
+	 			var productTaxType=await dbconn.query("SELECT producttaxtype FROM vtiger_xproduct where 	producttaxtype='Taxable' AND xproductid=?",{
 
+	 					type:QueryTypes.SELECT,
+	 					replacements:[productId],
+	 					logging:(msg)=>{
+	 						log.debug(msg);
+	 					}
+	 				}).spread((product)=>{
+	 					return product.producttaxtype;
+	 				}).catch(e=>{
+	 					log.error(e.message);
+	 					return false;
+	 				});
+	 			var distTaxType=await dbconn.query("SELECT xdistributorid,distributortaxtype FROM vtiger_xdistributor where distributortaxtype='Registered' AND xdistributorid=?",{
+	 					type:QueryTypes.SELECT,
+	 					replacements:[distId],
+	 					logging:(msg)=>{
+	 						log.debug(msg);
+	 					}
+	 				}).spread((dist)=>{
+	 					return dist.distributortaxtype;
+	 				}).catch(e=>{
+	 					log.error(e.message);
+	 					return false;
+	 				});
+	 			var buerOrSellerId=await dbconn.query("SELECT reference_id FROM vtiger_xreceivecustomermaster where xreceivecustomermasterid=?",{
+	 					type:QueryTypes.SELECT,
+	 					replacements:[buyerId],
+	 					logging:(msg)=>{
+	 						log.debug(msg);
+	 					}
+	 				}).spread((cust)=>{
+	 					if(cust){
+	 						return cust.reference_id;
+	 					}
+	 					else{
+	 						return buyerId;
+	 					}
+	 				}).catch(e=>{
+	 					log.error(e.message);
+	 					return buyerId;
+	 				});
+	 			var distStateId=await dbconn.query("SELECT cf_xdistributor_state FROM vtiger_xdistributorcf INNER JOIN vtiger_xdistributor ON vtiger_xdistributor.xdistributorid=vtiger_xdistributorcf.xdistributorid where vtiger_xdistributor.gstinno!='' AND vtiger_xdistributorcf.xdistributorid=?",{
+	 					type:QueryTypes.SELECT,
+	 					replacements:[distId],
+	 					logging:(msg)=>{
+	 						log.debug(msg);
+	 					}
+	 				}).spread((dist)=>{
+	 					return dist.cf_xdistributor_state;
+	 				}).catch(e=>{
+	 					log.error(e.message);
+	 					return false;
+	 				});
+	 			var retailerStateId= await dbconn.query("SELECT xState.xstateid from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?",{
+	 					type:QueryTypes.SELECT,
+	 					replacements:[shippingAddressId],
+	 					logging:(msg)=>{
+	 						log.debug(msg);
+	 					}
+	 				}).spread((state)=>{
+	 					return state.xstateid;
+	 				}).catch(e=>{
+	 					log.error(e.message);
+	 					return false;
+	 				});
+	 			if(distStateId!=false && retailerStateId!=false){
+	 				//AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL)
+	 				if(distStateId==retailerStateId){
+	 					var taxTypeToApply='LST';
+	 				}
+	 				else{
+	 					var taxTypeToApply='CST';
+	 				}
+	 				var productTaxDetails=await dbconn.query("SELECT vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'Product' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group, CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1 WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2 ELSE '' END as product_uom, CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1 WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion ELSE '' END as uom_conversion, vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor, vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion, vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid = vtiger_xtaxmappingcf.cf_xtaxmapping_product where vtiger_xtaxmapping.deleted=0 and vtiger_xtaxmappingcf.cf_xtaxmapping_product=? and vtiger_xtaxmapping.statename=? and vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '?' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '?') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DES",{
+	 						type:QueryTypes.SELECT,
+	 						replacements:[retailerStateId,productId,txnDate,txnDate],
+	 						logging:(msg)=>{
+	 							log.debug(msg);
+	 						}
+	 					}).then((productTax)=>{
+	 						console.log(productTax.dataValues);
+	 					})     
+	 			}
+	 			else{
+	 				return false;
+	 			}
+ 			}
+ 			else{
+ 				return false;
+ 			}
+ 		}
+ 		catch(e){
+ 			log.error(e.message);
+ 			return false;
+ 		}
+
+ 	}
  	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId,log){
  		var self=this;
  		const dbconn=this.getDb();
