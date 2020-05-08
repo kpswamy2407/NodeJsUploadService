@@ -1235,8 +1235,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						netTotalValue= netTotalValue + await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);
  						console.log('netTotalValue',netTotalValue);
  						log.info("===================== tax calucation - start ==========")
- 						console.log(so['buyerid'])
- 						console.log("so,",so);
+ 						
  						await self.updateProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
  						log.info("===================== tax calucation - end ==========")
  					}).catch(e=>{
@@ -1252,7 +1251,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		}
  	}
  	rSalesOrder.prototype.updateProductTax=async function(productId,module,distId,buyerId,shippingAddressId,transactionDate,log,lineItemId){
- 		console.log("buyerId",buyerId);
+ 		
  		try{
  			var self=this;
  			var dbconn=this.getDb();
@@ -1260,7 +1259,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			if(Number(ALLOW_GST_TRANSACTION)==1 || ALLOW_GST_TRANSACTION.toLowerCase()=='true'){
 	 			var retailerTaxType=await dbconn.query("SELECT vtiger_xretailer.retailertaxtype FROM vtiger_xretailer where vtiger_xretailer.xretailerid=? and vtiger_xretailer.deleted=0",{
 	 					type:QueryTypes.SELECT,
-	 					replacements:[buyerid],
+	 					replacements:[buyerId],
 	 					logging:(msg)=>{
 	 						log.debug(msg);
 	 					}
@@ -1519,7 +1518,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
  	rSalesOrder.prototype.getBuyerGSTStateInfo=async function(xaddressid,buyerid,log){
  		try{
- 			console.log("hello I am here with get Buyer GST");
+ 			
  			var self=this;
  			var dbconn=this.getDb();
  			return await dbconn.query("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
@@ -1562,7 +1561,6 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
  	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
  		try{
- 			console.log("I am here getDefaultXSeries ")
  			var self=this;
  			var dbconn=this.getDb();
  			const XSeries=dbconn.import('./../../models/x-series');
