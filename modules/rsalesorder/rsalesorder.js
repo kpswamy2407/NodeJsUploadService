@@ -308,14 +308,7 @@ const { QueryTypes } = require('sequelize');
 	 		                         		} 
 	 		                         	}
 	 		                         }
-	 		            /*if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
-
-	 		                if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
-	 		                	log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata);
-	 		                	rso[field.columnname]= coll[field.columnname]._text;
-	 		                    rsocf[field.columnname]= coll[field.columnname]._text;
-	 		                   } 
-	 		               }*/
+	 		            
 	 		               break;
 	 		           }
 
@@ -1369,8 +1362,31 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						logging:(msg)=>{
 	 							log.debug(msg);
 	 						}
-	 					}).then((productTax)=>{
-	 						console.log(productTax.dataValues);
+	 					}).then(async (productTax)=>{
+	 						
+	 						if(productTax){
+	 							var productTaxDetails=productTax;
+	 						}
+	 						else{
+	 							var product=await dbconn.query("SELECT vtiger_xproductcf.cf_xproduct_category,vtiger_xproduct.hsncode FROM vtiger_xproduct INNER JOIN vtiger_xproductcf on vtiger_xproductcf.xproductid=vtiger_xproduct.xproductid WHERE vtiger_xproduct.xproductid = ?",{
+	 								type:QueryTypes.SELECT,
+	 								replacements:[productId],
+	 								logging:(msg)=>{
+	 									log.debug(msg)
+	 								}
+	 							}).spread((product)=>{
+	 								return product;
+	 							}).catch(e=>{
+	 								log.error("Error while getting the product details "+e.message);
+	 								return false;
+	 							});
+	 							if(product){
+	 								var hsncode=product.hsncode;
+	 								var cf_xproduct_category=product.cf_xproduct_category;
+
+	 								var productTaxDetails=await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,limit,txnDate,productId,log);
+	 							}
+	 						}
 	 					})     
 	 			}
 	 			else{
@@ -1386,6 +1402,59 @@ rSalesOrder.prototype.getFields=async function (log){
  			return false;
  		}
 
+ 	}
+ 	rSalesOrder.prototype.getProdHierTax=async function(prodCat,taxToRetrive,retStateId,amenId,invDate,hsncode,limit,txnDate,productId,log){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			return await dbconn.query("SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'Hierachy' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group, CASE			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2			ELSE ''			END as product_uom,			CASE 			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion			ELSE ''			END as uom_conversion,			vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,			vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,			vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping			inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid	inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid =? where vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxmappingcf.cf_xtaxmapping_product=0 and vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy=? and vtiger_xtaxmapping.statename=? and vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= ? and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= ?) ) AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DESC",{
+ 				type:QueryTypes.SELECT,
+ 				replacements:[productId,prodCat,retStateId,txnDate,txnDate],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
+ 			}).the(async(productTaxDetails)=>{
+ 				if(productTaxDetails){
+ 					return productTaxDetails;
+ 				}
+ 				else{
+ 					var prodParentCat=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
+ 						type:QueryTypes.SELECT,
+ 						replacements:[prodCat],
+ 						logging:(msg)=>{
+ 							log.debug(msg)
+ 						}
+ 					}).spread(async(categoryDetails)=>{
+ 						if(categoryDetails){
+ 							return await self.getProdHierTax(categoryDetails.cf_xprodhier_parent,taxToRetrive,retStateId,'','',hsncode,limit,txnDate,productId,log);
+ 							
+ 						}
+ 						else{
+ 							if(hsncode!=''){
+ 								return await dbconn.query("SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'HSNCode' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group CASE			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2			ELSE ''			END as product_uom,			CASE 			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion			ELSE ''			END as uom_conversion,			vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,			vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,			vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping			inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid	inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid =? where vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxmapping.hsncode=? AND vtiger_xtaxmapping.statename=? AND vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= ? and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= ?) ) AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DESC ",{
+ 									type:QueryTypes.SELECT,
+ 									replacements:[hsncode,retStateId,txnDate,txnDate],
+ 									logging:(msg)=>{
+ 										log.debug(msg);
+ 									}
+ 								}).then((productTaxDetails)=>{
+ 									return productTaxDetails;
+ 								}).catch(e=>{
+ 									log.error("Got it in getProdHierTax 1443 "+e.message);
+ 									return false;
+ 								});
+ 							}
+ 							else{
+ 								return false;
+ 							}
+ 						}
+ 					})
+ 				}
+ 			})
+ 		}
+ 		catch(e){
+ 			log.error("Error in getProdHierTax:"+e.message)
+ 		}
  	}
  	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId,log){
  		var self=this;
