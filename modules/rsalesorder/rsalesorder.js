@@ -1388,7 +1388,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 								var hsncode=product.hsncode;
 	 								var cf_xproduct_category=product.cf_xproduct_category;
 	 								log.info("Prod hier Tax")
-	 								return await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,limit,txnDate,productId,log);
+	 								return await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
 
 	 							}
 
@@ -1404,6 +1404,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			}
  		}
  		catch(e){
+ 			console.log(e);
  			log.error(e.message);
  			return false;
  		}
@@ -1434,7 +1435,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						}
  					}).spread(async(categoryDetails)=>{
  						if(categoryDetails){
- 							return await self.getProdHierTax(categoryDetails.cf_xprodhier_parent,taxToRetrive,retStateId,'','',hsncode,limit,txnDate,productId,log);
+ 							return await self.getProdHierTax(categoryDetails.cf_xprodhier_parent,taxToRetrive,retStateId,'','',hsncode,'',txnDate,productId,log);
  							
  						}
  						else{
