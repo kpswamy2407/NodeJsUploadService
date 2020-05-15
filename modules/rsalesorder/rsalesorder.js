@@ -1229,7 +1229,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						console.log('netTotalValue',netTotalValue);
  						log.info("===================== tax calucation - start ==========")
  						
- 						var produdctTaxDetails=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
+ 						var productTaxDetails=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
  						console.log(productTaxDetails);
 
  						log.info("===================== tax calucation - end ==========")
