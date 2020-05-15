@@ -1229,7 +1229,9 @@ rSalesOrder.prototype.getFields=async function (log){
  						console.log('netTotalValue',netTotalValue);
  						log.info("===================== tax calucation - start ==========")
  						
- 						await self.updateProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
+ 						var produdctTaxDetails=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
+ 						console.log(productTaxDetails);
+
  						log.info("===================== tax calucation - end ==========")
  					}).catch(e=>{
  						console.log(e);
@@ -1243,7 +1245,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.updateProductTax=async function(productId,module,distId,buyerId,shippingAddressId,transactionDate,log,lineItemId){
+ 	rSalesOrder.prototype.getProductTax=async function(productId,module,distId,buyerId,shippingAddressId,transactionDate,log,lineItemId){
  		
  		try{
  			var self=this;
@@ -1365,7 +1367,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 					}).then(async (productTax)=>{
 	 						
 	 						if(productTax){
-	 							var productTaxDetails=productTax;
+	 							return productTax;
 	 						}
 	 						else{
 	 							var product=await dbconn.query("SELECT vtiger_xproductcf.cf_xproduct_category,vtiger_xproduct.hsncode FROM vtiger_xproduct INNER JOIN vtiger_xproductcf on vtiger_xproductcf.xproductid=vtiger_xproduct.xproductid WHERE vtiger_xproduct.xproductid = ?",{
@@ -1384,8 +1386,10 @@ rSalesOrder.prototype.getFields=async function (log){
 	 								var hsncode=product.hsncode;
 	 								var cf_xproduct_category=product.cf_xproduct_category;
 
-	 								var productTaxDetails=await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,limit,txnDate,productId,log);
+	 								return await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,limit,txnDate,productId,log);
+
 	 							}
+
 	 						}
 	 					})     
 	 			}
