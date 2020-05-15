@@ -1420,7 +1420,7 @@ rSalesOrder.prototype.getFields=async function (log){
  				logging:(msg)=>{
  					log.debug(msg);
  				}
- 			}).the(async(productTaxDetails)=>{
+ 			}).then(async(productTaxDetails)=>{
  				if(productTaxDetails.length>0){
  					log.info("tax present prodct category")
  					return productTaxDetails;
