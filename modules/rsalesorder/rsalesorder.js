@@ -1362,10 +1362,11 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						type:QueryTypes.SELECT,
 	 						replacements:[productId,retailerStateId,txnDate,txnDate],
 	 						logging:(msg)=>{
+	 							log.info("first level logging")
 	 							log.debug(msg);
 	 						}
 	 					}).then(async (productTax)=>{
-	 						
+	 						console.log(productTax);
 	 						if(productTax){
 	 							return productTax;
 	 						}
