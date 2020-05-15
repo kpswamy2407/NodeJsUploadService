@@ -1366,8 +1366,8 @@ rSalesOrder.prototype.getFields=async function (log){
 	 							log.debug(msg);
 	 						}
 	 					}).then(async (productTax)=>{
-	 						console.log(productTax);
-	 						if(productTax){
+	 						
+	 						if(productTax.length>0){
 	 							return productTax;
 	 						}
 	 						else{
@@ -1375,6 +1375,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 								type:QueryTypes.SELECT,
 	 								replacements:[productId],
 	 								logging:(msg)=>{
+	 									log.info("Getting the product hsncode and category");
 	 									log.debug(msg)
 	 								}
 	 							}).spread((product)=>{
@@ -1386,7 +1387,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 							if(product){
 	 								var hsncode=product.hsncode;
 	 								var cf_xproduct_category=product.cf_xproduct_category;
-
+	 								log.info("Prod hier Tax")
 	 								return await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,limit,txnDate,productId,log);
 
 	 							}
@@ -1419,10 +1420,12 @@ rSalesOrder.prototype.getFields=async function (log){
  					log.debug(msg);
  				}
  			}).the(async(productTaxDetails)=>{
- 				if(productTaxDetails){
+ 				if(productTaxDetails.length>0){
+ 					log.info("tax present prodct category")
  					return productTaxDetails;
  				}
  				else{
+ 					console.log("HSNCode");
  					var prodParentCat=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
  						type:QueryTypes.SELECT,
  						replacements:[prodCat],
@@ -1443,6 +1446,8 @@ rSalesOrder.prototype.getFields=async function (log){
  										log.debug(msg);
  									}
  								}).then((productTaxDetails)=>{
+ 									log.inf("tax basedon hsncode")
+ 									console.log(productTaxDetails);
  									return productTaxDetails;
  								}).catch(e=>{
  									log.error("Got it in getProdHierTax 1443 "+e.message);
