@@ -1388,7 +1388,14 @@ rSalesOrder.prototype.getFields=async function (log){
 	 								var hsncode=product.hsncode;
 	 								var cf_xproduct_category=product.cf_xproduct_category;
 	 								log.info("Prod hier Tax")
-	 								return await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
+	 								var productTaxDetails= await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
+	 								if(productTaxDetails.length>0){
+	 									return productTaxDetails;
+	 								}
+	 								else{
+	 									var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
+	 									console.log(productTaxDetails);
+	 								}
 
 	 							}
 
@@ -1426,7 +1433,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					return productTaxDetails;
  				}
  				else{
- 					console.log("HSNCode");
+ 					
  					var prodParentCat=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
  						type:QueryTypes.SELECT,
  						replacements:[prodCat],
@@ -1446,12 +1453,19 @@ rSalesOrder.prototype.getFields=async function (log){
  									logging:(msg)=>{
  										log.debug(msg);
  									}
- 								}).then((productTaxDetails)=>{
- 									log.inf("tax basedon hsncode")
- 									console.log(productTaxDetails);
- 									return productTaxDetails;
+ 								}).then(async(productTaxDetails)=>{
+ 									log.info("tax basedon hsncode")
+ 									if(productTaxDetails.length>0){
+ 										
+ 										return productTaxDetails;
+ 									}
+ 									else{
+ 										return false;
+
+ 									}
+ 									;
  								}).catch(e=>{
- 									log.error("Got it in getProdHierTax 1443 "+e.message);
+ 									log.error("Got it in getProdHierTax "+e.message);
  									return false;
  								});
  							}
@@ -1465,6 +1479,97 @@ rSalesOrder.prototype.getFields=async function (log){
  		}
  		catch(e){
  			log.error("Error in getProdHierTax:"+e.message)
+ 		}
+ 	}
+ 	rSalesOrder.prototype.getProdIndTax=async function(productId,prodCat,hsncode,taxToRetrive,invDate,taxapplytype,amenId,limit,txnDate,level,moduleFrom,retailerTaxType,log){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			var where="vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 AND vtiger_xstate.is_allstate=1";
+ 			var uomType=", CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom		WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1 WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2 ELSE '' END as product_uom,		CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1 WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion ELSE '' END as uom_conversion,		vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,		vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,		vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion";
+ 			var product="inner join vtiger_xproductcf on vtiger_xproductcf.xproductid = "+productId;
+ 			if(productId!='' && level==0){
+ 				where=where+" AND vtiger_xtaxmappingcf.cf_xtaxmapping_product='"+productId+"'";
+ 			}
+ 			else if(prodCat!='' && level==1){
+ 				where=where+" AND vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy='"+prodCat+"'";
+ 			}
+ 			else if(hsncode!='' && level==3){
+ 				where=where+" AND vtiger_xtaxmapping.hsncode='"+hsncode+"'";
+ 			}
+ 			if(amenId!=''){
+ 				where=where+" and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '"+invDate+"' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '"+invDate+"') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' ORDER BY vtiger_xtaxmapping.modified_at DESC";
+ 			}
+ 			else{
+ 				 where=where+"  and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '"+txnDate+"' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '"+txnDate+"') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' ORDER BY vtiger_xtaxmapping.modified_at DESC"
+ 			}
+ 			var indTax=" vtiger_xtaxmappingcf.incremental_flag=1 AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) AND ";
+ 			return false;
+ 			var checkQuery="SELECT vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group "+uomType+" FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xstate on vtiger_xstate.xstateid=vtiger_xtaxmapping.statename "+product+"  where "+indTax+" "+where;
+ 			log.info(checkQuery);
+ 			var noOfRows=await dbconn.query(checkQuery,{
+ 					type:QueryTypes.SELECT,
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).then(async(checkResult)=>{
+ 					return checkResult.length;
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return 0;
+ 				});
+ 			
+ 			var fromWhere='';
+ 			if(noOfRows==0){
+ 				fromWhere =" (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) AND ";
+ 			}
+ 			var mainTaxQuery="SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group "+uomType+" FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xstate on vtiger_xstate.xstateid=vtiger_xtaxmapping.statename "+product+" where "+fromWhere+" "+where;  
+		
+ 			var productTaxDetails= await dbconn.query(mainTaxQuery,{
+ 					type:QueryTypes.SELECT,
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).then(async(taxDetails)=>{
+ 					if(taxDetails.length>0){
+ 						return taxDetails;
+ 					}
+ 					else if(level!=2){
+ 						if(level==0){
+ 							return await self.getProdIndTax(productId,prodCat,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,1,moduleFrom,retailerTaxType,log);
+ 						}
+ 						else{
+ 							var parentCategory=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
+ 									type:QueryTypes.SELECT,
+ 									replacements:[prodCat],
+ 									logging:(msg)=>{
+ 										log.debug(msg);
+ 									}
+ 								}).spread(async(cat)=>{
+ 									return cat;
+ 								}).catch(e=>{
+ 									log.error("with selection of cf_xprodhier_parent query in getProdIndTax fuction");
+ 									return false;
+ 								});
+ 							if(parentCategory!=false){
+ 								return await self.getProdIndTax(productId,parentCategory.cf_xprodhier_parent,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,1,moduleFrom,retailerTaxType,log);	
+ 							}
+ 							else{
+ 								if(hsncode!=''){
+ 									return await self.getProdIndTax(productId,prodCat,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,2,moduleFrom,retailerTaxType,log);
+ 								}
+ 							}
+ 						}
+ 					}
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return false;
+ 				})
+
+ 		}
+ 		catch(e){
+ 			log.error(e.message);
+ 			return false;
  		}
  	}
  	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId,log){
