@@ -2193,7 +2193,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			version:0,
  			presence:1,
  			deleted:0,
- 			sendstatus:null,
+ 			sendstatus:0,
  			terms_conditions:null,
  		});
  		return rsocrm.save({logging:(msg)=>{
@@ -2201,8 +2201,8 @@ rSalesOrder.prototype.getFields=async function (log){
  		}}).then(crm=>{
  			return crm.crmid;
  		}).catch(e=>{
- 			console.log(e);
- 			console.log(e.message);
+ 			
+ 			log.error(e.message);
  			throw new Error('Unable to create CRM entity for rSalesOrder.');
  		});
 
