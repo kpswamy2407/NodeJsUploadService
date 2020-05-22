@@ -301,7 +301,7 @@ const { QueryTypes } = require('sequelize');
 	 		                         else{
 	 		                         	if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
 
-	 		                         		if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		                         		if(coll[field.columnname]!=='undefined' && coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
 	 		                         			log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
 	 		                         			rso[field.columnname]= coll[field.columnname]._text;
 	 		                         			rsocf[field.columnname]= coll[field.columnname]._text;

@@ -98,6 +98,7 @@ var XmlFile=(function(){
 			return new Promise((rs,rj)=>{
 				fs.writeFile(this.absPath(),this.content,(err)=>{
 					if(err){
+						console.log(err);
 						this.fatal(err.message);
 						rj(new BaseError('Unable to save file in the file system.'));
 					} else{
