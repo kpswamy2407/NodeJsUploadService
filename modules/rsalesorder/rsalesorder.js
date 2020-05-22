@@ -2201,6 +2201,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		}}).then(crm=>{
  			return crm.crmid;
  		}).catch(e=>{
+ 			console.loge(e);
  			throw new Error('Unable to create CRM entity for rSalesOrder.');
  		});
 
