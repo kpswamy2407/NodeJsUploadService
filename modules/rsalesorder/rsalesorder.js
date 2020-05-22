@@ -1414,6 +1414,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 										return productTaxDetails;
 	 									}
 	 									else{
+	 										log.info("indianTax")
 	 										var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
 	 									console.log(" result from getProdIndTax",productTaxDetails)
 	 									}
@@ -1608,6 +1609,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
  		}
  		catch(e){
+ 			console.log("Exception in indian tax",e);
  			log.error(e.message);
  			return false;
  		}
