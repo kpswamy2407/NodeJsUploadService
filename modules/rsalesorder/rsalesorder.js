@@ -1391,12 +1391,20 @@ rSalesOrder.prototype.getFields=async function (log){
 	 								var cf_xproduct_category=product.cf_xproduct_category;
 	 								log.info("Prod hier Tax")
 	 								var productTaxDetails= await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
+	 								console.log('value return from getProdHierTax',productTaxDetails);
 	 								if(productTaxDetails){
+	 									if(productTaxDetails.length>0){
+	 										return productTaxDetails;
+	 									}
+	 									else{
+	 										var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
+	 									console.log(" result from getProdIndTax",productTaxDetails)
+	 									}
 	 									return productTaxDetails;
 	 								}
 	 								else{
 	 									var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
-	 									console.log(productTaxDetails);
+	 									console.log(" result from getProdIndTax",productTaxDetails)
 	 								}
 
 	 							}
