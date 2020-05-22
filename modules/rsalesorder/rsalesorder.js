@@ -1421,6 +1421,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 									
 	 								}
 	 								else{
+	 									log.info("**** indian tax ******");
 	 									var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
 	 									console.log(" result from getProdIndTax",productTaxDetails)
 	 								}
@@ -1568,12 +1569,19 @@ rSalesOrder.prototype.getFields=async function (log){
  			var productTaxDetails= await dbconn.query(mainTaxQuery,{
  					type:QueryTypes.SELECT,
  					logging:(msg)=>{
- 						log.info("************** tax getProdIndTax ********* level: "+level)
+ 						log.info("************** tax getProdIndTax ********* level: "+level);
  						log.debug(msg);
  					}
  				}).then(async(taxDetails)=>{
- 					if(taxDetails.length>0){
- 						return taxDetails;
+ 					console.log("indian tax result",taxDetails);
+ 					if(taxDetails){
+ 						if(taxDetails.length>0){
+ 							return taxDetails;
+ 						}
+ 						else{
+ 							console.log("hell happen here");
+ 						}
+ 						
  					}
  					else if(level!=2){
  						if(level==0){
