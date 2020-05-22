@@ -1226,8 +1226,25 @@ rSalesOrder.prototype.getFields=async function (log){
  					sxbinfo.save({logging:(msg)=>{
  						log.debug(msg);
  					}}).then(async function(sxBatchInfo){
- 						netTotalValue= netTotalValue + await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);
- 						console.log('netTotalValue',netTotalValue);
+ 						var total=await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);
+ 						console.log(netTotalValue);
+ 						if(typeof(netTotalValue)!='undefined'){
+ 							netTotalValue=netTotalValue+total;
+ 							so.total=netTotalValue;
+ 							so.subtotal=netTotalValue;
+ 							so.save({
+ 								logging:(msg)=>{
+ 									log.debug(msg);
+ 								}
+ 							}).then((res)=>{
+ 								log.info("total and subtotal saved");
+ 							}).catch(e=>{
+ 								log.error(" while saving the total and sub total "+e.message);
+ 							})
+ 						}
+ 						else{
+ 							netTotalValue=total;
+ 						}
  						log.info("===================== tax calucation - start ==========")
  						
  						var productTaxDetails=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
@@ -1352,7 +1369,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 					return false;
 	 				});
 	 			if(distStateId!=false && retailerStateId!=false){
-	 				console.log("hello");
+	 				
 	 				//AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL)
 	 				if(distStateId==retailerStateId){
 	 					var taxTypeToApply='LST';
@@ -1364,7 +1381,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						type:QueryTypes.SELECT,
 	 						replacements:[productId,retailerStateId,txnDate,txnDate],
 	 						logging:(msg)=>{
-	 							log.info("first level logging")
+	 							log.info("***************** getProductTax *****************")
 	 							log.debug(msg);
 	 						}
 	 					}).then(async (productTax)=>{
@@ -1400,7 +1417,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 										var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
 	 									console.log(" result from getProdIndTax",productTaxDetails)
 	 									}
-	 									return productTaxDetails;
+	 									
 	 								}
 	 								else{
 	 									var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
@@ -1435,12 +1452,15 @@ rSalesOrder.prototype.getFields=async function (log){
  				type:QueryTypes.SELECT,
  				replacements:[productId,prodCat,retStateId,txnDate,txnDate],
  				logging:(msg)=>{
+ 					log.info("*****************getProdHierTax 1************")
  					log.debug(msg);
  				}
  			}).then(async(productTaxDetails)=>{
- 				if(productTaxDetails.length>0){
- 					log.info("tax present prodct category")
- 					return productTaxDetails;
+ 				if(productTaxDetails){
+ 					if(productTaxDetails.length>0){
+ 						log.info("tax present prodct category")
+ 						return productTaxDetails;
+ 					}
  				}
  				else{
  					
@@ -1452,6 +1472,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						}
  					}).spread(async(categoryDetails)=>{
  						if(categoryDetails){
+ 							log.info("*****************getProdHierTax category based************")
  							return await self.getProdHierTax(categoryDetails.cf_xprodhier_parent,taxToRetrive,retStateId,'','',hsncode,'',txnDate,productId,log);
  							
  						}
@@ -1461,6 +1482,7 @@ rSalesOrder.prototype.getFields=async function (log){
  									type:QueryTypes.SELECT,
  									replacements:[productId,hsncode,retStateId,txnDate,txnDate],
  									logging:(msg)=>{
+ 										log.info("tax calucation in getProdHierTax based on hsncode");
  										log.debug(msg);
  									}
  								}).then(async(productTaxDetails)=>{
@@ -1477,7 +1499,7 @@ rSalesOrder.prototype.getFields=async function (log){
  									else{
  										return false;
  									}
- 									log.info("tax basedon hsncode");
+ 									
  									
  									
  								}).catch(e=>{
@@ -1526,6 +1548,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			var noOfRows=await dbconn.query(checkQuery,{
  					type:QueryTypes.SELECT,
  					logging:(msg)=>{
+ 						log.info("************** check querygetProdIndTax ********* level: "+level)
  						log.debug(msg);
  					}
  				}).then(async(checkResult)=>{
@@ -1544,6 +1567,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			var productTaxDetails= await dbconn.query(mainTaxQuery,{
  					type:QueryTypes.SELECT,
  					logging:(msg)=>{
+ 						log.info("************** tax getProdIndTax ********* level: "+level)
  						log.debug(msg);
  					}
  				}).then(async(taxDetails)=>{
