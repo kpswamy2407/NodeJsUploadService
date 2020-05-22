@@ -1217,6 +1217,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					sxbinfo['pts']=0.000000;
  					sxbinfo['mrp']=0.000000;
  					sxbinfo['ecp']=0.000000;
+ 					sxbinfo['reconcile']='';
  					sxbinfo['distributor_id']=distId;
  					var trackSerial=await self.getProductTrackSerial(soRel['productid'],log);
  					sxbinfo['track_serial']=trackSerial;
