@@ -300,8 +300,7 @@ const { QueryTypes } = require('sequelize');
 	 		                         }
 	 		                         else{
 	 		                         	if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
-	 		                         		console.log(coll[field.columnname]);
-	 		                         		console.log(field.columnname);
+	 		                         		
 	 		                         		if( typeof (coll[field.columnname]) !=='undefined' &&coll[field.columnname]!=='undefined' && coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
 	 		                         			log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
 	 		                         			rso[field.columnname]= coll[field.columnname]._text;
@@ -1236,10 +1235,11 @@ rSalesOrder.prototype.getFields=async function (log){
 
  						log.info("===================== tax calucation - end ==========")
  					}).catch(e=>{
- 						console.log(e);
+ 						log.error(e.message);
+ 						
  					});
  				}).catch(e=>{
- 					
+ 					log.error(e.message);
  					return false;
  				});
  			}, Promise.resolve());
@@ -1391,7 +1391,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 								var cf_xproduct_category=product.cf_xproduct_category;
 	 								log.info("Prod hier Tax")
 	 								var productTaxDetails= await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
-	 								if(productTaxDetails.length>0){
+	 								if(productTaxDetails){
 	 									return productTaxDetails;
 	 								}
 	 								else{
@@ -1456,16 +1456,22 @@ rSalesOrder.prototype.getFields=async function (log){
  										log.debug(msg);
  									}
  								}).then(async(productTaxDetails)=>{
- 									log.info("tax basedon hsncode")
- 									if(productTaxDetails.length>0){
- 										
- 										return productTaxDetails;
+ 									if(productTaxDetails){
+ 										if(productTaxDetails.length>0){
+ 											
+ 											return productTaxDetails;
+ 										}
+ 										else{
+ 											return false;
+
+ 										}
  									}
  									else{
  										return false;
-
  									}
- 									;
+ 									log.info("tax basedon hsncode");
+ 									
+ 									
  								}).catch(e=>{
  									log.error("Got it in getProdHierTax "+e.message);
  									return false;
