@@ -1247,7 +1247,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						}
  						log.info("===================== tax calucation - start ==========")
  						
- 						var productTaxDetails=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id']);
+ 						var productTaxDetails=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
  						console.log(productTaxDetails);
 
  						log.info("===================== tax calucation - end ==========")
@@ -1264,7 +1264,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.getProductTax=async function(productId,module,distId,buyerId,shippingAddressId,transactionDate,log,lineItemId){
+ 	rSalesOrder.prototype.getProductTax=async function(productId,module,distId,buyerId,shippingAddressId,transactionDate,log,lineItemId,netTotal,so,baseqty){
  		
  		try{
  			var self=this;
@@ -1408,28 +1408,88 @@ rSalesOrder.prototype.getFields=async function (log){
 	 								var cf_xproduct_category=product.cf_xproduct_category;
 	 								log.info("Prod hier Tax")
 	 								var productTaxDetails= await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
-	 								console.log('value return from getProdHierTax',productTaxDetails);
+	 								
 	 								if(productTaxDetails){
 	 									if(productTaxDetails.length>0){
 	 										return productTaxDetails;
 	 									}
 	 									else{
-	 										log.info("indianTax")
-	 										var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
-	 									console.log(" result from getProdIndTax",productTaxDetails)
+	 										
+	 										return await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
+	 									
 	 									}
 	 									
 	 								}
 	 								else{
 	 									log.info("**** indian tax ******");
-	 									var productTaxDetails=await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
-	 									console.log(" result from getProdIndTax",productTaxDetails)
+	 									return await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
+	 									
 	 								}
 
 	 							}
 
 	 						}
-	 					})     
+	 					});
+	 					taxAmount=0.00;
+	 					taxValue=0.00;
+	 					await productTaxDetails.reduce(async(promise,tax)=>{
+	 						await promise;
+	 						var XtaxRelSo=dbconn.import('./../../models/x-tax-rel-so');
+	 						var xtaxRelSo=new XtaxRelSo();
+	 						var taxOnUomFlag=tax.tax_on_uom_flag;
+	 						var uomConversion=(tax.uom_conversion)?tax.uom_conversion:1;
+	 						if(taxTypeToApply=='LST'){
+	 							var percentage=tax.cf_xtax_lst_percentage;
+	 							var basePercentage=tax.cf_xtax_lst_percentage/uomConversion;
+	 							var percentageDisplay=tax.display_percentage_intra;
+	 							var taxGroupType=tax.lst_tax_group;
+	 						}
+	 						else{
+	 							var percentage=tax.cf_xtax_cst_percentage;
+	 							var basePercentage=tax.cf_xtax_cst_percentage/uomConversion;
+	 							var percentageDisplay=tax.display_percentage_intra;
+	 							var taxGroupType=tax.cst_tax_group;
+	 						}
+	 						var LBL_TAX_CONFIGURATION=await self.getInvMgtConfig('LBL_TAX_CONFIGURATION');
+	 						if(LBL_TAX_CONFIGURATION=='1' && taxOnUomFlag==1){
+	 							var taxPercentage=basePercentage;
+	 						}
+	 						else{
+	 							var taxPercentage=percentage;
+	 							var taxOnUomFlag=0;
+	 						}
+	 						if(taxOnUomFlag==1){
+	 							var taxAmount=await (Number(baseqty)*Number(taxPercentage));
+	 						}
+	 						else{
+	 							var taxAmount=await (Number(netTotal)*Number(taxPercentage)/100); 
+	 						}
+	 						taxValue=taxValue+taxAmount;
+	 						xtaxRelSo['transaction_id']=so['salesorderid'];
+	 						xtaxRelSo['lineitem_id']=productId;
+	 						xtaxRelSo['transaction_name']='xSalesOrder';
+	 						xtaxRelSo['tax_type']=(tax.taxcode?tax.taxcode:'');
+	 						xtaxRelSo['tax_label']=tax.taxdescription;
+	 						xtaxRelSo['tax_percentage']=taxPercentage;
+	 						xtaxRelSo['tax_amt']=taxAmount;
+	 						xtaxRelSo['taxable_amt']=netTotal;
+	 						xtaxRelSo['transaction_line_id']=lineItemId;
+	 						xtaxRelSo['xtaxid']=tax.xtaxid;
+	 						xtaxRelSo['tax_group_type']=taxGroupType;
+	 						xtaxRelSo['created_at']=moment().format('YYYY-MM-DD HHYYYY-MM-DD HH:mm:ss');
+	 						xtaxRelSo['modified_at']=moment().format('YYYY-MM-DD HHYYYY-MM-DD HH:mm:ss');
+	 						xtaxRelSo['tax_on_uom_flag']=taxOnUomFlag;
+	 						xtaxRelSo['tax_display_percentage']=percentageDisplay;
+	 						xtaxRelSo.save({logging:(msg)=>{
+	 							log.debug(msg);
+	 						}}).then(xtax=>{
+	 							log.info(" sify xtransaction rel so table save complete");
+	 						}).catch(e=>{
+	 							log.error(" sify xtransaction rel so table error "+ e.message);
+	 						});
+	 					},Promise.resolve());
+
+	 					return taxValue;    
 	 			}
 	 			else{
 	 				return false;
@@ -1440,7 +1500,6 @@ rSalesOrder.prototype.getFields=async function (log){
  			}
  		}
  		catch(e){
- 			console.log(e);
  			log.error(e.message);
  			return false;
  		}
@@ -1574,15 +1633,10 @@ rSalesOrder.prototype.getFields=async function (log){
  						log.debug(msg);
  					}
  				}).then(async(taxDetails)=>{
- 					console.log("indian tax result",taxDetails);
  					if(taxDetails){
  						if(taxDetails.length>0){
  							return taxDetails;
  						}
- 						else{
- 							console.log("hell happen here");
- 						}
- 						
  					}
  					else if(level!=2){
  						if(level==0){
@@ -1614,7 +1668,8 @@ rSalesOrder.prototype.getFields=async function (log){
  				}).catch(e=>{
  					log.error(e.message);
  					return false;
- 				})
+ 				});
+ 				return productTaxDetails;
 
  		}
  		catch(e){
