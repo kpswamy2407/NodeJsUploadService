@@ -1523,6 +1523,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
  	rSalesOrder.prototype.getProdIndTax=async function(productId,prodCat,hsncode,taxToRetrive,invDate,taxapplytype,amenId,limit,txnDate,level,moduleFrom,retailerTaxType,log){
  		try{
+ 			log.info("We are in get getProdIndTax function");
  			var self=this;
  			var dbconn=this.getDb();
  			var where="vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 AND vtiger_xstate.is_allstate=1";
@@ -1544,7 +1545,7 @@ rSalesOrder.prototype.getFields=async function (log){
  				 where=where+"  and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '"+txnDate+"' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '"+txnDate+"') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' ORDER BY vtiger_xtaxmapping.modified_at DESC"
  			}
  			var indTax=" vtiger_xtaxmappingcf.incremental_flag=1 AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) AND ";
- 			return false;
+ 			
  			var checkQuery="SELECT vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group "+uomType+" FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xstate on vtiger_xstate.xstateid=vtiger_xtaxmapping.statename "+product+"  where "+indTax+" "+where;
  			log.info(checkQuery);
  			var noOfRows=await dbconn.query(checkQuery,{
