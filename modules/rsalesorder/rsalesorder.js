@@ -1924,10 +1924,14 @@ rSalesOrder.prototype.getFields=async function (log){
  							}
  							else{
  								const fiscalFinanceYearMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('YYYY-MM');
+ 								console.log('fiscalFinanceYearMonth',fiscalFinanceYearMonth);
  								const currentYearMonth=moment().format('YYYY-MM');
+ 								console.log('currentYearMonth',currentYearMonth);
  								const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
  								const fisMonthCurYear=moment([moment().format('YYYY'),moment().month('"'+series.XSery.fiscal_finance+'"').format('MM')]).format('YYYY-MM');
+ 								console.log(fisMonthCurYear);
  								if(currentYearMonth>=fisMonthCurYear && LastDateUpdate<fisMonthCurYear){
+ 									console.log("condition");
  									nextValue=currentValue=series['cf_xtransactionseries_current_value'];
  									minValue=1;
  								}
@@ -2054,7 +2058,8 @@ rSalesOrder.prototype.getFields=async function (log){
  			break;
  			default: 
 
- 			str = nextValue.padEnd(value.length,'0');
+ 			str = nextValue.padStart(value.length,'0');
+ 			console.log('str',str);
  			break;
  		}
  		//console.log(value,str);
