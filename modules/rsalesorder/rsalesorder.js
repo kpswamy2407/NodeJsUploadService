@@ -1784,6 +1784,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		socf['cf_xsalesorder_seller_id']=distId;
  		socf['cf_xsalesorder_buyer_id']=buyerId;
  		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
+ 		return false;
  		socf['cf_salesorder_transaction_number']=xGenSeries;
  		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
  		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
@@ -1894,6 +1895,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					try{
  						console.log(series.dataValues);
  						const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
+ 						console.log('diffFromLastXDate',diffFromLastXDate);
  						var nextValue=currentValue=minValue=0;
  						if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
  							if(diffFromLastXDate>0){
