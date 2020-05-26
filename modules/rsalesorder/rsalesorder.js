@@ -1991,6 +1991,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
 
  	rSalesOrder.prototype.getDiffernceBtLastXDate= async function(trans){
+ 		console.log('getDiffernceBtLastXDate',trans);
  		
  		try{
  			if(trans.cf_xtransactionseries_last_fetch_date.length<=0){
@@ -2018,7 +2019,8 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
 
  	rSalesOrder.prototype.getNextValueForSeries=async function(value,nextValue){
-
+ 		console.log('value',value);
+ 		console.log('nextValue',nextValue);
  		var str="";
  		switch (value) {
  			case "DD":
