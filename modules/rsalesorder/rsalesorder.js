@@ -1227,6 +1227,13 @@ rSalesOrder.prototype.getFields=async function (log){
  						log.debug(msg);
  					}}).then(async function(sxBatchInfo){
  						var total=await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);
+ 						log.info("===================== tax calucation - start ==========")
+ 						
+ 						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
+ 						if(taxAmount>0){
+ 							total=total+(total*(taxAmount/100));
+ 						}
+
  						console.log(netTotalValue);
  						if(typeof(netTotalValue)!='undefined'){
  							netTotalValue=netTotalValue+total;
@@ -1245,10 +1252,6 @@ rSalesOrder.prototype.getFields=async function (log){
  						else{
  							netTotalValue=total;
  						}
- 						log.info("===================== tax calucation - start ==========")
- 						
- 						var productTaxDetails=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
- 						console.log(productTaxDetails);
 
  						log.info("===================== tax calucation - end ==========")
  					}).catch(e=>{
