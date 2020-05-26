@@ -1962,6 +1962,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						}
  						var xGenSeries='';
  						for( let key in series.rawAttributes ){
+ 							console.log('key',key);
  							if(key.includes('scheme') && series[key].length>0 ){
  								if(Number(key.substr(-2))){
  									var gen=await self.getNextValueForSeries(series[key],nextValue);
