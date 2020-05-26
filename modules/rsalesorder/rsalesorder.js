@@ -1892,7 +1892,7 @@ rSalesOrder.prototype.getFields=async function (log){
  				
  				if(series){
  					try{
- 						
+ 						console.log(series.dataValues);
  						const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
  						var nextValue=currentValue=minValue=0;
  						if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
@@ -1906,6 +1906,7 @@ rSalesOrder.prototype.getFields=async function (log){
  							}
  						}
  						else{
+ 							console.log("Yearly calucation started");
  							if(diffFromLastXDate>0){
  								const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
  								const currentMonth=moment().format('MM');
@@ -1991,7 +1992,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
 
  	rSalesOrder.prototype.getDiffernceBtLastXDate= async function(trans){
- 		console.log('getDiffernceBtLastXDate',trans);
+ 		console.log('getDiffernceBtLastXDate',trans.cf_xtransactionseries_last_fetch_date);
  		
  		try{
  			if(trans.cf_xtransactionseries_last_fetch_date.length<=0){
@@ -2008,12 +2009,14 @@ rSalesOrder.prototype.getFields=async function (log){
  					return currentDate.diff(lastXDate,'months');
  					break;
  					default:
+ 					console.log(currentDate.diff(lastXDate,'years'));
  					return currentDate.diff(lastXDate,'years');
  					break;
  				}
  			}
  			
  		}catch(e){
+ 			console.log(e);
  			return 1;
  		}
  	}
