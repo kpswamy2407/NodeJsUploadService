@@ -1784,7 +1784,6 @@ rSalesOrder.prototype.getFields=async function (log){
  		socf['cf_xsalesorder_seller_id']=distId;
  		socf['cf_xsalesorder_buyer_id']=buyerId;
  		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
- 		return false;
  		socf['cf_salesorder_transaction_number']=xGenSeries;
  		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
  		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
@@ -2059,7 +2058,9 @@ rSalesOrder.prototype.getFields=async function (log){
  			break;
  			default: 
  			console.log(typeof(nextValue));
- 			console.log(nextValue.toString().padStart(value.length,'0'));
+ 			console.log(typeof(value));
+ 			console.log(value.length);
+ 			console.log(nextValue.padStart(value.length,'0'));
  			str = nextValue.toString().padStart(value.length,'0');
  			console.log('str',str);
  			break;
