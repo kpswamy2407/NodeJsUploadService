@@ -1230,8 +1230,10 @@ rSalesOrder.prototype.getFields=async function (log){
  						log.info("===================== tax calucation - start ==========")
  						
  						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
+ 						console.log('taxAmount',taxAmount);
+ 						console.log('total',total);
  						if(taxAmount>0){
- 							total=total+(total*(taxAmount/100));
+ 							total=total+taxAmount;
  						}
 
  						if(typeof(netTotalValue)!='undefined'){
@@ -1466,7 +1468,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						else{
 	 							var taxAmount=await (Number(netTotal)*Number(taxPercentage)/100); 
 	 						}
-	 						taxValue=taxValue+taxPercentage;
+	 						taxValue=taxValue+taxAmount;
 	 						xtaxRelSo['transaction_id']=so['salesorderid'];
 	 						xtaxRelSo['lineitem_id']=productId;
 	 						xtaxRelSo['transaction_name']='xSalesOrder';
