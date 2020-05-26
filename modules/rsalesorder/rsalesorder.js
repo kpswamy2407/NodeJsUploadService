@@ -1234,7 +1234,6 @@ rSalesOrder.prototype.getFields=async function (log){
  							total=total+(total*(taxAmount/100));
  						}
 
- 						console.log(netTotalValue);
  						if(typeof(netTotalValue)!='undefined'){
  							netTotalValue=netTotalValue+total;
  							so.total=netTotalValue;
@@ -1479,8 +1478,8 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						xtaxRelSo['transaction_line_id']=lineItemId;
 	 						xtaxRelSo['xtaxid']=tax.xtaxid;
 	 						xtaxRelSo['tax_group_type']=taxGroupType;
-	 						xtaxRelSo['created_at']=moment().format('YYYY-MM-DD HHYYYY-MM-DD HH:mm:ss');
-	 						xtaxRelSo['modified_at']=moment().format('YYYY-MM-DD HHYYYY-MM-DD HH:mm:ss');
+	 						xtaxRelSo['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 						xtaxRelSo['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 	 						xtaxRelSo['tax_on_uom_flag']=taxOnUomFlag;
 	 						xtaxRelSo['tax_display_percentage']=percentageDisplay;
 	 						xtaxRelSo.save({logging:(msg)=>{

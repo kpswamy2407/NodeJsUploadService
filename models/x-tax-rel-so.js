@@ -24,10 +24,6 @@ module.exports=(sequelize,DataTypes)=>{
 		tax_label: {
 			type: DataTypes.STRING(255),
 		},
-		expiry: {
-			type: DataTypes.STRING(255),
-			defaultValue: null,
-		},
 		transaction_type: {
 			type: DataTypes.STRING(250),
 		},
