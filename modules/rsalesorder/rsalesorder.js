@@ -1466,7 +1466,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						else{
 	 							var taxAmount=await (Number(netTotal)*Number(taxPercentage)/100); 
 	 						}
-	 						taxValue=taxValue+taxAmount;
+	 						taxValue=taxValue+taxPercentage;
 	 						xtaxRelSo['transaction_id']=so['salesorderid'];
 	 						xtaxRelSo['lineitem_id']=productId;
 	 						xtaxRelSo['transaction_name']='xSalesOrder';

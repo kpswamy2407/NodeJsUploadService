@@ -24,7 +24,7 @@ module.exports=(sequelize,DataTypes)=>{
 		tax_label: {
 			type: DataTypes.STRING(255),
 		},
-		transaction_type: {
+		transaction_name: {
 			type: DataTypes.STRING(250),
 		},
 		tax_percentage: {
