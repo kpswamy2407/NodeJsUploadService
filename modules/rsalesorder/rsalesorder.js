@@ -1895,9 +1895,9 @@ rSalesOrder.prototype.getFields=async function (log){
  				
  				if(series){
  					try{
- 						console.log(series.dataValues);
+ 						
  						const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
- 						console.log('diffFromLastXDate',diffFromLastXDate);
+ 						
  						var nextValue=currentValue=minValue=0;
  						if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
  							if(diffFromLastXDate>0){
@@ -1910,7 +1910,7 @@ rSalesOrder.prototype.getFields=async function (log){
  							}
  						}
  						else{
- 							console.log("Yearly calucation started");
+ 							
  							if(diffFromLastXDate>0){
  								const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
  								const currentMonth=moment().format('MM');
@@ -1926,14 +1926,14 @@ rSalesOrder.prototype.getFields=async function (log){
  							}
  							else{
  								const fiscalFinanceYearMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('YYYY-MM');
- 								console.log('fiscalFinanceYearMonth',fiscalFinanceYearMonth);
+ 								
  								const currentYearMonth=moment().format('YYYY-MM');
- 								console.log('currentYearMonth',currentYearMonth);
+ 								
  								const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
  								const fisMonthCurYear=moment([moment().format('YYYY'),moment().month('"'+series.XSery.fiscal_finance+'"').format('MM')]).format('YYYY-MM');
- 								console.log(fisMonthCurYear);
+ 								
  								if(currentYearMonth>=fisMonthCurYear && LastDateUpdate<fisMonthCurYear){
- 									console.log("condition");
+ 									
  									nextValue=currentValue=series['cf_xtransactionseries_current_value'];
  									minValue=1;
  								}
@@ -1964,7 +1964,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						}
  						var xGenSeries='';
  						for( let key in series.rawAttributes ){
- 							console.log('key',key);
+ 							
  							if(key.includes('scheme') && series[key].length>0 ){
  								if(Number(key.substr(-2))){
  									var gen=await self.getNextValueForSeries(series[key],nextValue);
@@ -2031,8 +2031,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
 
  	rSalesOrder.prototype.getNextValueForSeries=async function(value,nextValue){
- 		console.log('value',value);
- 		console.log('nextValue',nextValue);
+ 		
  		
  		switch (value) {
  			case "DD":
@@ -2060,11 +2059,8 @@ rSalesOrder.prototype.getFields=async function (log){
  					return moment().format('SS').toString();
  			break;
  			default: 
- 			console.log(typeof(nextValue));
- 			console.log(typeof(value));
- 			console.log(value.length);
- 			console.log(nextValue.padStart(value.length,'0'));
- 			return nextValue.toString().padStart(value.length,'0');
+ 				console.log(nextValue.toString().padStart(value.length,'0'));
+ 				return nextValue.toString().padStart(value.length,'0');
  			
  			break;
  		}
