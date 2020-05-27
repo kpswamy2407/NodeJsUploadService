@@ -1879,7 +1879,8 @@ rSalesOrder.prototype.getFields=async function (log){
  					cf_xtransactionseries_transaction_type:type
  				},
  				order:[
- 					['cf_xtransactionseries_mark_as_default','xtransactionseriesid ','DESC']
+ 					['cf_xtransactionseries_mark_as_default','DESC'],
+ 					['xtransactionseriesid','DESC']
  				],
 				include:[{
  					model:XSeries,
