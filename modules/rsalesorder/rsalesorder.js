@@ -2059,11 +2059,8 @@ rSalesOrder.prototype.getFields=async function (log){
  					return moment().format('SS').toString();
  			break;
  			default: 
- 				console.log(value);
- 				console.log(typeof(value));
- 				console.log(value.length);
- 				console.log(nextValue.toString().padStart(value.length,"0"));
- 				return nextValue.toString().padStart(value.length,"0");
+ 				console.log(nextValue.toString().padStart((nextValue.toString().length+value.length),"0"));
+ 				return nextValue.toString().padStart((nextValue.toString().length+value.length),"0");
  			
  			break;
  		}
