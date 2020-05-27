@@ -1878,8 +1878,10 @@ rSalesOrder.prototype.getFields=async function (log){
  				where:{
  					cf_xtransactionseries_transaction_type:type
  				},
- 				
- 				include:[{
+ 				order:[
+ 					['cf_xtransactionseries_mark_as_default','xtransactionseriesid ','DESC']
+ 				],
+				include:[{
  					model:XSeries,
  					required:true,
  					where:{xdistributorid:distId,deleted:0},
@@ -1903,7 +1905,7 @@ rSalesOrder.prototype.getFields=async function (log){
  							}
  							else{
  								currentValue =series.cf_xtransactionseries_current_value;
- 								nextValue=currentValue= currentValue+1;
+ 								nextValue=currentValue= Number(currentValue)+1;
  							}
  						}
  						else{
@@ -1918,7 +1920,7 @@ rSalesOrder.prototype.getFields=async function (log){
  								}
  								else{
  									currentValue =series.cf_xtransactionseries_current_value;
- 									nextValue=currentValue= currentValue+1;
+ 									nextValue=currentValue= Number(currentValue)+1;
  								}
  							}
  							else{
@@ -1935,7 +1937,7 @@ rSalesOrder.prototype.getFields=async function (log){
  									minValue=1;
  								}
  								else{
- 									nextValue=currentValue=series['cf_xtransactionseries_current_value']+1;
+ 									nextValue=currentValue=Number(series['cf_xtransactionseries_current_value'])+1;
  								}
  							}
  						}
@@ -2030,43 +2032,42 @@ rSalesOrder.prototype.getFields=async function (log){
  	rSalesOrder.prototype.getNextValueForSeries=async function(value,nextValue){
  		console.log('value',value);
  		console.log('nextValue',nextValue);
- 		var str="";
+ 		
  		switch (value) {
  			case "DD":
- 			str = moment().format('DD').toString();
+ 				return moment().format('DD').toString();
  			break;
  			case "MM":
- 			str = moment().format('MM').toString();
+ 				return moment().format('MM').toString();
  			break;
  			case "MMM":
- 			str = moment().format('MMM').toString();
+ 			 return moment().format('MMM').toString();
  			break;
  			case "YY":
- 			str = moment().format('YY').toString();
+ 				return moment().format('YY').toString();
  			break;
  			case "YYYY":
- 			str = moment().format('YYYY').toString();
+ 					return moment().format('YYYY').toString();
  			break;
  			case "HH":
- 			str = moment().format('HH').toString();
+ 					return moment().format('HH').toString();
  			break;
  			case "mm":
- 			str = moment().format('mm').toString();
+ 					return moment().format('mm').toString();
  			break;
  			case "SS":
- 			str = moment().format('SS').toString();
+ 					return moment().format('SS').toString();
  			break;
  			default: 
  			console.log(typeof(nextValue));
  			console.log(typeof(value));
  			console.log(value.length);
  			console.log(nextValue.padStart(value.length,'0'));
- 			str = nextValue.toString().padStart(value.length,'0');
- 			console.log('str',str);
+ 			return nextValue.toString().padStart(value.length,'0');
+ 			
  			break;
  		}
- 		//console.log(value,str);
- 		return str;
+ 		
  		
  	}
  	rSalesOrder.prototype.getCreditTerm=async function(buyerId,log){
