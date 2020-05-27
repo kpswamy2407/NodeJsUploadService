@@ -280,7 +280,7 @@ const { QueryTypes } = require('sequelize');
  			 	 }
  			 	 break;
  			 	 default:
-	 		                         //console.log(field.columnname,'=>',coll[field.columnname]);
+	 		                         
 	 		                         if(field.typeofdata.includes('M')){
 	 		                         	if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
 	 		                         		log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
@@ -366,12 +366,12 @@ rSalesOrder.prototype.getFields=async function (log){
 			var rsoBillAds=new RsoBillAds();
 			rsoBillAds['sobilladdressid']=soId;
 			rsoBillAds.save({logging:(msg)=>{log.debug(msg)}}).then().catch(e=>{
-				console.log(e);
+				log.error(e.message);
 			});
 			var rsoShipAds=new RsoShipAds();
 			rsoShipAds['soshipaddressid']=soId;
 			rsoShipAds.save({logging:(msg)=>{log.debug(msg)}}).then().catch(e=>{
-				console.log(e);
+				log.error(e.message);
 			});
 			return true;
 		}
@@ -1079,7 +1079,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							console.log('netTotal',netTotal);
+ 							
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1103,7 +1103,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			return true;
  			
  		}catch(e){
- 			console.log(e);
+ 			log.error(e.message);
  			return false;
  		}
  	}
@@ -1230,8 +1230,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						log.info("===================== tax calucation - start ==========")
  						
  						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
- 						console.log('taxAmount',taxAmount);
- 						console.log('total',total);
+ 						
  						if(taxAmount>0){
  							total=total+taxAmount;
  						}
@@ -1677,7 +1676,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
  		}
  		catch(e){
- 			console.log("Exception in indian tax",e);
+ 		
  			log.error(e.message);
  			return false;
  		}
@@ -1857,13 +1856,13 @@ rSalesOrder.prototype.getFields=async function (log){
  					}
  				}).catch(e=>{
  					log.error(e.message);
- 					console.log(e);
+ 					
  					return {gstinno:'',statecode:''}
  				});
  			
  		}
  		catch(e){
- 			console.log(e);
+ 			
  			log.error(e.message);
  			return {gstinno:'',statecode:''}
  		}
@@ -2001,7 +2000,6 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
 
  	rSalesOrder.prototype.getDiffernceBtLastXDate= async function(trans){
- 		console.log('getDiffernceBtLastXDate',trans.cf_xtransactionseries_last_fetch_date);
  		
  		try{
  			if(trans.cf_xtransactionseries_last_fetch_date.length<=0){
@@ -2018,14 +2016,14 @@ rSalesOrder.prototype.getFields=async function (log){
  					return currentDate.diff(lastXDate,'months');
  					break;
  					default:
- 					console.log(currentDate.diff(lastXDate,'years'));
+ 					
  					return currentDate.diff(lastXDate,'years');
  					break;
  				}
  			}
  			
  		}catch(e){
- 			console.log(e);
+ 			
  			return 1;
  		}
  	}
@@ -2059,7 +2057,6 @@ rSalesOrder.prototype.getFields=async function (log){
  					return moment().format('SS').toString();
  			break;
  			default: 
- 				console.log(nextValue.toString().padStart((nextValue.toString().length+value.length),"0"));
  				return nextValue.toString().padStart((nextValue.toString().length+value.length),"0");
  			
  			break;
