@@ -1446,13 +1446,11 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						if(taxTypeToApply=='LST'){
 	 							var percentage=tax.cf_xtax_lst_percentage;
 	 							var basePercentage=tax.cf_xtax_lst_percentage/uomConversion;
-	 							var percentageDisplay=
 	 							var taxGroupType=tax.lst_tax_group;
 	 						}
 	 						else{
 	 							var percentage=tax.cf_xtax_cst_percentage;
 	 							var basePercentage=tax.cf_xtax_cst_percentage/uomConversion;
-	 							var percentageDisplay=tax.display_percentage_intra;
 	 							var taxGroupType=tax.cst_tax_group;
 	 						}
 	 						var LBL_TAX_CONFIGURATION=await self.getInvMgtConfig('LBL_TAX_CONFIGURATION');
