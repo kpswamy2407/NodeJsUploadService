@@ -900,7 +900,13 @@ rSalesOrder.prototype.getFields=async function (log){
 						case 'tax1' :
 						try{
 							var tax1=lineItem.tax1._text;
-							xrsoProdRel['tax1']=tax1
+							if(typeof(tax1)=='undefined'||tax1=='undefined' || tax1==''){
+								xrsoProdRel['tax1']='0';
+							}
+							else{
+								xrsoProdRel['tax1']=tax1
+							}
+							
 							log.info("tax1: "+tax1);
 						}
 						catch(e){
@@ -1091,7 +1097,20 @@ rSalesOrder.prototype.getFields=async function (log){
  								log.debug(msg);
  							}}).then().catch(e=>{
  								log.error(e.message)
- 							});							
+ 							});	
+ 							rsocf.cf_xrso_next_stage_name='';
+ 							rsocf.save({logging:(msg)=>{
+ 								log.debug(msg);
+ 							}}).then().catch(e=>{
+ 								log.error(e.message);
+ 							});
+ 							rso.status='Processed';
+ 							rso.is_processed=2;
+ 							rso.save({logging:(msg)=>{
+ 								log.debug(msg);
+ 							}}).then().catch(e=>{
+ 								log.error(e.message);
+ 							});						
  						}
  					});
  				}).then(async (t) => {

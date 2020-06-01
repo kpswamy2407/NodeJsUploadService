@@ -18,7 +18,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         cf_salesorder_send_to_buyer: {
             type: DataTypes.STRING(3),
-            defaultValue:null,
+            defaultValue:'',
         },
         cf_xsalesorder_sales_man: {
             type: DataTypes.BIGINT(20),
