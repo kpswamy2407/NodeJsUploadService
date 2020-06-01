@@ -66,7 +66,7 @@ module.exports=(sequelize,DataTypes)=>{
 		},
 		mrp: {
 			type: DataTypes.DECIMAL(25,6),
-			defaultValue: null,
+			defaultValue: 0,
 		},
 		created_at: {
 			type: DataTypes.DATE,
