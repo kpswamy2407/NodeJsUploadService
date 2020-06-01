@@ -181,6 +181,8 @@ const { QueryTypes } = require('sequelize');
  		log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
  		rso.salesorderid=salesorderid;
  		rsocf.salesorderid=salesorderid;
+ 		rso.lbl_rso_save_pro_cate=await self.getInvMgtConfig('lbl_rso_save_pro_cate');
+
  		await fields.reduce(async (promise, field) => {
  			await promise;
 
@@ -1444,7 +1446,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						if(taxTypeToApply=='LST'){
 	 							var percentage=tax.cf_xtax_lst_percentage;
 	 							var basePercentage=tax.cf_xtax_lst_percentage/uomConversion;
-	 							var percentageDisplay=tax.display_percentage_intra;
+	 							var percentageDisplay=
 	 							var taxGroupType=tax.lst_tax_group;
 	 						}
 	 						else{
@@ -1482,7 +1484,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 						xtaxRelSo['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 	 						xtaxRelSo['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 	 						xtaxRelSo['tax_on_uom_flag']=taxOnUomFlag;
-	 						xtaxRelSo['tax_display_percentage']=percentageDisplay;
+	 						xtaxRelSo['tax_display_percentage']=(tax.display_percentage_intra?tax.display_percentage_intra:taxPercentage);
 	 						xtaxRelSo.save({logging:(msg)=>{
 	 							log.debug(msg);
 	 						}}).then(xtax=>{

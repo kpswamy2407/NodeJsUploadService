@@ -57,7 +57,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         subtotal:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         taxtype:{
             type: DataTypes.STRING(25),
@@ -73,7 +73,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         s_h_amount:{
             type: DataTypes.DECIMAL(25,3),
-            defaultValue:null,
+            defaultValue:0,
         },
         terms_conditions:{
             type: DataTypes.TEXT,
@@ -155,11 +155,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         lbl_rso_save_pro_cate:{
             type: DataTypes.STRING(20),
-            set(val) {
-                const invMgtConf=sequelize.models.InvMgtConfig;
-                
-                  this.setDataValue('lbl_rso_save_pro_cate',true);
-            }
+            defaultValue:null,
         },
     },{
         tableName:'vtiger_xrso',

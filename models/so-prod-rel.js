@@ -58,7 +58,7 @@ module.exports=(sequelize,DataTypes)=>{
 		},
 		tax1: {
 			type: DataTypes.DECIMAL(25,6),
-			defaultValue: null,
+			defaultValue: 0,
 		},
 		tax2: {
 			type: DataTypes.DECIMAL(25,6),
