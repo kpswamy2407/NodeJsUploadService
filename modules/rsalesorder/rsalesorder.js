@@ -138,7 +138,32 @@ const { QueryTypes } = require('sequelize');
  									log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
  									log.info("*********** RSO to SO conversion start ************")
  									await self.autoRsoToSo(so,socf,distributorId,log);	
- 									log.info("*********** RSO to SO conversion end ***************")
+ 									log.info("*********** RSO to SO conversion end ***************");
+
+ 									await dbconn.query("update vtiger_xrso set status=?,is_processed=? where salesorderid=?",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:['Processed',2,so.salesorderid],
+ 										logging:(msg)=>{
+ 											log.debug(msg);
+ 										}
+ 									}).then(()=>{
+ 										log.info("xrso status updated");
+ 									}).catch(e=>{
+ 										log.error(e.message+ " issue with xrso update status");
+ 									});
+ 									await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where salesorderid=?",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:[so.salesorderid],
+ 										logging:(msg)=>{
+ 											log.debug(msg);
+ 										}
+ 									}).then(()=>{
+ 										log.info("vtiger_xrsocf next stage updated");
+ 									}).catch(e=>{
+ 										log.error(e.message + " issue with vtiger_xrsocf update");
+ 									})
+ 									
+ 									
  								}
 
  							}
@@ -1098,19 +1123,7 @@ rSalesOrder.prototype.getFields=async function (log){
  							}}).then().catch(e=>{
  								log.error(e.message)
  							});	
- 							rsocf.cf_xrso_next_stage_name='';
- 							rsocf.save({logging:(msg)=>{
- 								log.debug(msg);
- 							}}).then().catch(e=>{
- 								log.error(e.message);
- 							});
- 							rso.status='Processed';
- 							rso.is_processed=2;
- 							rso.save({logging:(msg)=>{
- 								log.debug(msg);
- 							}}).then().catch(e=>{
- 								log.error(e.message);
- 							});						
+ 												
  						}
  					});
  				}).then(async (t) => {
