@@ -1236,8 +1236,39 @@ rSalesOrder.prototype.getFields=async function (log){
  				soProdRel.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(soRel){
+
+
+ 						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
+ 						log.info("===================== tax calucation - start ==========")
+ 						
+ 						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
+ 						
+ 						if(taxAmount>0){
+ 							total=total+taxAmount;
+ 						}
+
+ 						if(typeof(netTotalValue)!='undefined'){
+ 							netTotalValue=netTotalValue+total;
+ 							so.total=netTotalValue;
+ 							so.subtotal=netTotalValue;
+ 							so.save({
+ 								logging:(msg)=>{
+ 									log.debug(msg);
+ 								}
+ 							}).then((res)=>{
+ 								log.info("total and subtotal saved");
+ 							}).catch(e=>{
+ 								log.error(" while saving the total and sub total "+e.message);
+ 							})
+ 						}
+ 						else{
+ 							netTotalValue=total;
+ 						}
+
+ 						log.info("===================== tax calucation - end ==========")
  					
- 					var sxbinfo=new SaleXBatchInfo();
+ 					
+ 					/*var sxbinfo=new SaleXBatchInfo();
  					sxbinfo['transaction_id']=soRel['id'];
  					sxbinfo['trans_line_id']=soRel['lineitem_id'];
  					sxbinfo['product_id']=soRel['productid'];
@@ -1291,7 +1322,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					}).catch(e=>{
  						log.error(e.message);
  						
- 					});
+ 					});*/
  				}).catch(e=>{
  					log.error(e.message);
  					return false;
@@ -1713,7 +1744,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			return false;
  		}
  	}
- 	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,sxbinfo,distId,log){
+ 	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,distId,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const ALLOW_GST_TRANSACTION=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
