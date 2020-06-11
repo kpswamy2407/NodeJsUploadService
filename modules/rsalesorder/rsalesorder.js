@@ -1788,7 +1788,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		so['carrier']=rso['carrier'];
  		so['deleted']=0;
 		//get the receive customer master - reference id for buyer id
-		var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
+	/*	var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
 		log.info("Buyer Id in so :"+buyerId);
 		if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
 			buyerId=rso['buyerid'];
@@ -1796,8 +1796,8 @@ rSalesOrder.prototype.getFields=async function (log){
 		}
 		else{
 			so['buyerid']=buyerId;
-		}
-
+		}*/
+		so['buyerid']=rso['buyerid'];
 		so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		so['requisition_no']=rso['requisition_no'];
