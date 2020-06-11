@@ -1797,6 +1797,7 @@ rSalesOrder.prototype.getFields=async function (log){
 		else{
 			so['buyerid']=buyerId;
 		}*/
+		buyerId=rso['buyerid'];
 		so['buyerid']=rso['buyerid'];
 		so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
