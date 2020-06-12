@@ -72,7 +72,7 @@ const { QueryTypes } = require('sequelize');
  			
  			var dbconn=this.getDb();
  			var crdr=new CollecReader(this._xmljs);
- 			var log=new Log(log_path+'/'+crdr.transactionId()+'-'+moment().format('HHmmss.SSS')+'-log.log');
+ 			var log=new Log(log_path+'/'+crdr.transactionId()+'-'+moment().format('HHmmss.SSS')+Math.random().toString(36).substring(7)+'-log.log');
  			log.setLogger();
  			log.info("=========================RSO Start==================")
  			log.info("Module Name: xrSalesOrder");
