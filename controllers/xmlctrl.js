@@ -24,7 +24,7 @@ var XmlCtrl=(function(){
             enumerable:true,
         });
     }
-    XmlCtrl.SAVE_XML_TO_FS=false;
+    XmlCtrl.SAVE_XML_TO_FS=true;
     XmlCtrl.prototype.XML_FILE_NAME=null;
     XmlCtrl.prototype.saveXml=function(modl){
         if(XmlCtrl.SAVE_XML_TO_FS){
@@ -35,7 +35,7 @@ var XmlCtrl=(function(){
             xmlf.basedir='./public/uploads';
             xmlf.module=modl;
             xmlf.content=this.xmlstr;
-            xmlf.fileName=moment.format('YYYYMMDDHHmmss.SSS');
+            xmlf.fileName=moment.format('YYYYMMDDHHmmss.SSS')+Math.random().toString(36).substring(7);
             xmlf.date=moment.format('YYYY-MM-DD');
             return xmlf.save().then(file=>{
                 this.XML_FILE_NAME=file;
