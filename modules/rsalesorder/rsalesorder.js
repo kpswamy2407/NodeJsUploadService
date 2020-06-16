@@ -121,6 +121,7 @@ const { QueryTypes } = require('sequelize');
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
  				const distributorId=coll.distributor_id._text;
+ 				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
  				await dbconn.transaction().then(async (t) => {
  					return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
@@ -137,7 +138,7 @@ const { QueryTypes } = require('sequelize');
  									log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
  									log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
  									log.info("*********** RSO to SO conversion start ************")
- 									await self.autoRsoToSo(so,socf,distributorId,log);	
+ 									await self.autoRsoToSo(so,socf,distributorId,customerType,log);	
  									log.info("*********** RSO to SO conversion end ***************");
 
  									await dbconn.query("update vtiger_xrso set status=?,is_processed=? where salesorderid=?",{
@@ -1062,7 +1063,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			});
 
 		}
-		rSalesOrder.prototype.autoRsoToSo=async function(rso,rsocf,distId,log){
+		rSalesOrder.prototype.autoRsoToSo=async function(rso,rsocf,distId,custType,log){
 			try{
 				var self=this;
 				const dbconn=this.getDb();
@@ -1104,7 +1105,7 @@ rSalesOrder.prototype.getFields=async function (log){
 				var salesOrderId=await self.getCrmEntity('xSalesOrder',log);
  			//get Salesorder Object 
  			log.info("xSalesOrder crmentity id :"+salesOrderId)
- 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,log);
+ 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,custType,log);
 
  			await dbconn.transaction().then(async (t) => {
  				return await so.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
@@ -1766,7 +1767,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
  		}
  	}
- 	rSalesOrder.prototype.prepareSo=async function(soId,rso,rsocf,distId,log){
+ 	rSalesOrder.prototype.prepareSo=async function(soId,rso,rsocf,distId,custType,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const SalesOrder=dbconn.import('./../../models/salesorder');
@@ -1787,19 +1788,27 @@ rSalesOrder.prototype.getFields=async function (log){
  		so['tracking_no']=rso['tracking_no'];
  		so['carrier']=rso['carrier'];
  		so['deleted']=0;
+ 		if(Number(custType)==1){
+ 			var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
+ 				log.info("Buyer Id in so :"+buyerId);
+ 				if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
+ 					buyerId=rso['buyerid'];
+ 						so['buyerid']=rso['buyerid'];
+ 					}
+ 					else{
+ 						buyerId=rso['buyerid'];
+ 						so['buyerid']=buyerId;
+ 				}
+ 		}
+ 		else{
+ 			buyerId=rso['buyerid'];
+ 			so['buyerid']=rso['buyerid'];
+ 		}
 		//get the receive customer master - reference id for buyer id
-	/*	var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
-		log.info("Buyer Id in so :"+buyerId);
-		if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
-			buyerId=rso['buyerid'];
-			so['buyerid']=rso['buyerid'];
-		}
-		else{
-			so['buyerid']=buyerId;
-		}*/
-		log.info("address:"+rso['buyerid']);
-		buyerId=rso['buyerid'];
-		so['buyerid']=rso['buyerid'];
+	/*	*/
+		
+		
+		
 		so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		so['requisition_no']=rso['requisition_no'];
@@ -2166,6 +2175,7 @@ rSalesOrder.prototype.getFields=async function (log){
  	rSalesOrder.prototype.prepareBillAds=async function(soId,refId,log){
  		var self=this;
  		var dbconn=this.getDb();
+ 		log.info("refId"+refId)
  		const SoBillAds=dbconn.import('./../../models/so-bill-ads');
  		soBillAds=new SoBillAds();
  		var billAddress=await self.getAddress('Billing',refId,log);
