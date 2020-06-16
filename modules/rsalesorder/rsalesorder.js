@@ -1797,6 +1797,7 @@ rSalesOrder.prototype.getFields=async function (log){
 		else{
 			so['buyerid']=buyerId;
 		}*/
+		log.info("address:"+rso['buyerid']);
 		buyerId=rso['buyerid'];
 		so['buyerid']=rso['buyerid'];
 		so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
@@ -1816,6 +1817,7 @@ rSalesOrder.prototype.getFields=async function (log){
 		if(SO_LBL_TAX_OPTION_ENABLE.toLowerCase()!="true"){
 			so['taxtype']='individual';
 		}
+		log.info("address1:"+buyerId);
 		var soBillAds=await self.prepareBillAds(soId,buyerId,log);
 		soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
 		soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
