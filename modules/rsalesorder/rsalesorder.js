@@ -738,7 +738,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						[Op.and]: [
 						  { deleted:0 },
 						  { distributor_id:distId},
-						  sequelize.where(sequelize.fn('upper', sequelize.col('?')),coll.buyerid.customercode._text)
+						  dbconn.where(dbconn.fn('upper', dbconn.col('?')),coll.buyerid.customercode._text)
 						]
 					},
 					attributes:[entityidfield],
