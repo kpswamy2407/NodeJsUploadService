@@ -734,9 +734,8 @@ rSalesOrder.prototype.getFields=async function (log){
 				const {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
 				
 				return  RecCustMaster.findOne({
-					where:["?=? and deleted=0 and distributor_id=?"],
+					where:["?=? and deleted=0 and distributor_id=?",columnname,coll.buyerid.customercode._text,distId],
 					attributes:[entityidfield],
-					replacements:[columnname,coll.buyerid.customercode._text,distId],
 					logging:(msg)=>{
 						log.debug(msg);
 					}
