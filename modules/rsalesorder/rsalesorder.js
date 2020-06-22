@@ -723,6 +723,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 		rSalesOrder.prototype.getBuyerId=async function(customerType,coll,log,distId,prkey){
 			var dbconn=this.getDb();
+			var self=this;
 			const Retailer=dbconn.import('./../../models/retailer');
 			const SubRetailer=dbconn.import('./../../models/sub-retailer');
 			const RecCustMaster=dbconn.import('./../../models/rec-cust-mas');
