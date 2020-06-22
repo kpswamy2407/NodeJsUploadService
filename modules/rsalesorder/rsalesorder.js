@@ -236,7 +236,7 @@ const { QueryTypes } = require('sequelize');
  			 	 	case 'buyerid':
  			 	 	log.info("=========== Related Module: Customer ================")
  			 	 	var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log,distId,prkey);
-
+ 			 	 	exit();
  			 	 	if(buyerid){
  			 	 		log.info(field.columnname+" : "+buyerid+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
 
@@ -730,6 +730,9 @@ rSalesOrder.prototype.getFields=async function (log){
 			switch(customerType){
 				case '1':
 				log.info("=========== Related sub-module: ReceiveCustomerMaster ================")
+				var {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
+				console.log(columnname,entityidfield);
+				return false;
 				return  RecCustMaster.findOne({
 					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
 					attributes:['xreceivecustomermasterid'],
@@ -2366,6 +2369,62 @@ rSalesOrder.prototype.getFields=async function (log){
  		}catch(e){
  			return false;
  		}
+ 	}
+ 	rSalesOrder.prototype.getEnityForRelativeModules=async function(moduleName,mand,prkey,log,column){
+ 		try{
+ 			const dbconn=this.getDb();
+ 			const VtigerField=dbconn.import('./../../models/vtiger-field');
+ 			const VtigerTab=dbconn.import('./../../models/vtiger-tab');
+ 			const EnityName=dbconn.import('./../../models/entity-name');
+ 			return await EnityName.findOne({
+ 				where:{modulename:moduleName},
+ 				attributes:['tabid','tablename','entityidfield'],
+ 				logging:(msg)=>{
+ 						log.debug(msg),
+				}
+ 				}).then(entity=>{
+ 					if(entity){
+ 						if(mand=='MU'){
+ 							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND columnname = '"+column+"'";
+ 						}
+ 						else{
+ 							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND FIND_IN_SET columnname ('"+prkey+"')";
+ 						}
+ 						return await dbconn.query(filedQuery,{
+ 							type:QueryTypes.SELECT,
+ 							logging:(msg)=>{
+ 								log.debug(msg);
+ 							}
+ 						}).spread(async(field)=>{
+ 							return {columnname:field.columnname,entityidfield:entity.entityidfield}
+ 						}).catch(e=>{
+ 							log.error("Getting issue while getting values from getEnityForRelativeModules "+e.message)
+ 						})
+ 					}
+ 					else{
+ 						log.error(" No entity information found for module:"+moduleName);
+ 					}
+ 				});
+ 			log.info("Module table Names: "+rSalesOrder.tableName+","+rSalesOrder.tableName+'cf');
+ 			return VtigerField.findAll({
+ 				where:{
+ 					tablename:[rSalesOrder.tableName,rSalesOrder.tableName+'cf'],xmlreceivetable:1},
+ 					attributes: ['fieldid','columnname','typeofdata','uitype','tabid'],
+ 					include:[{model:VtigerTab,required:true,attributes:['tabid','name']}],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).then(fields => {
+ 					return fields;
+ 				}).catch(e=>{
+ 					return e.error;
+ 				});
+ 			
+ 		}
+ 		catch(e){
+ 			log.error(e.message);
+ 		}
+
  	}
  	rSalesOrder.prototype.getCrmEntity=async function(module,log){
  		const dbconn=this.getDb();
