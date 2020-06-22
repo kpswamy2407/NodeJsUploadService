@@ -750,6 +750,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						return false;
 					}
 				}).catch(e=>{
+					log.error(e.message)
 					return false;
 				});
 				break;
