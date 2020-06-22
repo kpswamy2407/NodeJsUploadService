@@ -2389,7 +2389,7 @@ rSalesOrder.prototype.getFields=async function (log){
  							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND columnname = '"+column+"'";
  						}
  						else{
- 							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND FIND_IN_SET columnname ('"+prkey+"')";
+ 							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND FIND_IN_SET  (columnname,'"+prkey+"')";
  						}
  						return await dbconn.query(filedQuery,{
  							type:QueryTypes.SELECT,
