@@ -734,8 +734,15 @@ rSalesOrder.prototype.getFields=async function (log){
 				const {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
 				
 				return  RecCustMaster.findOne({
-					where:["?=? and deleted=0 and distributor_id=?",columnname,coll.buyerid.customercode._text,distId],
+					where:{
+						[Op.and]: [
+						  { deleted:0 },
+						  { distributor_id:distId},
+						  sequelize.where(sequelize.fn('upper', sequelize.col('?')),coll.buyerid.customercode._text)
+						]
+					},
 					attributes:[entityidfield],
+					replacements:[columnname],
 					logging:(msg)=>{
 						log.debug(msg);
 					}
