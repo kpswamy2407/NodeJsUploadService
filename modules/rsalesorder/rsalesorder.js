@@ -731,7 +731,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			switch(customerType){
 				case '1':
 				log.info("=========== Related sub-module: ReceiveCustomerMaster ================")
-				var {columnname:columnname,entityidfield:entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
+				const {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
 				console.log(columnname,entityidfield);
 				return false;
 				return  RecCustMaster.findOne({
