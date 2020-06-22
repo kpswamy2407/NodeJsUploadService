@@ -236,7 +236,7 @@ const { QueryTypes } = require('sequelize');
  			 	 	case 'buyerid':
  			 	 	log.info("=========== Related Module: Customer ================")
  			 	 	var buyerid=await self.getBuyerId(coll.customer_type._text,coll,log,distId,prkey);
- 			 	 	exit();
+ 			 	 	
  			 	 	if(buyerid){
  			 	 		log.info(field.columnname+" : "+buyerid+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
 
@@ -732,16 +732,18 @@ rSalesOrder.prototype.getFields=async function (log){
 				case '1':
 				log.info("=========== Related sub-module: ReceiveCustomerMaster ================")
 				const {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
-				console.log(columnname,entityidfield);
-				return false;
+				
 				return  RecCustMaster.findOne({
-					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
-					attributes:['xreceivecustomermasterid'],
+					where:{'?':coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
+					attributes:[entityidfield],
+					replacements:[columnname],
 					logging:(msg)=>{
 						log.debug(msg);
 					}
 				}).then(retailer=>{
 					if(retailer){
+						console.log(retailer);
+						return false;
 						return retailer.xreceivecustomermasterid;
 					}
 					else{
@@ -2403,7 +2405,9 @@ rSalesOrder.prototype.getFields=async function (log){
  						})
  					}
  					else{
+
  						log.error(" No entity information found for module:"+moduleName);
+
  					}
  				}).catch(e=>{
  					log.error(e.message);
