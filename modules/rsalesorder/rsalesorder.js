@@ -2380,9 +2380,9 @@ rSalesOrder.prototype.getFields=async function (log){
  				where:{modulename:moduleName},
  				attributes:['tabid','tablename','entityidfield'],
  				logging:(msg)=>{
- 						log.debug(msg),
-				}
- 				}).then(entity=>{
+ 						log.debug(msg)
+					}
+ 				}).then(async(entity)=>{
  					if(entity){
  						if(mand=='MU'){
  							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND columnname = '"+column+"'";
@@ -2404,6 +2404,8 @@ rSalesOrder.prototype.getFields=async function (log){
  					else{
  						log.error(" No entity information found for module:"+moduleName);
  					}
+ 				}).catch(e=>{
+ 					log.error(e.message);
  				});
  			log.info("Module table Names: "+rSalesOrder.tableName+","+rSalesOrder.tableName+'cf');
  			return VtigerField.findAll({
