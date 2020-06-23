@@ -259,7 +259,7 @@ const { QueryTypes } = require('sequelize');
  			 	 	case 'cf_xrso_beat':
  			 	 	log.info("=========== Related Module: Beat ================")
 
- 			 	 	var beatId=await self.getBeat(coll,log,distId);
+ 			 	 	var beatId=await self.getBeat(coll,log,distId,prkey);
  			 	 	if(beatId){
  			 	 		log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
  			 	 		rso[field.columnname]=beatId;
@@ -421,12 +421,14 @@ rSalesOrder.prototype.getFields=async function (log){
 			});
 		}
 
-		rSalesOrder.prototype.getBeat=async function(coll,log,distId){
+		rSalesOrder.prototype.getBeat=async function(coll,log,distId,prkey){
 			var dbconn=this.getDb();
 			const Beat=dbconn.import('./../../models/beat');
+			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
+
 			return Beat.findOne({
-				where:{beatcode:coll.cf_xrso_beat.beatcode._text,deleted:0,cf_xbeat_distirbutor_id:distId},
-				attributes:['xbeatid'],
+				where:{[columnname]:coll.cf_xrso_beat.beatcode._text,deleted:0,cf_xbeat_distirbutor_id:distId},
+				attributes:[entityidfield],
 				logging:(msg)=>{
 					log.debug(msg);
 				}
@@ -731,64 +733,79 @@ rSalesOrder.prototype.getFields=async function (log){
 			switch(customerType){
 				case '1':
 				log.info("=========== Related sub-module: ReceiveCustomerMaster ================")
-				const {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
+				var {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
+
+				if((typeof(columnname)=='undefined' || columnname=='undefined'||columnname==null) || entityidfield=='undefined'|| typeof(entityidfield)=='undefined' || entityidfield==null){
+					log.error(" Unable to get the related field values for module: xReceiveCustomerMaster");
+					return false
+				}
+				else{
+					return  RecCustMaster.findOne({
+						where:{
+							[Op.and]: [
+							  { deleted:0 },
+							  { distributor_id:distId},
+							  {[columnname]:coll.buyerid.customercode._text}
+							]
+						},
+						attributes:[entityidfield],
+						logging:(msg)=>{
+							log.debug(msg);
+						}
+					}).then(retailer=>{
+						if(retailer){
+							console.log(retailer[entityidfield]);
+							log.info(retailer[entityidfield]);
+							return retailer[entityidfield];
+						}
+						else{
+							return false;
+						}
+					}).catch(e=>{
+						log.error(e.message)
+						return false;
+					});
+				}
 				
-				return  RecCustMaster.findOne({
-					where:{
-						[Op.and]: [
-						  { deleted:0 },
-						  { distributor_id:distId},
-						  {[columnname]:coll.buyerid.customercode._text}
-						]
-					},
-					attributes:[entityidfield],
-					replacements:[columnname],
-					logging:(msg)=>{
-						log.debug(msg);
-					}
-				}).then(retailer=>{
-					if(retailer){
-						console.log(retailer);
-						return false;
-						return retailer.xreceivecustomermasterid;
-					}
-					else{
-						return false;
-					}
-				}).catch(e=>{
-					log.error(e.message)
-					return false;
-				});
+				
 				break;
 				case '2':
 				log.info("=========== Related sub-module: SubRetailer ================")
-				return await SubRetailer.findOne({
-					where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
-					attributes:['xsubretailerid'],
-					logging:(msg)=>{
-						log.debug(msg);
-					}
-				}).then(subretailer=>{
+				var {columnname,entityidfield}=await self.getEnityForRelativeModules('xsubretailer','',prkey,log,'');
+				if(columnname!='' && entityidfield!=''){
+					return await SubRetailer.findOne({
+						where:{[columnname]:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
+						attributes:[entityidfield],
+						logging:(msg)=>{
+							log.debug(msg);
+						}
+					}).then(subretailer=>{
 
-					if(subretailer){
+						if(subretailer){
 
-						return subretailer.xsubretailerid;
-					}
-					else{
+							return subretailer.xsubretailerid;
+						}
+						else{
 
+							return false;
+						}
+					}).catch(e=>{
+						log.error(e.message);
 						return false;
-					}
-				}).catch(e=>{
-					log.error(e.message);
-					return false;
-				});
+					});
+				}
+				else{
+					log.error(" Unable to get the related field values for module: xsubretailer");
+				}
+				
 				break;
 				case '0':
 				log.info("=========== Related sub-module: Retailer ================")
-				if(prkey.includes('unique_retailer_code')){
+				var {columnname,entityidfield}=await self.getEnityForRelativeModules('xRetailer','',prkey,log,'');
+				if(columnname!='' && entityidfield!=''){
 					return Retailer.findOne({
-						where:{unique_retailer_code:coll.buyerid.unique_retailer_code._text,deleted:0,distributor_id:distId},
-						attributes:['xretailerid'],
+						where:{[columnname]:coll.buyerid.unique_retailer_code._text,deleted:0,distributor_id:distId},
+						attributes:[entityidfield],
 						logging:(msg)=>{
 							log.debug(msg);
 						}
@@ -804,25 +821,9 @@ rSalesOrder.prototype.getFields=async function (log){
 					});	
 				}
 				else{
-					return Retailer.findOne({
-						where:{customercode:coll.buyerid.customercode._text,deleted:0,distributor_id:distId},
-						attributes:['xretailerid'],
-						logging:(msg)=>{
-							log.debug(msg);
-						}
-					}).then(retailer=>{
-						if(retailer){
-							return retailer.xretailerid;
-						}
-						else{
-							return false;
-						}
-					}).catch(e=>{
-						return false;
-					});
-					
+					log.error("unable to get the related columnname for module : xRetailer");
+					return false;
 				}
-
 
 			}
 		}
