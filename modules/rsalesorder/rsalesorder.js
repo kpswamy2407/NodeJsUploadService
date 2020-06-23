@@ -132,7 +132,7 @@ const { QueryTypes } = require('sequelize');
  								await self.save(socf.salesorderid,log);
  								log.info("************* Transaction -vtiger_xrso- end ***************");
  								log.info("*********************** vtiger_xrso - lineItems update start **************")
- 								await self.updateLineItems(so,audit,coll.lineitems,log);
+ 								await self.updateLineItems(so,audit,coll.lineitems,log,crdr.prkey());
  								log.info("****************** vtiger_xrso lineitems update -end *********************")
  								if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
  									log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
@@ -423,26 +423,33 @@ rSalesOrder.prototype.getFields=async function (log){
 
 		rSalesOrder.prototype.getBeat=async function(coll,log,distId,prkey){
 			var dbconn=this.getDb();
+			var self=this;
 			const Beat=dbconn.import('./../../models/beat');
-			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xReceiveCustomerMaster','',prkey,log,'');
+			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xBeat','',prkey,log,'');
+			if(columnname!='' && entityidfield!=''){
+				return Beat.findOne({
+					where:{[columnname]:coll.cf_xrso_beat.beatcode._text,deleted:0,cf_xbeat_distirbutor_id:distId},
+					attributes:[entityidfield],
+					logging:(msg)=>{
+						log.debug(msg);
+					}
+				}).then(beat=>{
+					if(beat){
+						return beat[entityidfield];
+					}
+					else{
+						return false;
+					}
 
-			return Beat.findOne({
-				where:{[columnname]:coll.cf_xrso_beat.beatcode._text,deleted:0,cf_xbeat_distirbutor_id:distId},
-				attributes:[entityidfield],
-				logging:(msg)=>{
-					log.debug(msg);
-				}
-			}).then(beat=>{
-				if(beat){
-					return beat.xbeatid;
-				}
-				else{
+				}).catch(e=>{
 					return false;
-				}
-
-			}).catch(e=>{
-				return false;
-			});
+				});
+			}
+			else{
+				log.error(" unable to get related module values for module:Beat")
+				return false
+			}
+			
 		}
 		rSalesOrder.prototype.getInvMgtConfig=async function(key){
 			var dbconn=this.getDb();
@@ -490,26 +497,35 @@ rSalesOrder.prototype.getFields=async function (log){
 			});
 
 		}
-		rSalesOrder.prototype.getProductId=async function(productCode,log){
+		rSalesOrder.prototype.getProductId=async function(productCode,log,prkey){
 			var dbconn=this.getDb();
-			const Product=dbconn.import('./../../models/product');
-			return Product.findOne({
-				where:{productcode:productCode},
-				attributes:['xproductid'],
-				logging:(msg)=>{
-					log.debug(msg);
-				}
-			}).then(product=>{
-				if(product){
-					return product.xproductid;
-				}
-				else{
-					return false;
-				}
+			var self=this;
+			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xProduct','',prkey,log,'');
+			if(columnname!='' && entityidfield!=''){
+				const Product=dbconn.import('./../../models/product');
+				return Product.findOne({
+					where:{productcode:productCode},
+					attributes:['xproductid'],
+					logging:(msg)=>{
+						log.debug(msg);
+					}
+				}).then(product=>{
+					if(product){
+						return product.xproductid;
+					}
+					else{
+						return false;
+					}
 
-			}).catch(e=>{
+				}).catch(e=>{
+					return false;
+				});
+			}
+			else{
+				log.error("unable get relate module entityidfield and columnname for xProduct");
 				return false;
-			});
+			}
+			
 		}
 		rSalesOrder.prototype.getUomId=async function(uomName,log){
 			var dbconn=this.getDb();
@@ -754,8 +770,6 @@ rSalesOrder.prototype.getFields=async function (log){
 						}
 					}).then(retailer=>{
 						if(retailer){
-							console.log(retailer[entityidfield]);
-							log.info(retailer[entityidfield]);
 							return retailer[entityidfield];
 						}
 						else{
@@ -783,7 +797,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 						if(subretailer){
 
-							return subretailer.xsubretailerid;
+							return subretailer[entityidfield];
 						}
 						else{
 
@@ -811,7 +825,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						}
 					}).then(retailer=>{
 						if(retailer){
-							return retailer.xretailerid;
+							return retailer[entityidfield];
 						}
 						else{
 							return false;
@@ -828,9 +842,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			}
 		}
 
-		rSalesOrder.prototype.updateLineItems=async function(so,audit,coll,log){
-
-
+		rSalesOrder.prototype.updateLineItems=async function(so,audit,coll,log,prkey){
 
 			var self=this;
 			var dbconn=this.getDb();
@@ -871,7 +883,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						case transRel.profirldname :
 						if(is_process==1){
 							log.info("====== product details ==============")
-							var productId=await self.getProductId(lineItem.productcode._text,log);
+							var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
 							if(productId==false){
 								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
 									audit.statusCode='FN8212';
