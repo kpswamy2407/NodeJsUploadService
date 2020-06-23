@@ -738,7 +738,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						[Op.and]: [
 						  { deleted:0 },
 						  { distributor_id:distId},
-						  dbconn.where(dbconn.fn('upper', dbconn.col('?')),coll.buyerid.customercode._text)
+						  {[columnname]:coll.buyerid.customercode._text}
 						]
 					},
 					attributes:[entityidfield],
