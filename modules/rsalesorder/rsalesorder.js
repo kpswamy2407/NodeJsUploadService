@@ -124,6 +124,9 @@ const { QueryTypes } = require('sequelize');
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
  				await dbconn.transaction().then(async (t) => {
+ 					if(self.isFailure==true){
+ 						return Promise.resolve(this.updateStatus(self.isFailure));
+ 					}
  					return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  						return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
  							if(t.commit()){
