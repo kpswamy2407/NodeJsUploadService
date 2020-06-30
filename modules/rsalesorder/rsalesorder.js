@@ -57,7 +57,7 @@ const { QueryTypes } = require('sequelize');
  	};
  	rSalesOrder.prototype.import=async function(xml,xmlFile){
  		try{
- 			
+ 			var self=this;
  			var xmlf=new XmlFile();
  			xmlf.setLog(this.getLog());
  			xmlf.basedir='./public/uploads';
@@ -127,6 +127,10 @@ const { QueryTypes } = require('sequelize');
  					if(self.isFailure==true){
  						return Promise.resolve(this.updateStatus(self.isFailure));
  					}
+ 					var salesorderid=await self.getCrmEntity('xrSalesOrder',log);
+ 					log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
+ 					rso.salesorderid=salesorderid;
+ 					rsocf.salesorderid=salesorderid;
  					return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  						return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
  							if(t.commit()){
@@ -206,10 +210,7 @@ const { QueryTypes } = require('sequelize');
  		const CurrencyInfo=dbconn.import('./../../models/currency-info');
  		var rso=new rSalesOrder();
  		var rsocf=new rSalesOrderCf();
- 		var salesorderid=await self.getCrmEntity('xrSalesOrder',log);
- 		log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
- 		rso.salesorderid=salesorderid;
- 		rsocf.salesorderid=salesorderid;
+ 		
  		rso.lbl_rso_save_pro_cate=await self.getInvMgtConfig('lbl_rso_save_pro_cate');
 
  		await fields.reduce(async (promise, field) => {
@@ -250,7 +251,7 @@ const { QueryTypes } = require('sequelize');
  			 	 	else{
  			 	 		log.error("unable to get the buye id :"+buyerid);
  			 	 		audit.statusCode='FN8200';
- 			 	 		audit.statusMsg="Due to Invalid data, we are unable to get the buyer id";
+ 			 	 		audit.statusMsg="Invalid Customer";
  			 	 		audit.reason="Error while getting the related module data";
  			 	 		audit.status='Failed';
  			 	 		audit.subject=coll.subject._text;
@@ -290,7 +291,7 @@ const { QueryTypes } = require('sequelize');
  			 	 	catch(e){
  			 	 		log.error("Unable to get the salesman info");
  			 	 		audit.statusCode='FN8210';
- 			 	 		audit.statusMsg="Invalid Salesman code";
+ 			 	 		audit.statusMsg="Invalid Salesman";
  			 	 		audit.reason="Error while getting the related module data";
  			 	 		audit.status='Failed';
  			 	 		audit.subject=coll.subject._text;
@@ -319,7 +320,7 @@ const { QueryTypes } = require('sequelize');
 	 		                         		rsocf[field.columnname]= coll[field.columnname]._text;
 	 		                         	}
 	 		                         	else{
-	 		                         		log.error(ield.columnname+" is required");
+	 		                         		log.error(field.columnname+" is required");
 	 		                         		audit.statusCode='FN8210';
 	 		                         		audit.statusMsg=field.columnname+" is required";
 	 		                         		audit.reason=field.columnname+" is required";
@@ -890,7 +891,7 @@ rSalesOrder.prototype.getFields=async function (log){
 							if(productId==false){
 								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
 									audit.statusCode='FN8212';
-									audit.statusMsg="Invalid Product Code "
+									audit.statusMsg="Invalid Product Code"
 									audit.reason="Product Is Not Availabale with provided input"+lineItem.productcode._text;
 									audit.status='Failed';
 									audit.subject=so.subject;
@@ -919,7 +920,7 @@ rSalesOrder.prototype.getFields=async function (log){
 							var uomId=await self.getUomId(lineItem.tuom.uomname._text,log);
 							if(uomId==false){
 								audit.statusCode='FN8213';
-								audit.statusMsg="Invalid UOM - "+lineItem.tuom.uomname._text;
+								audit.statusMsg="Invalid UOM";
 								audit.reason="UOM Is Not Availabale with provided input "+lineItem.tuom.uomname._text;
 								audit.status='Failed';
 								audit.subject=so.subject;
