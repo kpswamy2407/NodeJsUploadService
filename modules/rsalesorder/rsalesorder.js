@@ -124,7 +124,9 @@ const { QueryTypes } = require('sequelize');
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
  				await dbconn.transaction().then(async (t) => {
+ 					console.log(self.isFailure);
  					if(self.isFailure==true){
+ 						return;
  						return Promise.resolve(this.updateStatus(self.isFailure));
  					}
  					var salesorderid=await self.getCrmEntity('xrSalesOrder',log);
@@ -172,6 +174,8 @@ const { QueryTypes } = require('sequelize');
  									
  									
  								}
+ 							}).catch(e=>{
+ 								return;
  							});
  								log.info("****************** vtiger_xrso lineitems update -end *********************")
  								
