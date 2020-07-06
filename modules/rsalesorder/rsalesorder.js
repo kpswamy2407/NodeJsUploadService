@@ -139,9 +139,8 @@ const { QueryTypes } = require('sequelize');
  								await self.save(socf.salesorderid,log);
  								log.info("************* Transaction -vtiger_xrso- end ***************");
  								log.info("*********************** vtiger_xrso - lineItems update start **************")
- 								await self.updateLineItems(so,audit,coll.lineitems,log,crdr.prkey());
- 								log.info("****************** vtiger_xrso lineitems update -end *********************")
- 								if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
+ 								await self.updateLineItems(so,audit,coll.lineitems,log,crdr.prkey()).then(async()=>{
+ 									if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
  									log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
  									log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
  									log.info("*********** RSO to SO conversion start ************")
@@ -173,6 +172,9 @@ const { QueryTypes } = require('sequelize');
  									
  									
  								}
+ 							});
+ 								log.info("****************** vtiger_xrso lineitems update -end *********************")
+ 								
 
  							}
  						});
@@ -899,7 +901,7 @@ rSalesOrder.prototype.getFields=async function (log){
 									self.trash(so.salesorderid,log);
 									self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 									self.isFailure=true;
-									continue lineItemsIteration;
+									return Promise.reject(false);
 								}
 								else{
 									xrsoProdRel['productname']='0';
@@ -928,7 +930,7 @@ rSalesOrder.prototype.getFields=async function (log){
 								self.trash(so.salesorderid,log);
 								self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 								self.isFailure=true;
-								continue lineItemsIteration;
+								return Promise.reject(false);
 
 							}else{
 								var isProdUomMapped= await self.isProdUomMap(xrsoProdRel['productid'],uomId,log);
@@ -944,7 +946,7 @@ rSalesOrder.prototype.getFields=async function (log){
 										self.trash(so.salesorderid,log);
 										self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 										self.isFailure=true;
-										continue lineItemsIteration;
+										return Promise.reject(false);
 
 									}	
 								}
@@ -990,7 +992,7 @@ rSalesOrder.prototype.getFields=async function (log){
 								self.trash(so.salesorderid,log);
 								self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 								self.isFailure=true;
-								continue lineItemsIteration;
+								return Promise.reject(false);
 							}
 						}catch(e){
 							log.error("Invalid Quantity");
@@ -1003,7 +1005,7 @@ rSalesOrder.prototype.getFields=async function (log){
 							self.trash(so.salesorderid,log);
 							self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 							self.isFailure=true;
-							continue lineItemsIteration;
+							return Promise.reject(false);
 						}
 						break;
 						case 'baseqty':
