@@ -124,9 +124,7 @@ const { QueryTypes } = require('sequelize');
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
  				await dbconn.transaction().then(async (t) => {
- 					console.log(self.isFailure);
  					if(self.isFailure==true){
- 						return;
  						return Promise.resolve(this.updateStatus(self.isFailure));
  					}
  					var salesorderid=await self.getCrmEntity('xrSalesOrder',log);
@@ -185,12 +183,13 @@ const { QueryTypes } = require('sequelize');
  					}).then(async (t) => {
 
  					}).catch(async (err) => {
+ 						console.log(err);
  						audit.statusCode='FN2010';
  						audit.statusMsg=err.message;
  						audit.reason=err.message;
  						audit.status='Failed';
  						audit.subject=rso.subject;
- 						audit.saveLog(dbconn,log);
+ 						await audit.saveLog(dbconn,log);
  						self.isFailure=true;
  						return await t.rollback();
  					});
@@ -261,7 +260,7 @@ const { QueryTypes } = require('sequelize');
  			 	 		audit.reason="Error while getting the related module data";
  			 	 		audit.status='Failed';
  			 	 		audit.subject=coll.subject._text;
- 			 	 		audit.saveLog(dbconn,log);
+ 			 	 		await audit.saveLog(dbconn,log);
  			 	 		self.isFailure=true;
  			 	 	}
  			 	 	break;
@@ -282,7 +281,7 @@ const { QueryTypes } = require('sequelize');
  			 	 		audit.reason="Error while getting the related module data";
  			 	 		audit.status='Failed';
  			 	 		audit.subject=coll.subject._text;
- 			 	 		audit.saveLog(dbconn,log);
+ 			 	 		await audit.saveLog(dbconn,log);
  			 	 		self.isFailure=true;
  			 	 	}
  			 	 	break;
@@ -301,7 +300,7 @@ const { QueryTypes } = require('sequelize');
  			 	 		audit.reason="Error while getting the related module data";
  			 	 		audit.status='Failed';
  			 	 		audit.subject=coll.subject._text;
- 			 	 		audit.saveLog(dbconn,log);
+ 			 	 		await audit.saveLog(dbconn,log);
  			 	 		self.isFailure=true;
  			 	 	}
 
@@ -332,7 +331,7 @@ const { QueryTypes } = require('sequelize');
 	 		                         		audit.reason=field.columnname+" is required";
 	 		                         		audit.status='Failed';
 	 		                         		audit.subject=coll.subject._text;
-	 		                         		audit.saveLog(dbconn,log);
+	 		                         		await audit.saveLog(dbconn,log);
 	 		                         		self.isFailure=true;
 	 		                         	} 
 	 		                         }
@@ -901,7 +900,7 @@ rSalesOrder.prototype.getFields=async function (log){
 									audit.reason="Product Is Not Availabale with provided input"+lineItem.productcode._text;
 									audit.status='Failed';
 									audit.subject=so.subject;
-									audit.saveLog(dbconn,log);
+									await audit.saveLog(dbconn,log);
 									self.trash(so.salesorderid,log);
 									self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 									self.isFailure=true;
@@ -930,7 +929,7 @@ rSalesOrder.prototype.getFields=async function (log){
 								audit.reason="UOM Is Not Availabale with provided input "+lineItem.tuom.uomname._text;
 								audit.status='Failed';
 								audit.subject=so.subject;
-								audit.saveLog(dbconn,log);
+								await audit.saveLog(dbconn,log);
 								self.trash(so.salesorderid,log);
 								self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 								self.isFailure=true;
@@ -992,7 +991,7 @@ rSalesOrder.prototype.getFields=async function (log){
 								audit.reason="quantity Is Not Availabale";
 								audit.status='Failed';
 								audit.subject=so.subject;
-								audit.saveLog(dbconn,log);
+								await audit.saveLog(dbconn,log);
 								self.trash(so.salesorderid,log);
 								self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 								self.isFailure=true;
@@ -1005,7 +1004,7 @@ rSalesOrder.prototype.getFields=async function (log){
 							audit.reason="quantity Is Not Availabale";
 							audit.status='Failed';
 							audit.subject=so.subject;
-							audit.saveLog(dbconn,log);
+							await audit.saveLog(dbconn,log);
 							self.trash(so.salesorderid,log);
 							self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
 							self.isFailure=true;

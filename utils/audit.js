@@ -31,7 +31,7 @@ var Audit=(function(){
 	Audit.prototype.docCreatedDate=null;
 
 	
-	Audit.prototype.saveLog=function(db,log){
+	Audit.prototype.saveLog= async function(db,log){
 		try{
 			var SendRecAudit=db.import('./../models/send-rec-audit');
 			var RecAuditLog=db.import('./../models/rec-audit-log');
@@ -48,11 +48,12 @@ var Audit=(function(){
 			sendRecAudit.sen_rec_rawurl=this.rawURL;
 			sendRecAudit.sen_rec_destapplication=this.destination;
 			sendRecAudit.sen_rec_sourceapplication=this.source;
-			sendRecAudit.save({logging:(msg)=>{
+			var result= await sendRecAudit.save({logging:(msg)=>{
 				log.debug(msg);
 			}}).then(sr=>{
+				return true;
 			}).catch(e=>{
-				//console.log(e);
+				return false;
 			});
 
 			var recAuditLog=new RecAuditLog();
@@ -71,18 +72,20 @@ var Audit=(function(){
 			recAuditLog.rec_log_subject=this.subject;
 			recAuditLog.rec_log_status_code=this.statusCode;
 			recAuditLog.rec_log_status_msg=this.statusMsg;
-			recAuditLog.save({logging:(msg)=>{
+			var result= await recAuditLog.save({logging:(msg)=>{
 				log.debug(msg);
 			}}).then(rc=>{
-				
+				return true;
 			}).catch(e=>{
+				return false;
 				//console.log(e);
 			});
 		}
 		catch(e){
+			return false;
 			//console.log(e);
 		}
-		
+		return result;
 	};
 	
 	return Audit;
