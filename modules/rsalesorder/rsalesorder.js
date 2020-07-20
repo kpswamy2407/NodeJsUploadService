@@ -513,14 +513,14 @@ rSalesOrder.prototype.getFields=async function (log){
 			if(columnname!='' && entityidfield!=''){
 				const Product=dbconn.import('./../../models/product');
 				return Product.findOne({
-					where:{productcode:productCode},
-					attributes:['xproductid'],
+					where:{[columnname]:productCode},
+					attributes:[entityidfield],
 					logging:(msg)=>{
 						log.debug(msg);
 					}
 				}).then(product=>{
 					if(product){
-						return product.xproductid;
+						return product[entityidfield];
 					}
 					else{
 						return false;
@@ -887,6 +887,110 @@ rSalesOrder.prototype.getFields=async function (log){
 						xrsoProdRel[transRel.relid]=so.salesorderid;
 						break;
 						case transRel.categoryid :
+						if(typeof(lineItem.xprodhierid.prodhiercode)!='undefined' || typeof(lineItem.xprodhierid.prodhiercode)!=null && lineItem.xprodhierid.prodhiercode._text!=''){
+							var showErrorXprodHier=0;
+							var prodHierId=await self.getProdHierId(lineItem.xprodhierid.prodhiercode._text,log,prkey);
+							var LBL_RSO_SAVE_PRO_CATE=await self.getInvMgtConfig('LBL_RSO_SAVE_PRO_CATE');
+							xrsoProdRel[transRel.categoryid]=prodHierId;
+							if(LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='false'){
+								showErrorXprodHier=0;
+							}
+							if(prodHierId==false && showErrorXprodHier==1){
+								audit.statusCode='FN8212';
+								audit.statusMsg="Invalid xProdHier Code"
+								audit.reason="xProdHier Is Not Availabale with provided input"+lineItem.xprodhierid.prodhiercode._text;
+								audit.status='Failed';
+								audit.subject=so.subject;
+								await audit.saveLog(dbconn,log);
+								self.trash(so.salesorderid,log);
+								self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
+								self.isFailure=true;
+								return Promise.reject(false);
+							}
+							else{
+								if(LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && (transRel.receive_pro_by_cate).toLowerCase()=='true' && prodHierId!=''){
+									xrsoProdRel[transRel.categoryid]=prodHierId;
+									var catLevelQuery="select HIR.xprodhierid,HIR.prodhiercode,HRCF.cf_xprodhier_code_path as hpath from vtiger_xprodhier HIR INNER JOIN vtiger_xprodhiercf HRCF ON HIR .xprodhierid = HRCF.xprodhierid  Where HIR .xprodhierid = ?";
+									await dbconn.query(catLevelQuery,{
+										type:QueryTypes.SELECT,
+										replacements:[prodHierId],
+										logging:(msg)=>{
+											log.debug(msg);
+										}
+									}).spread(async(catLeveRes)=>{
+											if(catLeveRes){
+												var hpath=await catLeveRes.hpath;
+												var catParentQtyQuery="select group_concat(HIR.xprodhierid) as cateids from vtiger_xprodhier HIR INNER JOIN vtiger_xprodhiercf HRCF ON HIR.xprodhierid = HRCF.xprodhierid where HIR.xprodhierid = ? or HRCF.cf_xprodhier_code_path like '"+hpath+" -%'";
+												await dbconn.query(catParentQtyQuery,{
+													type:QueryTypes.SELECT,
+													replacements:[prodHierId],
+													logging:(msg)=>{
+														log.debug(msg);
+													}
+												}).spread(async(catParentQtyRes)=>{
+													if(catParentQtyRes){
+														if(catParentQtyRes.cateids!=''){
+															prodHierId=catParentQtyRes.cateids.replace(',',"','");
+														}
+													}
+												}).catch(e=>{
+													log.error(e.message);
+												});
+											}
+									}).catch(e=>{
+										log.error(" Problem identified in product hierachy category level, " + e.message);
+									});
+								
+								var productCatCode=lineItem.product_category_code._text;
+								var productQuery="select PRO.xproductid as proid,PRO.productcode as productcode from vtiger_xproduct PRO  inner Join vtiger_xproductcf PROCF on PRO.xproductid = PROCF.xproductid Where PRO.productcode = ? or PROCF.cf_xproduct_category in(?) order by PRO.productcode DESC limit 1";
+								await dbconn.query(productQuery,{
+										type:QueryTypes.SELECT,
+										replacements:[productCatCode,prodHierId],
+									}).spread(async(productRes)=>{
+										if(productRes){
+											var productId=productRes.proid;
+											var productCode=productRes.productcode;
+											if(productId=='' || productId.length<0){
+												audit.statusCode='FN8212';
+												audit.statusMsg="The catecode not mappied with product"
+												audit.reason="the catecode Is Not Availabale with provided input"+lineItem.xprodhierid.prodhiercode._text;
+												audit.status='Failed';
+												audit.subject=so.subject;
+												await audit.saveLog(dbconn,log);
+												self.trash(so.salesorderid,log);
+												self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
+												self.isFailure=true;
+												return Promise.reject(false);
+											}
+											else{
+												xrsoProdRel[transRel.profirldname]=productId;
+												xrsoProdRel['productcode']=productCode;
+											}
+										}
+										else{
+
+										}
+									}).catch(e=>{
+										log.error(e.message);
+									})
+								}
+								else if(LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && (transRel.receive_pro_by_cate).toLowerCase()=='true' && (prodHierId=='' || prodHierId=='undefined' || prodHierId== false)){
+									audit.statusCode='FN8212';
+									audit.statusMsg="Invalid xProdHier Code"
+									audit.reason="xProdHier Is Not Availabale with provided input"+lineItem.xprodhierid.prodhiercode._text;
+									audit.status='Failed';
+									audit.subject=so.subject;
+									await audit.saveLog(dbconn,log);
+									self.trash(so.salesorderid,log);
+									self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
+									self.isFailure=true;
+									return Promise.reject(false);
+								}
+								else{
+									xrsoProdRel[transRel.categoryid]=prodHierId;
+								}
+							}
+						}
 
 						break;
 						case transRel.profirldname :
@@ -1048,6 +1152,40 @@ rSalesOrder.prototype.getFields=async function (log){
 
 			return Promise.resolve(true);
 
+
+		}
+		rSalesOrder.prototype.getProdHierId=async function(prodHierCode,log,prkey){
+
+			var dbconn=this.getDb();
+			var self=this;
+			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xProdHier','',prkey,log,'');
+			if(columnname!='' && entityidfield!=''){
+				const Prodhier=dbconn.import('./../../models/prodhier');
+				return Prodhier.findOne({
+					where:{[columnname]:prodHierCode},
+					attributes:[entityidfield],
+					logging:(msg)=>{
+						log.debug(msg);
+					}
+				}).then(prodhier=>{
+					if(prodhier){
+						return prodhier[entityidfield];
+					}
+					else{
+						return false;
+					}
+
+				}).catch(e=>{
+					log.error(e.message);
+					return false;
+				});
+			}
+			else{
+				log.error("unable get relate module entityidfield and columnname for xProdHier");
+				return false;
+			}
+			
+		
 
 		}
 		rSalesOrder.prototype.isProdUomMap=async function(productId,uomId,log){
