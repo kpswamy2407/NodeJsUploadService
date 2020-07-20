@@ -995,6 +995,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						break;
 						case transRel.profirldname :
 						console.log(lineItem.productcode._text);
+						console.log(typeof(lineItem.productcode._text));
 						log.info("product id"+lineItem.productcode._text);
 						if(typeof(lineItem.productcode)!=='undefined' || typeof(lineItem.productcode._text)!=='undefined'){
 							if(is_process==1){
