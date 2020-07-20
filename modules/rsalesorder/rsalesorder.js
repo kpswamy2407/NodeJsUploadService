@@ -1026,6 +1026,9 @@ rSalesOrder.prototype.getFields=async function (log){
 							}
 						}
 						}
+						else{
+							console.log("Something went wrong");
+						}
 						
 						break;
 						case transRel.uom :
