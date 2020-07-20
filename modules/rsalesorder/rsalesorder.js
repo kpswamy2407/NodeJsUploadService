@@ -996,7 +996,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						case transRel.profirldname :
 						console.log(lineItem.productcode._text);
 						log.info("product id"+lineItem.productcode._text);
-						if(lineItem.productcode._text!='undefined'){
+						if(typeof(lineItem.productcode)!=='undefined' || typeof(lineItem.productcode._text)!=='undefined'){
 							if(is_process==1){
 							log.info("====== product details ==============")
 							var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
@@ -1004,7 +1004,7 @@ rSalesOrder.prototype.getFields=async function (log){
 								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
 									audit.statusCode='FN8212';
 									audit.statusMsg="Invalid Product Code"
-									audit.reason="Product Is Not Availabale with provided input"+lineItem.productcode._text;
+									audit.reason="Product Is Not Availabale with provided input "+lineItem.productcode._text;
 									audit.status='Failed';
 									audit.subject=so.subject;
 									await audit.saveLog(dbconn,log);
