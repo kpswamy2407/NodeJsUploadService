@@ -994,7 +994,8 @@ rSalesOrder.prototype.getFields=async function (log){
 
 						break;
 						case transRel.profirldname :
-						if(is_process==1){
+						if(lineItem.productcode._text!='undefined'){
+							if(is_process==1){
 							log.info("====== product details ==============")
 							var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
 							if(productId==false){
@@ -1022,6 +1023,8 @@ rSalesOrder.prototype.getFields=async function (log){
 								xrsoProdRel['productcode']=lineItem.productcode._text;
 							}
 						}
+						}
+						
 						break;
 						case transRel.uom :
 						if(is_process==1){
