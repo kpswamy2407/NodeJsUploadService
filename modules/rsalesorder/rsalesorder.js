@@ -997,7 +997,7 @@ rSalesOrder.prototype.getFields=async function (log){
 						console.log(lineItem.productcode._text);
 						console.log(typeof(lineItem.productcode._text));
 						log.info("product id"+lineItem.productcode._text);
-						if(typeof(lineItem.productcode)!=='undefined' || typeof(lineItem.productcode._text)!=='undefined'){
+						if(typeof(lineItem.productcode._text)!=='undefined'){
 							if(is_process==1){
 							log.info("====== product details ==============")
 							var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
