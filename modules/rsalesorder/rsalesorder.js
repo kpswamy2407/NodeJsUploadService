@@ -1689,6 +1689,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 					});
 	 					taxAmount=0.00;
 	 					taxValue=0.00;
+	 					console.log(productTaxDetails);
 	 					await productTaxDetails.reduce(async(promise,tax)=>{
 	 						await promise;
 	 						var XtaxRelSo=dbconn.import('./../../models/x-tax-rel-so');
