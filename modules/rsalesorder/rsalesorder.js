@@ -911,6 +911,9 @@ rSalesOrder.prototype.getFields=async function (log){
 								return Promise.reject(false);
 							}
 							else{
+								log.info("LBL_RSO_SAVE_PRO_CATE:"+LBL_RSO_SAVE_PRO_CATE);
+								log.info("transRel.receive_pro_by_cate"+transRel.receive_pro_by_cate);
+
 								if(LBL_RSO_SAVE_PRO_CATE.toLowerCase()=='true' && (transRel.receive_pro_by_cate).toLowerCase()=='true' && prodHierId!=''){
 									xrsoProdRel[transRel.categoryid]=prodHierId;
 									var catLevelQuery="select HIR.xprodhierid,HIR.prodhiercode,HRCF.cf_xprodhier_code_path as hpath from vtiger_xprodhier HIR INNER JOIN vtiger_xprodhiercf HRCF ON HIR .xprodhierid = HRCF.xprodhierid  Where HIR .xprodhierid = ?";
