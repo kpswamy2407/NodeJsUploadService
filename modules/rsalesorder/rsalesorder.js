@@ -12,7 +12,7 @@ const { QueryTypes } = require('sequelize');
  * 
  * @see 
  * @since Tue October 01, 2019 05:24 PM.
- * @author nandha.viswanathan@sifycorp.com 
+ * @author pedda.swamy@sifycorp.com 
  */
  var rSalesOrder=(function(){
  	__extends(rSalesOrder,BaseModule);
@@ -418,7 +418,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			const TransRel=dbconn.import('./../../models/trans-rel');
 			return TransRel.findOne({
 				where:{'transaction_name':'xrSalesOrder'},
-				attributes:['transaction_rel_table','profirldname','relid','uom','categoryid','receive_pro_by_cate'],
+				attributes:['transaction_rel_table','profirldname','relid','categoryid','uom','categoryid','receive_pro_by_cate'],
 				logging:(msg)=>{
 					log.debug(msg);
 				}
