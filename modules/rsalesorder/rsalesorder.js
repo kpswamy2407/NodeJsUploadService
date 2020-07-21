@@ -418,7 +418,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			const TransRel=dbconn.import('./../../models/trans-rel');
 			return TransRel.findOne({
 				where:{'transaction_name':'xrSalesOrder'},
-				attributes:['transaction_rel_table','profirldname','relid','categoryid','uom','categoryid','receive_pro_by_cate'],
+				attributes:['categoryid','profirldname','relid','transaction_rel_table','uom','receive_pro_by_cate'],
 				logging:(msg)=>{
 					log.debug(msg);
 				}
