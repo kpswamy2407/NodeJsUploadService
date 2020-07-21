@@ -385,6 +385,9 @@ rSalesOrder.prototype.getFields=async function (log){
 			where:{
 				tablename:tableName,xmlreceivetable:1},
 				attributes: ['columnname'],
+				order:[
+					['columnname','DESC']
+				],
 				logging:(msg)=>{
 					log.debug(msg);
 				}
