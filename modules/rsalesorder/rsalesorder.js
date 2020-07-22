@@ -118,9 +118,48 @@ const { QueryTypes } = require('sequelize');
  			else{
  				var baseColls=baseColl;
  			}
+ 			const distIdFromId=await dbconn.query("SELECT xdistributorid FROM vtiger_xdistributor where distributorcode=?",{
+ 				type:QueryTypes.SELECT,
+ 				replacements:[crdr.fromId()]
+ 				}).spread(async(dist)=>{
+ 					return dist.xdistributorid;
+ 				}).catch(e=>{
+ 					log.info("dist id from fromid "+e.message);
+ 				})
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
- 				const distributorId=coll.distributor_id._text;
+ 				if(coll.hasOwnProperty('type')){
+ 					const type=coll.type._text;
+ 					log.inf('type:'+type);
+ 				}
+ 				if(typeof(type)!=='undefined' && Number(type)==14){
+ 					var unique_retailer_code=coll.buyerid.unique_retailer_code._text;
+ 					var distQuery="select vtiger_xretailer.xretailerid,vtiger_xretailercf.cf_xretailer_active,												vtiger_xretailer.unique_retailer_code,vtiger_xretailer.distributor_id,												vtiger_xdistributor.distributorname,												vtiger_xdistributor.distributorcode from vtiger_xretailer inner join vtiger_xretailercf on vtiger_xretailer.xretailerid=vtiger_xretailercf.xretailerid inner join vtiger_xdistributor on vtiger_xdistributor.xdistributorid = vtiger_xretailer.distributor_id											where vtiger_xretailer.unique_retailer_code =? and cf_xretailer_active = 1 order by vtiger_xretailer.xretailerid desc limit 1";
+ 					await dbconn.query(distQuery,{
+ 						type:QueryTypes.SELECT,
+ 						replacements:[unique_retailer_code],
+ 						logging:(msg)=>{
+ 							log.debug(msg);
+ 							}
+ 						}).spread(async(distQryRes)=>{
+ 							if(distQryRes){
+ 								var distributorId=distQryRes.distributor_id;
+ 								var distributorCodeForSellerId=distQryRes.distributorcode;
+ 							}
+ 						}).catch(e=>{
+ 							log.info(" type 14 values not available "+ e.message);
+ 						})
+ 				}
+ 				else{
+ 					if(coll.hasOwnProperty('distributor_id')){
+ 						var distributorId=coll.distributor_id._text;
+ 					}
+ 					else{
+ 						var distributorId=distIdFromId;
+ 					}
+ 				}
+ 				
+ 				
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
  				await dbconn.transaction().then(async (t) => {
@@ -267,41 +306,71 @@ const { QueryTypes } = require('sequelize');
 
  			 	 	case 'cf_xrso_beat':
  			 	 	log.info("=========== Related Module: Beat ================")
-
- 			 	 	var beatId=await self.getBeat(coll,log,distId,prkey);
- 			 	 	if(beatId){
- 			 	 		log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
- 			 	 		rso[field.columnname]=beatId;
- 			 	 		rsocf[field.columnname]=beatId;
+ 			 	 	if(typeof(coll.cf_xrso_beat.beatcode._text)!=='undefined' && (coll.cf_xrso_beat.beatcode._text).length>0){
+ 			 	 		var beatId=await self.getBeat(coll,log,distId,prkey);
+ 			 	 		if(beatId){
+ 			 	 			log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
+ 			 	 			rso[field.columnname]=beatId;
+ 			 	 			rsocf[field.columnname]=beatId;
+ 			 	 		}
+ 			 	 		else{
+ 			 	 			log.error("Unable to get the beat info");
+ 			 	 			audit.statusCode='FN8216';
+ 			 	 			audit.statusMsg="Invalid Beat";
+ 			 	 			audit.reason="Error while getting the related module data";
+ 			 	 			audit.status='Failed';
+ 			 	 			audit.subject=coll.subject._text;
+ 			 	 			await audit.saveLog(dbconn,log);
+ 			 	 			self.isFailure=true;
+ 			 	 		
+ 			 	 		}
  			 	 	}
  			 	 	else{
- 			 	 		log.error("Unable to get the beat info");
- 			 	 		audit.statusCode='FN8216';
- 			 	 		audit.statusMsg="Invalid Beat";
- 			 	 		audit.reason="Error while getting the related module data";
- 			 	 		audit.status='Failed';
- 			 	 		audit.subject=coll.subject._text;
- 			 	 		await audit.saveLog(dbconn,log);
- 			 	 		self.isFailure=true;
+ 			 	 		if(field.typeofdata.includes('M')){
+ 			 	 			log.error("Unable to get the beat info");
+ 			 	 			audit.statusCode='FN8216';
+ 			 	 			audit.statusMsg="Invalid Beat";
+ 			 	 			audit.reason="Error while getting the related module data";
+ 			 	 			audit.status='Failed';
+ 			 	 			audit.subject=coll.subject._text;
+ 			 	 			await audit.saveLog(dbconn,log);
+ 			 	 			self.isFailure=true;
+ 			 	 		}
  			 	 	}
+ 			 	 	
  			 	 	break;
  			 	 	case 'cf_xrso_sales_man':
  			 	 	log.info("=========== Related Module: Salesman ================")
+ 			 	 	log.info(field.columnname+" : "+coll.cf_xrso_sales_man.salesmancode._text+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
+ 			 	 	if(typeof(coll.cf_xrso_sales_man.salesmancode._text)!=='undefined' && (coll.cf_xrso_sales_man.salesmancode._text).length>0){
+ 			 	 		var salesmanId=await self.getSalesman(coll,log,distId,prkey);
+ 			 	 		if(salesmanId){
+ 			 	 			rso[field.columnname]= salesmanId;
+ 			 	 			rsocf[field.columnname]= salesmanId;
+ 			 	 		}
+ 			 	 		else{
+ 			 	 			log.error("Unable to get the salesman info");
+ 			 	 			audit.statusCode='FN8210';
+ 			 	 			audit.statusMsg="Invalid Salesman";
+ 			 	 			audit.reason="Error while getting the related module data";
+ 			 	 			audit.status='Failed';
+ 			 	 			audit.subject=coll.subject._text;
+ 			 	 			await audit.saveLog(dbconn,log);
+ 			 	 			self.isFailure=true;
+ 			 	 		}
 
- 			 	 	try{
- 			 	 		log.info(field.columnname+" : "+coll.cf_xrso_sales_man.salesmanid._text+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
- 			 	 		rso[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
- 			 	 		rsocf[field.columnname]= coll.cf_xrso_sales_man.salesmanid._text;
  			 	 	}
- 			 	 	catch(e){
- 			 	 		log.error("Unable to get the salesman info");
- 			 	 		audit.statusCode='FN8210';
- 			 	 		audit.statusMsg="Invalid Salesman";
- 			 	 		audit.reason="Error while getting the related module data";
- 			 	 		audit.status='Failed';
- 			 	 		audit.subject=coll.subject._text;
- 			 	 		await audit.saveLog(dbconn,log);
- 			 	 		self.isFailure=true;
+ 			 	 	else{
+ 			 	 		if(field.typeofdata.includes('M')){
+	 			 	 		log.error("Unable to get the salesman info");
+	 			 	 		audit.statusCode='FN8210';
+	 			 	 		audit.statusMsg="Invalid Salesman";
+	 			 	 		audit.reason="Error while getting the related module data";
+	 			 	 		audit.status='Failed';
+	 			 	 		audit.subject=coll.subject._text;
+	 			 	 		await audit.saveLog(dbconn,log);
+	 			 	 		self.isFailure=true;
+ 			 	 		}
  			 	 	}
 
  			 	 	break;
@@ -317,37 +386,63 @@ const { QueryTypes } = require('sequelize');
  			 	 }
  			 	 break;
  			 	 default:
-	 		                         
-	 		                         if(field.typeofdata.includes('M')){
-	 		                         	if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
-	 		                         		log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
-	 		                         		rso[field.columnname]= coll[field.columnname]._text;
-	 		                         		rsocf[field.columnname]= coll[field.columnname]._text;
-	 		                         	}
-	 		                         	else{
-	 		                         		log.error(field.columnname+" is required");
-	 		                         		audit.statusCode='FN8210';
-	 		                         		audit.statusMsg=field.columnname+" is required";
-	 		                         		audit.reason=field.columnname+" is required";
-	 		                         		audit.status='Failed';
-	 		                         		audit.subject=coll.subject._text;
-	 		                         		await audit.saveLog(dbconn,log);
-	 		                         		self.isFailure=true;
-	 		                         	} 
-	 		                         }
-	 		                         else{
-	 		                         	if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
-	 		                         		
-	 		                         		if( typeof (coll[field.columnname]) !=='undefined' &&coll[field.columnname]!=='undefined' && coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
-	 		                         			log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
-	 		                         			rso[field.columnname]= coll[field.columnname]._text;
-	 		                         			rsocf[field.columnname]= coll[field.columnname]._text;
-	 		                         		} 
-	 		                         	}
-	 		                         }
-	 		            
-	 		               break;
-	 		           }
+	 		     if(field.typeofdata.includes('M') && field.columnname=='subject'){
+	 		     	return xrSalesOrder.findOne({
+	 		     		where:{subject:coll[field.columnname]._text},
+	 		     		attributes:[subject],
+	 		     		logging:(msg)=>{
+	 		     			log.debug(msg);
+	 		     		}
+	 		     	}).then(async(xrsorder)=>{
+	 		     		if(xrsorder){
+	 		     			if(xrsorder.subject!=''){
+	 		     				log.error(field.columnname+" is required");
+	 		     				audit.statusCode='FN8210';
+	 		     				audit.statusMsg="Rejected since Order already available";
+	 		     				audit.reason=coll.subject._text+ " Already Available In Application";
+	 		     				audit.status='Failed';
+	 		     				audit.subject=coll.subject._text;
+	 		     				await audit.saveLog(dbconn,log);
+	 		     				self.isFailure=true;
+	 		     			}
+	 		     		}
+	 		     	}).catch(e=>{
+	 		     	
+	 		     	});
+	 		     }  
+	 		     
+	 		     	if(field.typeofdata.includes('M')){
+	 		     		if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		     			log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
+	 		     			rso[field.columnname]= coll[field.columnname]._text;
+	 		     			rsocf[field.columnname]= coll[field.columnname]._text;
+	 		     		}
+	 		     		else{
+	 		     			log.error(field.columnname+" is required");
+	 		     			audit.statusCode='FN8210';
+	 		     			audit.statusMsg=field.columnname+" is required";
+	 		     			audit.reason=field.columnname+" is required";
+	 		     			audit.status='Failed';
+	 		     			audit.subject=coll.subject._text;
+	 		     			await audit.saveLog(dbconn,log);
+	 		     			self.isFailure=true;
+	 		     		} 
+	 		     	}
+	 		     	else{
+	 		     		if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
+
+	 		     			if( typeof (coll[field.columnname]) !=='undefined' &&coll[field.columnname]!=='undefined' && coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		     				log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
+	 		     				rso[field.columnname]= coll[field.columnname]._text;
+	 		     				rsocf[field.columnname]= coll[field.columnname]._text;
+	 		     			} 
+	 		     		}
+	 		     	}
+
+	 		                   
+ 			 	 
+ 			 	 break;
+ 			 	}
 
 
 
@@ -431,6 +526,37 @@ rSalesOrder.prototype.getFields=async function (log){
 
 				throw new Error("Unable to get the tranaction related information");
 			});
+		}
+
+		rSalesOrder.prototype.getSalesman=async function(coll,log,distId,prkey){
+			var dbconn=this.getDb();
+			var self=this;
+			const Salesman=dbconn.import('./../../models/salesman');
+			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xSalesman','',prkey,log,'');
+			if(columnname!='' && entityidfield!=''){
+				return Salesman.findOne({
+					where:{[columnname]:coll.cf_xrso_sales_man.salesmancode._text,deleted:0,cf_xbeat_distirbutor_id:distId},
+					attributes:[entityidfield],
+					logging:(msg)=>{
+						log.debug(msg);
+					}
+				}).then(salesman=>{
+					if(salesman){
+						return salesman[entityidfield];
+					}
+					else{
+						return false;
+					}
+
+				}).catch(e=>{
+					return false;
+				});
+			}
+			else{
+				log.error(" unable to get related module values for module:xSalesman")
+				return false
+			}
+			
 		}
 
 		rSalesOrder.prototype.getBeat=async function(coll,log,distId,prkey){
