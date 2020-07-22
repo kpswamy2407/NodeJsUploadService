@@ -376,7 +376,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			return e.error;
 		});
 	}
-	rSalesOrder.prototype.getTransGridFields=async function (tableName,log){
+	rSalesOrder.prototype.getTransGridFields=async function (tableName,log,order){
 		log.info("======== Related Module: sify_tr_grid_field ================")
 		const dbconn=this.getDb();
 		const XGridField=dbconn.import('./../../models/x-grid-field');
@@ -386,7 +386,7 @@ rSalesOrder.prototype.getFields=async function (log){
 				tablename:tableName,xmlreceivetable:1},
 				attributes: ['columnname'],
 				order:[
-					['columnname','DESC']
+					['columnname',order]
 				],
 				logging:(msg)=>{
 					log.debug(msg);
@@ -860,7 +860,12 @@ rSalesOrder.prototype.getFields=async function (log){
 			var dbconn=this.getDb();
 			const XrsoProdRel=dbconn.import('./../../models/xrso-prod-rel');
 			var transRel=await self.getTransRel(log);
-			var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table,log);
+			if(transRel.categoryid!='' && (transRel.categoryid).length>0){
+				var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table,log,'DESC');	
+			}
+			else{
+				var transGridFields=await self.getTransGridFields(transRel.transaction_rel_table,log,'ASC');
+			}
 			if(Object.getPrototypeOf( coll[transRel.transaction_rel_table]) === Object.prototype){
 
 				var lineItems=[coll[transRel.transaction_rel_table]]
@@ -1000,9 +1005,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 						break;
 						case transRel.profirldname :
-						console.log(lineItem.productcode._text);
-						console.log(typeof(lineItem.productcode._text));
-						log.info("product id"+lineItem.productcode._text);
+						
 						if(typeof(lineItem.productcode._text)!=='undefined'){
 							if(is_process==1){
 							log.info("====== product details ==============")
@@ -1689,7 +1692,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 					});
 	 					taxAmount=0.00;
 	 					taxValue=0.00;
-	 					console.log(productTaxDetails);
+
 	 					await productTaxDetails.reduce(async(promise,tax)=>{
 	 						await promise;
 	 						var XtaxRelSo=dbconn.import('./../../models/x-tax-rel-so');
