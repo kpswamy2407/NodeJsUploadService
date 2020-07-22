@@ -162,7 +162,8 @@ const { QueryTypes } = require('sequelize');
  						})
  					}
  				}
- 				log.info("distributor id"+distributorId)
+ 				log.info("distributor id"+distributorId);
+ 				log.info("distributorCodeForSellerId :"+distributorCodeForSellerId);
  				
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
