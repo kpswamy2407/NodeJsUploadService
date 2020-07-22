@@ -167,6 +167,9 @@ const { QueryTypes } = require('sequelize');
  				
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
+ 				if(coll.hasOwnProperty('type') && Number(coll.type._text)==14){
+ 					rsocf['cf_xrso_seller_id']=distributorCodeForSellerId;
+ 				}
  				await dbconn.transaction().then(async (t) => {
  					if(self.isFailure==true){
  						return Promise.resolve(this.updateStatus(self.isFailure));
