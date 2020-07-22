@@ -535,7 +535,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xSalesman','',prkey,log,'');
 			if(columnname!='' && entityidfield!=''){
 				return Salesman.findOne({
-					where:{[columnname]:coll.cf_xrso_sales_man.salesmancode._text,deleted:0,cf_xbeat_distirbutor_id:distId},
+					where:{[columnname]:coll.cf_xrso_sales_man.salesmancode._text,deleted:0},
 					attributes:[entityidfield],
 					logging:(msg)=>{
 						log.debug(msg);
