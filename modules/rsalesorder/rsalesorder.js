@@ -389,7 +389,7 @@ const { QueryTypes } = require('sequelize');
 	 		     if(field.typeofdata.includes('M') && field.columnname=='subject'){
 	 		     	return rSalesOrder.findOne({
 	 		     		where:{subject:coll[field.columnname]._text},
-	 		     		attributes:[subject],
+	 		     		attributes:['subject'],
 	 		     		logging:(msg)=>{
 	 		     			log.debug(msg);
 	 		     		}
