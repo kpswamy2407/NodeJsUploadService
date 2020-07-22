@@ -406,8 +406,12 @@ const { QueryTypes } = require('sequelize');
 	 		     				self.isFailure=true;
 	 		     			}
 	 		     		}
+	 		     		else{
+	 		     			console.log(" no values found ")
+	 		     			log.info(" else subject "+coll[field.columnname]._text);
+	 		     		}
 	 		     	}).catch(e=>{
-	 		     	
+	 		     		log.error(" subject "+e.message);
 	 		     	});
 	 		     }  
 	 		     
