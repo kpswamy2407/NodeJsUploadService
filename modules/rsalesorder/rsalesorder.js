@@ -118,20 +118,11 @@ const { QueryTypes } = require('sequelize');
  			else{
  				var baseColls=baseColl;
  			}
- 			const distIdFromId=await dbconn.query("SELECT xdistributorid FROM vtiger_xdistributor where distributorcode=?",{
- 				type:QueryTypes.SELECT,
- 				replacements:[crdr.fromId()],
- 				logging:(msg)=>{
- 					log.debug(msg);
- 				}
- 				}).spread(async(dist)=>{
- 					return dist.xdistributorid;
- 				}).catch(e=>{
- 					log.info("dist id from fromid "+e.message);
- 				})
+ 			
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
- 				
+ 				var distributorId=0;
+ 				var distributorCodeForSellerId=0;
  				if(coll.hasOwnProperty('type') && Number(coll.type._text)==14){
  					var unique_retailer_code=coll.buyerid.unique_retailer_code._text;
  					var distQuery="select vtiger_xretailer.xretailerid,vtiger_xretailercf.cf_xretailer_active,vtiger_xretailer.unique_retailer_code,vtiger_xretailer.distributor_id,vtiger_xdistributor.distributorname,vtiger_xdistributor.distributorcode from vtiger_xretailer inner join vtiger_xretailercf on vtiger_xretailer.xretailerid=vtiger_xretailercf.xretailerid inner join vtiger_xdistributor on vtiger_xdistributor.xdistributorid = vtiger_xretailer.distributor_id	where vtiger_xretailer.unique_retailer_code =? and cf_xretailer_active = 1 order by vtiger_xretailer.xretailerid desc limit 1";
@@ -144,8 +135,10 @@ const { QueryTypes } = require('sequelize');
  						}).spread(async(distQryRes)=>{
  							console.log(distQryRes);
  							if(distQryRes){
- 								var distributorId=distQryRes.distributor_id;
- 								var distributorCodeForSellerId=distQryRes.distributorcode;
+ 								audit.distCode=distQryRes.distributorcode;
+ 								 	distributorId=distQryRes.distributor_id;
+ 									distributorCodeForSellerId=distQryRes.distributorcode;
+ 									return;
  							}
  						}).catch(e=>{
  							log.info(" type 14 values not available "+ e.message);
@@ -153,10 +146,20 @@ const { QueryTypes } = require('sequelize');
  				}
  				else{
  					if(coll.hasOwnProperty('distributor_id')){
- 						var distributorId=coll.distributor_id._text;
+ 						 distributorId=coll.distributor_id._text;
  					}
  					else{
- 						var distributorId=distIdFromId;
+ 						distributorId=await dbconn.query("SELECT xdistributorid FROM vtiger_xdistributor where distributorcode=?",{
+ 								type:QueryTypes.SELECT,
+ 								replacements:[crdr.fromId()],
+ 								logging:(msg)=>{
+ 									log.debug(msg);
+ 								}
+ 						}).spread(async(dist)=>{
+ 						return dist.xdistributorid;
+ 						}).catch(e=>{
+ 							log.info("dist id from fromid "+e.message);
+ 						})
  					}
  				}
  				log.info("distributor id"+distributorId)
