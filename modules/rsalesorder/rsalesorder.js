@@ -130,7 +130,7 @@ const { QueryTypes } = require('sequelize');
  				await promise;
  				if(coll.hasOwnProperty('type')){
  					const type=coll.type._text;
- 					log.inf('type:'+type);
+ 					log.info('type:'+type);
  				}
  				if(typeof(type)!=='undefined' && Number(type)==14){
  					var unique_retailer_code=coll.buyerid.unique_retailer_code._text;
