@@ -134,7 +134,7 @@ const { QueryTypes } = require('sequelize');
  				
  				if(coll.hasOwnProperty('type') && Number(coll.type._text)==14){
  					var unique_retailer_code=coll.buyerid.unique_retailer_code._text;
- 					var distQuery="select vtiger_xretailer.xretailerid,vtiger_xretailercf.cf_xretailer_active,vtiger_xretailer.unique_retailer_code,vtiger_xretailer.distributor_id,vtiger_xdistributor.distributorname,vtiger_xdistributor.distributorcode from vtiger_xretailer inner join vtiger_xretailercf on viger_xretailer.xretailerid=vtiger_xretailercf.xretailerid inner join vtiger_xdistributor on vtiger_xdistributor.xdistributorid = vtiger_xretailer.distributor_id	where vtiger_xretailer.unique_retailer_code =? and cf_xretailer_active = 1 order by vtiger_xretailer.xretailerid desc limit 1";
+ 					var distQuery="select vtiger_xretailer.xretailerid,vtiger_xretailercf.cf_xretailer_active,vtiger_xretailer.unique_retailer_code,vtiger_xretailer.distributor_id,vtiger_xdistributor.distributorname,vtiger_xdistributor.distributorcode from vtiger_xretailer inner join vtiger_xretailercf on vtiger_xretailer.xretailerid=vtiger_xretailercf.xretailerid inner join vtiger_xdistributor on vtiger_xdistributor.xdistributorid = vtiger_xretailer.distributor_id	where vtiger_xretailer.unique_retailer_code =? and cf_xretailer_active = 1 order by vtiger_xretailer.xretailerid desc limit 1";
  					await dbconn.query(distQuery,{
  						type:QueryTypes.SELECT,
  						replacements:[unique_retailer_code],
