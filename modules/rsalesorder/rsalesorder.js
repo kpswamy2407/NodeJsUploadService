@@ -120,7 +120,10 @@ const { QueryTypes } = require('sequelize');
  			}
  			const distIdFromId=await dbconn.query("SELECT xdistributorid FROM vtiger_xdistributor where distributorcode=?",{
  				type:QueryTypes.SELECT,
- 				replacements:[crdr.fromId()]
+ 				replacements:[crdr.fromId()],
+ 				logging:(msg)=>{
+ 					log.debug(msg);
+ 				}
  				}).spread(async(dist)=>{
  					return dist.xdistributorid;
  				}).catch(e=>{
@@ -128,11 +131,8 @@ const { QueryTypes } = require('sequelize');
  				})
  			await baseColls.reduce(async (promise, coll) => {
  				await promise;
- 				if(coll.hasOwnProperty('type')){
- 					const type=coll.type._text;
- 					log.info('type:'+type);
- 				}
- 				if(typeof(type)!=='undefined' && Number(type)==14){
+ 				
+ 				if(coll.hasOwnProperty('type') && Number(coll.type._text)==14){
  					var unique_retailer_code=coll.buyerid.unique_retailer_code._text;
  					var distQuery="select vtiger_xretailer.xretailerid,vtiger_xretailercf.cf_xretailer_active,												vtiger_xretailer.unique_retailer_code,vtiger_xretailer.distributor_id,												vtiger_xdistributor.distributorname,												vtiger_xdistributor.distributorcode from vtiger_xretailer inner join vtiger_xretailercf on vtiger_xretailer.xretailerid=vtiger_xretailercf.xretailerid inner join vtiger_xdistributor on vtiger_xdistributor.xdistributorid = vtiger_xretailer.distributor_id											where vtiger_xretailer.unique_retailer_code =? and cf_xretailer_active = 1 order by vtiger_xretailer.xretailerid desc limit 1";
  					await dbconn.query(distQuery,{
@@ -407,8 +407,21 @@ const { QueryTypes } = require('sequelize');
 	 		     			}
 	 		     		}
 	 		     		else{
-	 		     			console.log(" no values found ")
-	 		     			log.info(" else subject "+coll[field.columnname]._text);
+	 		     			if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+	 		     				log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
+	 		     				rso[field.columnname]= coll[field.columnname]._text;
+	 		     				rsocf[field.columnname]= coll[field.columnname]._text;
+	 		     			}
+	 		     			else{
+		 		     			log.error(field.columnname+" is required");
+		 		     			audit.statusCode='FN8211';
+		 		     			audit.statusMsg="Invalid Reference Number / Empty Reference Number";
+		 		     			audit.reason=field.columnname+" is required";
+		 		     			audit.status='Failed';
+		 		     			audit.subject=coll.subject._text;
+		 		     			await audit.saveLog(dbconn,log);
+		 		     			self.isFailure=true;
+	 		     			} 
 	 		     		}
 	 		     	}).catch(e=>{
 	 		     		log.error(" subject "+e.message);
