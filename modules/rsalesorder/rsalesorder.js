@@ -142,6 +142,7 @@ const { QueryTypes } = require('sequelize');
  							log.debug(msg);
  							}
  						}).spread(async(distQryRes)=>{
+ 							console.log(distQryRes);
  							if(distQryRes){
  								var distributorId=distQryRes.distributor_id;
  								var distributorCodeForSellerId=distQryRes.distributorcode;
@@ -158,7 +159,7 @@ const { QueryTypes } = require('sequelize');
  						var distributorId=distIdFromId;
  					}
  				}
- 				
+ 				log.info("distributor id"+distributorId)
  				
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
@@ -986,6 +987,7 @@ rSalesOrder.prototype.getFields=async function (log){
 							return false;
 						}
 					}).catch(e=>{
+						console.log(e);
 						return false;
 					});	
 				}
