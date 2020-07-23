@@ -2187,6 +2187,20 @@ rSalesOrder.prototype.getFields=async function (log){
  		socf['cf_salesorder_sales_order_date']=rsocf['cf_salesorder_sales_order_date'];
  		socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
  		socf['cf_xsalesorder_sales_man']=rsocf['cf_xrso_sales_man'];
+ 		console.log(rsocf['cf_xrso_beat'])
+ 		console.log(typeof(rsocf['cf_xrso_beat']));
+ 		console.log(rsocf['cf_xrso_sales_man']);
+ 		console.log(typeof(rsocf['cf_xrso_sales_man']));
+ 		var salesmanBeatInfo= await self.getSalesmanBeatInfo(buyerId,log);
+ 		console.log(salesmanBeatInfo);
+ 		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_beat'])=='undefined' || typeof(rsocf['cf_xrso_beat'])=='null') && rsocf['cf_xrso_beat'].length<=0){
+ 			socf['cf_xsalesorder_beat']=salesmanBeatInfo['cf_xrso_beat'];
+ 		}
+
+ 		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_sales_man'])=='undefined' || typeof(rsocf['cf_xrso_sales_man'])=='null') && rsocf['cf_xrso_sales_man'].length<=0){
+ 			socf['cf_xsalesorder_sales_man']=salesmanBeatInfo['cf_xrso_sales_man'];
+ 		}
+ 		
  		if(typeof(rsocf['cf_xrso_credit_term'])==null || rsocf['cf_xrso_credit_term']=='' ||rsocf['cf_xrso_credit_term']==null){
  			var creditTerm=await self.getCreditTerm(rso['buyerid'],log);
  			socf['cf_xsalesorder_credit_term']=creditTerm;
@@ -2224,11 +2238,35 @@ rSalesOrder.prototype.getFields=async function (log){
 		}
  		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
  	}
+ 	rSalesOrder.prototype.getSalesmanBeatInfo= async function(custId,log){
+ 		try{
+ 			var self=this;
+ 			var dbconn=this.getDb();
+ 			return await dbconn.query("select beat.xbeatid, beat.beatname, sal.xsalesmanid, sal.salesman from vtiger_xbeat as beat INNER JOIN vtiger_crmentityrel crmrel ON crmrel.relcrmid = beat.xbeatid INNER JOIN vtiger_crmentityrel crmrel1 ON crmrel1.relcrmid = crmrel.relcrmid and crmrel1.module = 'xSalesman' INNER JOIN vtiger_xsalesman sal ON sal.xsalesmanid = crmrel1.crmid INNER JOIN vtiger_xbeatcf beatcf ON beatcf.xbeatid = beat.xbeatid INNER JOIN vtiger_xsalesmancf salcf ON salcf.xsalesmanid = sal.xsalesmanid where crmrel.crmid = ? and beatcf.cf_xbeat_active = '1' and salcf.cf_xsalesman_active = '1'order by sal.salesman,beat.beatname limit 1",{
+ 				type:QueryTypes.SELECT,
+ 				replacements:[custId],
+ 				logging:(msg)=>{
+ 					log.debug(msg)
+ 				}
+ 			}).spread((info)=>{
+ 				if(info){
+ 					return info;
+ 				}
+ 				else{
+ 					return false;
+ 				}
+ 			})
+ 		}
+ 		catch(e){
+ 			log.error(e.message);
+ 			return false;
+ 		}
+ 	}
  	rSalesOrder.prototype.getSellerGstStateInfo= async function (distId, log){
  		try{
  			var self=this;
  			var dbconn=this.getDb();
- 			return await dbconn.query("SELECT xDis.gstinno,xState.statecode from vtiger_xdistributor xDis						INNER JOIN vtiger_xdistributorcf xDiscf on xDiscf.xdistributorid=xDis.xdistributorid						INNER JOIN vtiger_xstate xState on xState.xstateid=xDiscf.cf_xdistributor_state where xDis.xdistributorid=?",{
+ 			return await dbconn.query("SELECT xDis.gstinno,xState.statecode from vtiger_xdistributor xDis INNER JOIN vtiger_xdistributorcf xDiscf on xDiscf.xdistributorid=xDis.xdistributorid INNER JOIN vtiger_xstate xState on xState.xstateid=xDiscf.cf_xdistributor_state where xDis.xdistributorid=?",{
  				type:QueryTypes.SELECT,
  				replacements:[distId],
  				logging:(msg)=>{
