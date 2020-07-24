@@ -1384,6 +1384,8 @@ rSalesOrder.prototype.getFields=async function (log){
 					log.debug(msg)
 				}
 			}).then(uoms => {
+				console.log("Object.values(uoms).includes(uomId)",Object.values(uoms).includes(uomId));
+				console.log(Object.values(uoms));
 				return Object.values(uoms).includes(uomId);
 			}).catch(e=>{
 				return false;
