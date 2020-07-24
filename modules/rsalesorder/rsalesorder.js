@@ -661,7 +661,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 		}
 		rSalesOrder.prototype.getProductId=async function(productCode,log,prkey){
-			log.inf("I am getting product id for product code :"+productCode);
+			log.info("I am getting product id for product code :"+productCode);
 			var dbconn=this.getDb();
 			var self=this;
 			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xProduct','',prkey,log,'');
