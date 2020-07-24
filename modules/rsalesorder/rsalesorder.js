@@ -1158,43 +1158,47 @@ rSalesOrder.prototype.getFields=async function (log){
 
 						break;
 						case transRel.profirldname :
-						console.log("transRel.profirldname",transRel.profirldname);
-						console.log(lineItem.productcode._text);
-						console.log(typeof(lineItem.productcode._text)!=='undefined');
-						if(typeof(lineItem.productcode._text)!=='undefined'){
-							if(is_process==1){
-							log.info("====== product details ==============")
-							var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
-							if(productId==false){
-								if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
-									audit.statusCode='FN8212';
-									audit.statusMsg="Invalid Product Code"
-									audit.reason="Product Is Not Availabale with provided input "+lineItem.productcode._text;
-									audit.status='Failed';
-									audit.subject=so.subject;
-									await audit.saveLog(dbconn,log);
-									self.trash(so.salesorderid,log);
-									self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
-									self.isFailure=true;
-									return Promise.reject(false);
+						try{
+							console.log("transRel.profirldname",transRel.profirldname);
+							console.log(lineItem.productcode._text);
+							console.log(typeof(lineItem.productcode._text)!=='undefined');
+							if(typeof(lineItem.productcode._text)!=='undefined'){
+								if(is_process==1){
+								log.info("====== product details ==============")
+								var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
+								if(productId==false){
+									if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
+										audit.statusCode='FN8212';
+										audit.statusMsg="Invalid Product Code"
+										audit.reason="Product Is Not Availabale with provided input "+lineItem.productcode._text;
+										audit.status='Failed';
+										audit.subject=so.subject;
+										await audit.saveLog(dbconn,log);
+										self.trash(so.salesorderid,log);
+										self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
+										self.isFailure=true;
+										return Promise.reject(false);
+									}
+									else{
+										xrsoProdRel['productname']='0';
+										xrsoProdRel['productcode']=lineItem.productcode._text;
+										xrsoProdRel[transRel.profirldname]=productId;
+									}
 								}
 								else{
-									xrsoProdRel['productname']='0';
-									xrsoProdRel['productcode']=lineItem.productcode._text;
+									xrsoProdRel['productname']=productId;
 									xrsoProdRel[transRel.profirldname]=productId;
+									xrsoProdRel['productcode']=lineItem.productcode._text;
 								}
 							}
+							}
 							else{
-								xrsoProdRel['productname']=productId;
-								xrsoProdRel[transRel.profirldname]=productId;
-								xrsoProdRel['productcode']=lineItem.productcode._text;
+								console.log("Something went wrong");
 							}
 						}
+						catch(e){
+							console.log(e);
 						}
-						else{
-							console.log("Something went wrong");
-						}
-						
 						break;
 						case transRel.uom :
 						if(is_process==1){
