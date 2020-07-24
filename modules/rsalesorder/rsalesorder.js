@@ -661,6 +661,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 		}
 		rSalesOrder.prototype.getProductId=async function(productCode,log,prkey){
+			log.inf("I am getting product id for product code :"+productCode);
 			var dbconn=this.getDb();
 			var self=this;
 			const {columnname,entityidfield}=await self.getEnityForRelativeModules('xProduct','',prkey,log,'');
@@ -1157,7 +1158,8 @@ rSalesOrder.prototype.getFields=async function (log){
 
 						break;
 						case transRel.profirldname :
-						
+						console.log("transRel.profirldname",transRel.profirldname);
+						console.log(lineItem.productcode._text);
 						if(typeof(lineItem.productcode._text)!=='undefined'){
 							if(is_process==1){
 							log.info("====== product details ==============")
@@ -2194,11 +2196,11 @@ rSalesOrder.prototype.getFields=async function (log){
  		var salesmanBeatInfo= await self.getSalesmanBeatInfo(buyerId,log);
  		console.log(salesmanBeatInfo);
  		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_beat'])=='undefined' || typeof(rsocf['cf_xrso_beat'])=='null') && rsocf['cf_xrso_beat'].length<=0){
- 			socf['cf_xsalesorder_beat']=salesmanBeatInfo['cf_xrso_beat'];
+ 			socf['cf_xsalesorder_beat']=salesmanBeatInfo['beat_id'];
  		}
 
  		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_sales_man'])=='undefined' || typeof(rsocf['cf_xrso_sales_man'])=='null') && rsocf['cf_xrso_sales_man'].length<=0){
- 			socf['cf_xsalesorder_sales_man']=salesmanBeatInfo['cf_xrso_sales_man'];
+ 			socf['cf_xsalesorder_sales_man']=salesmanBeatInfo['salesman_id'];
  		}
  		
  		if(typeof(rsocf['cf_xrso_credit_term'])==null || rsocf['cf_xrso_credit_term']=='' ||rsocf['cf_xrso_credit_term']==null){
