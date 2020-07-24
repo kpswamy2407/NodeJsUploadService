@@ -2204,9 +2204,9 @@ rSalesOrder.prototype.getFields=async function (log){
  		
  		console.log(typeof(salesmanBeatInfo));
  		console.log(rsocf['cf_xrso_beat']);
- 		console.log(typeof(salesmanBeatInfo)=='Object' && (rsocf['cf_xrso_beat']==undefined || rsocf['cf_xrso_beat'] ==null));
+ 		console.log(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_beat']=='undefined' || rsocf['cf_xrso_beat'] ==null));
 
- 		if(typeof(salesmanBeatInfo)=='Object' && (rsocf['cf_xrso_beat']==undefined || rsocf['cf_xrso_beat'] ==null)){
+ 		if(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_beat']=='undefined' || rsocf['cf_xrso_beat'] ==null)){
  			console.log("hello")
  			socf['cf_xsalesorder_beat']=salesmanBeatInfo['beat_id'];
  		}
