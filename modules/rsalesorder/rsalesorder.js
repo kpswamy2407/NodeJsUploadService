@@ -2201,7 +2201,9 @@ rSalesOrder.prototype.getFields=async function (log){
  		socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
  		socf['cf_xsalesorder_sales_man']=rsocf['cf_xrso_sales_man'];
  		var salesmanBeatInfo= await self.getSalesmanBeatInfo(buyerId,log);
- 		console.log(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_beat'])=='undefined' || typeof(rsocf['cf_xrso_beat'])=='null'));
+ 		console.log("'typeof(rsocf['cf_xrso_beat'])'",typeof(rsocf['cf_xrso_beat']));
+ 		console.log(typeof(salesmanBeatInfo));
+ 		console.log(typeof(salesmanBeatInfo)=='Object' && (typeof(rsocf['cf_xrso_beat'])=='undefined' || typeof(rsocf['cf_xrso_beat'])=='null'));
 
  		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_beat'])=='undefined' || typeof(rsocf['cf_xrso_beat'])=='null')){
  			console.log("hello")
