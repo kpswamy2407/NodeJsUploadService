@@ -1370,8 +1370,8 @@ rSalesOrder.prototype.getFields=async function (log){
 			const dbconn=this.getDb();
 			const Product=dbconn.import('./../../models/product');
 			const ProductCf=dbconn.import('./../../models/product-cf');
-			var prodUomFields=await self.getProductUomFields('vtiger_xproduct');
-			var prodUomCusFields=await self.getProductUomFields('vtiger_xproductcf');
+			var prodUomFields=await self.getProductUomFields('vtiger_xproduct',log);
+			var prodUomCusFields=await self.getProductUomFields('vtiger_xproductcf',log);
 			log.info("========== checking if the product and uom mapped ================")
 			return ProductCf.findOne({
 				where:{
@@ -1393,7 +1393,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 
 		}
-		rSalesOrder.prototype.getProductUomFields=async function(tableName){
+		rSalesOrder.prototype.getProductUomFields=async function(tableName,log){
 			const dbconn=this.getDb();
 			const VtigerField=dbconn.import('./../../models/vtiger-field');
 
@@ -1405,6 +1405,9 @@ rSalesOrder.prototype.getFields=async function (log){
 				},
 				attributes: ['columnname'],
 				raw: true,
+				logging:(msg)=>{
+					log.debug(msg);
+				}
 			}).then(fields => {
 				var uoms=fields.map((uom)=>{
 					return uom.columnname;
