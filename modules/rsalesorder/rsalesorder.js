@@ -2201,9 +2201,8 @@ rSalesOrder.prototype.getFields=async function (log){
  		socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
  		socf['cf_xsalesorder_sales_man']=rsocf['cf_xrso_sales_man'];
  		var salesmanBeatInfo= await self.getSalesmanBeatInfo(buyerId,log);
- 		console.log(rsocf['cf_xrso_sales_man'].length);
- 		console.log(rsocf['cf_xrso_beat'].length);
- 		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_beat'])=='undefined' || typeof(rsocf['cf_xrso_beat'])==null) && rsocf['cf_xrso_beat'].length<=0){
+
+ 		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_beat'])=='undefined' || typeof(rsocf['cf_xrso_beat'])==null)){
  			console.log("hello")
  			socf['cf_xsalesorder_beat']=salesmanBeatInfo['beat_id'];
  		}
@@ -2211,7 +2210,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			console.log(" not satis");
  		}
 
- 		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_sales_man'])=='undefined' || typeof(rsocf['cf_xrso_sales_man'])==null) && rsocf['cf_xrso_sales_man'].length<=0){
+ 		if(salesmanBeatInfo!=false && (typeof(rsocf['cf_xrso_sales_man'])=='undefined' || typeof(rsocf['cf_xrso_sales_man'])==null)){
  			socf['cf_xsalesorder_sales_man']=salesmanBeatInfo['salesman_id'];
  		}
  		console.log
