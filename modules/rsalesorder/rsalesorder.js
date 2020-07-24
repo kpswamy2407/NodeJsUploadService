@@ -1370,8 +1370,9 @@ rSalesOrder.prototype.getFields=async function (log){
 			const dbconn=this.getDb();
 			const Product=dbconn.import('./../../models/product');
 			const ProductCf=dbconn.import('./../../models/product-cf');
-			var prodUomFields=await self.getProductUomFields('vtiger_xproduct',log);
-			var prodUomCusFields=await self.getProductUomFields('vtiger_xproductcf',log);
+			var prodUomFields=await self.getProductUomFields('vtiger_xproduct');
+			var prodUomCusFields=await self.getProductUomFields('vtiger_xproductcf');
+			prodUomCusFields.push('cf_xproduct_base_uom');
 			log.info("========== checking if the product and uom mapped ================")
 			return ProductCf.findOne({
 				where:{
