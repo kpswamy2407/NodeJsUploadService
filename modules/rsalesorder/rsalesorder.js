@@ -123,7 +123,7 @@ const { QueryTypes } = require('sequelize');
  				await promise;
  				var distributorId=0;
  				var distributorCodeForSellerId=0;
- 				if(coll.hasOwnProperty('type') && Number(coll.type._text)==14){
+ 				if(coll.hasOwnProperty('type') && (Number(coll.type._text)==14 || Number(coll.type._text)==12)){
  					var unique_retailer_code=coll.buyerid.unique_retailer_code._text;
  					var distQuery="select vtiger_xretailer.xretailerid,vtiger_xretailercf.cf_xretailer_active,vtiger_xretailer.unique_retailer_code,vtiger_xretailer.distributor_id,vtiger_xdistributor.distributorname,vtiger_xdistributor.distributorcode from vtiger_xretailer inner join vtiger_xretailercf on vtiger_xretailer.xretailerid=vtiger_xretailercf.xretailerid inner join vtiger_xdistributor on vtiger_xdistributor.xdistributorid = vtiger_xretailer.distributor_id	where vtiger_xretailer.unique_retailer_code =? and cf_xretailer_active = 1 order by vtiger_xretailer.xretailerid desc limit 1";
  					await dbconn.query(distQuery,{
@@ -141,7 +141,7 @@ const { QueryTypes } = require('sequelize');
  									return;
  							}
  						}).catch(e=>{
- 							log.info(" type 14 values not available "+ e.message);
+ 							log.info(" type 14 or 12 values not available "+ e.message);
  						})
  				}
  				else{
@@ -167,7 +167,7 @@ const { QueryTypes } = require('sequelize');
  				
  				const customerType=coll.customer_type._text;
  				const {rso, rsocf} = await self.prepareValues(coll,fields,audit,log,distributorId,crdr.prkey());
- 				if(coll.hasOwnProperty('type') && Number(coll.type._text)==14){
+ 				if(coll.hasOwnProperty('type') && (Number(coll.type._text)==14 || Number(coll.type._text)==12)){
  					rsocf['cf_xrso_seller_id']=distributorCodeForSellerId;
  				}
  				await dbconn.transaction().then(async (t) => {
