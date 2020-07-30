@@ -982,7 +982,7 @@ rSalesOrder.prototype.getFields=async function (log){
 				var {columnname,entityidfield}=await self.getEnityForRelativeModules('xRetailer','',prkey,log,'');
 				if(columnname!='' && entityidfield!=''){
 					return Retailer.findOne({
-						where:{[columnname]:coll.buyerid.unique_retailer_code._text,deleted:0,distributor_id:distId},
+						where:{[columnname]:coll.buyerid[columnname]._text,deleted:0,distributor_id:distId},
 						attributes:[entityidfield],
 						logging:(msg)=>{
 							log.debug(msg);
