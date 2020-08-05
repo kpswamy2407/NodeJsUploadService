@@ -145,11 +145,10 @@ const { QueryTypes } = require('sequelize');
  						})
  				}
  				else{
- 					console.log(coll.distributor_id);
- 					console.log(coll.distributor_id._text);
- 					console.log(typeof(coll.distributor_id._text));
  					
- 					if(coll.hasOwnProperty('distributor_id') ){
+ 				
+
+ 					if(coll.hasOwnProperty('distributor_id') && coll.distributor_id.hasOwnProperty('_text') && typeof(coll.distributor_id._text)!='undefined'){
  						 distributorId=coll.distributor_id._text;
  					}
  					else{
