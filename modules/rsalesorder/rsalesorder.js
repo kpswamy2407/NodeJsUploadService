@@ -145,7 +145,7 @@ const { QueryTypes } = require('sequelize');
  						})
  				}
  				else{
- 					if(coll.hasOwnProperty('distributor_id')){
+ 					if(coll.hasOwnProperty('distributor_id') && coll.distributor_id._text!='undefined'){
  						 distributorId=coll.distributor_id._text;
  					}
  					else{
