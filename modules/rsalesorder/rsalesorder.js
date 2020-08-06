@@ -865,30 +865,36 @@ rSalesOrder.prototype.getFields=async function (log){
 				).then().catch();		
 		}
 		rSalesOrder.prototype.getTransactionSeries=async function(coll,log){
-			var dbconn=this.getDb();
-			const XSeries=dbconn.import('./../../models/x-series');
-			return XSeries.findOne({
-				where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriescode._text,
-					deleted:0,
-					xdistributorid:coll.distributor_id._text,
-					logging:(msg)=>{
-						log.debug(msg)
+			try{
+				var dbconn=this.getDb();
+				const XSeries=dbconn.import('./../../models/x-series');
+				return XSeries.findOne({
+					where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriescode._text,
+						deleted:0,
+						xdistributorid:coll.distributor_id._text,
+						logging:(msg)=>{
+							log.debug(msg)
+						}
+					},
+					attributes:['xtransactionseriesid']
+				}).then(series=>{
+					if(series){
+						return series.xtransactionseriesid;
 					}
-				},
-				attributes:['xtransactionseriesid']
-			}).then(series=>{
-				if(series){
-					return series.xtransactionseriesid;
-				}
-				else{
+					else{
+						return '';
+
+					}
+
+				}).catch(e=>{
 					return '';
 
-				}
-
-			}).catch(e=>{
+				});
+			}
+			catch(e){
+				
 				return '';
-
-			});
+			}
 		}
 		rSalesOrder.prototype.getXrsoProdRel=async function(soId){
 			try{
