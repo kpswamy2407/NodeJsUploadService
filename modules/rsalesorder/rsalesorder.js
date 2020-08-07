@@ -1478,7 +1478,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							
+ 							console.log(netTotal);
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1612,10 +1612,11 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(taxAmount>0){
  							total=total+taxAmount;
  						}
-
+ 						cons.log("netTotalValue",netTotalValue);
  						if(typeof(netTotalValue)!='undefined'){
+ 							cons.log(" in side if netTotalValue",netTotalValue);
  							netTotalValue=netTotalValue+total;
- 							so.total=netTotalValue;
+ 							/*so.total=netTotalValue;
  							so.subtotal=netTotalValue;
  							so.save({
  								logging:(msg)=>{
@@ -1625,70 +1626,16 @@ rSalesOrder.prototype.getFields=async function (log){
  								log.info("total and subtotal saved");
  							}).catch(e=>{
  								log.error(" while saving the total and sub total "+e.message);
- 							})
+ 							})*/
  						}
  						else{
+ 							cons.log(" outside netTotalValue",netTotalValue);
  							netTotalValue=total;
  						}
 
  						log.info("===================== tax calucation - end ==========")
  					
  					
- 					/*var sxbinfo=new SaleXBatchInfo();
- 					sxbinfo['transaction_id']=soRel['id'];
- 					sxbinfo['trans_line_id']=soRel['lineitem_id'];
- 					sxbinfo['product_id']=soRel['productid'];
- 					sxbinfo['pkd']='';
- 					sxbinfo['expiry']='';
- 					sxbinfo['transaction_type']='SO';
- 					sxbinfo['sqty']=soRel['quantity'];
- 					sxbinfo['sfqty']=0.000000;
- 					sxbinfo['ptr']=soRel['ptr'];
- 					sxbinfo['pts']=0.000000;
- 					sxbinfo['mrp']=0.000000;
- 					sxbinfo['ecp']=0.000000;
- 					sxbinfo['reconcile']='';
- 					sxbinfo['distributor_id']=distId;
- 					var trackSerial=await self.getProductTrackSerial(soRel['productid'],log);
- 					sxbinfo['track_serial']=trackSerial;
- 					sxbinfo['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');;
- 					sxbinfo['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');;
- 					sxbinfo['deleted']=0;
- 					sxbinfo.save({logging:(msg)=>{
- 						log.debug(msg);
- 					}}).then(async function(sxBatchInfo){
- 						var total=await self.updateSoXRelInfo(so,socf,soRel,sxBatchInfo,distId,log);
- 						log.info("===================== tax calucation - start ==========")
- 						
- 						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
- 						
- 						if(taxAmount>0){
- 							total=total+taxAmount;
- 						}
-
- 						if(typeof(netTotalValue)!='undefined'){
- 							netTotalValue=netTotalValue+total;
- 							so.total=netTotalValue;
- 							so.subtotal=netTotalValue;
- 							so.save({
- 								logging:(msg)=>{
- 									log.debug(msg);
- 								}
- 							}).then((res)=>{
- 								log.info("total and subtotal saved");
- 							}).catch(e=>{
- 								log.error(" while saving the total and sub total "+e.message);
- 							})
- 						}
- 						else{
- 							netTotalValue=total;
- 						}
-
- 						log.info("===================== tax calucation - end ==========")
- 					}).catch(e=>{
- 						log.error(e.message);
- 						
- 					});*/
  				}).catch(e=>{
  					log.error(e.message);
  					return false;
