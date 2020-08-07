@@ -1611,9 +1611,9 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(taxAmount>0){
  							total=total+taxAmount;
  						}
- 						cons.log("netTotalValue",netTotalValue);
+ 						console.log("netTotalValue",netTotalValue);
  						if(typeof(netTotalValue)!='undefined'){
- 							cons.log(" in side if netTotalValue",netTotalValue);
+ 							console.log(" in side if netTotalValue",netTotalValue);
  							netTotalValue=netTotalValue+total;
  							/*so.total=netTotalValue;
  							so.subtotal=netTotalValue;
@@ -1628,7 +1628,7 @@ rSalesOrder.prototype.getFields=async function (log){
  							})*/
  						}
  						else{
- 							cons.log(" outside netTotalValue",netTotalValue);
+ 							console.log(" outside netTotalValue",netTotalValue);
  							netTotalValue=total;
  						}
 
