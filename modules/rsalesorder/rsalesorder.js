@@ -20,6 +20,7 @@ const { QueryTypes } = require('sequelize');
  		BaseModule.call(this,xmljs);
  	};
  	rSalesOrder.prototype.isFailure=false;
+ 	rSalesOrder.prototype.netTotalAmount=0;
  	rSalesOrder.prototype.importAssoc=function(){
  		const dbconn=this.getDb();
  		const CrmEntity=dbconn.import('./../../models/crmentity');
@@ -1477,7 +1478,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							console.log(netTotal);
+ 							console.log('self.netTotalAmount',self.netTotalAmount);
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1569,7 +1570,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			const SaleXBatchInfo=dbconn.import('./../../models/sale-x-batch-info');
  			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
  			var i=1;
- 			var netTotalValue=0;
+ 			
  			return await xrsoProdLineItems.reduce(async (promise, item) => {
  				await promise;
  				var soProdRel=new SoProdRel();
@@ -1611,27 +1612,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(taxAmount>0){
  							total=total+taxAmount;
  						}
- 						console.log("netTotalValue",netTotalValue);
- 						if(typeof(netTotalValue)!='undefined'){
- 							console.log(" in side if netTotalValue",netTotalValue);
- 							netTotalValue=netTotalValue+total;
- 							/*so.total=netTotalValue;
- 							so.subtotal=netTotalValue;
- 							so.save({
- 								logging:(msg)=>{
- 									log.debug(msg);
- 								}
- 							}).then((res)=>{
- 								log.info("total and subtotal saved");
- 							}).catch(e=>{
- 								log.error(" while saving the total and sub total "+e.message);
- 							})*/
- 						}
- 						else{
- 							console.log(" outside netTotalValue",netTotalValue);
- 							netTotalValue=total;
- 						}
-
+ 						self.netTotalAmount=self.netTotalAmount+total;
  						log.info("===================== tax calucation - end ==========")
  					
  					
