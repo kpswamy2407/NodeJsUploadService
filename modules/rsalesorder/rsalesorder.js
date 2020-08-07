@@ -133,7 +133,7 @@ const { QueryTypes } = require('sequelize');
  							log.debug(msg);
  							}
  						}).spread(async(distQryRes)=>{
- 							console.log(distQryRes);
+ 							
  							if(distQryRes){
  								audit.distCode=distQryRes.distributorcode;
  								 	distributorId=distQryRes.distributor_id;
@@ -1004,7 +1004,7 @@ rSalesOrder.prototype.getFields=async function (log){
 							return false;
 						}
 					}).catch(e=>{
-						console.log(e);
+						
 						return false;
 					});	
 				}
@@ -1394,8 +1394,7 @@ rSalesOrder.prototype.getFields=async function (log){
 					log.debug(msg)
 				}
 			}).then(uoms => {
-				console.log("Object.values(uoms).includes(uomId)",Object.values(uoms).includes(uomId));
-				console.log(Object.values(uoms));
+				
 				return Object.values(uoms).includes(uomId);
 			}).catch(e=>{
 				return false;
@@ -2157,7 +2156,7 @@ rSalesOrder.prototype.getFields=async function (log){
  		
  		
  		var salesmanBeatInfo= await self.getSalesmanBeatInfo(buyerId,log);
- 		console.log(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_beat']=='undefined' || rsocf['cf_xrso_beat'] ==null));
+ 		
 
  		if(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_beat']=='undefined' || rsocf['cf_xrso_beat'] ==null)){
  			socf['cf_xsalesorder_beat']=salesmanBeatInfo['xbeatid'];
