@@ -1626,6 +1626,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					return false;
  				});			
  			}
+ 			console.log(self.netTotalAmount);
  			return self.netTotalAmount;
  		}catch(e){
  			return false;
