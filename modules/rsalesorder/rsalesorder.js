@@ -1471,9 +1471,9 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							await dbconn.query("update vtiger_xsalesorder set total='?',subtotal='?'' where subject='?'",{
+ 							await dbconn.query("update vtiger_xsalesorder set total=?,subtotal=? where salesorderid=?",{
  										type:QueryTypes.UPDATE,
- 										replacements:[self.netTotalAmount,self.netTotalAmount,so.subject],
+ 										replacements:[self.netTotalAmount,self.netTotalAmount,so.salesorderid],
  										logging:(msg)=>{
  											log.debug(msg);
  										}
