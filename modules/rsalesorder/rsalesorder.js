@@ -195,7 +195,8 @@ const { QueryTypes } = require('sequelize');
  									log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
  									log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
  									log.info("*********** RSO to SO conversion start ************")
- 									await self.autoRsoToSo(so,socf,distributorId,customerType,log);	
+ 									await self.autoRsoToSo(so,socf,distributorId,customerType,log);
+ 									console.log('=>netTotalAmount',self.netTotalAmount);	
  									log.info("*********** RSO to SO conversion end ***************");
 
  									await dbconn.query("update vtiger_xrso set status=?,is_processed=? where salesorderid=?",{
@@ -1477,7 +1478,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							console.log('self.netTotalAmount',self.netTotalAmount);
+ 							
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1607,7 +1608,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						log.info("===================== tax calucation - start ==========")
  						
  						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
- 						
+ 						console.log('taxAmount',taxAmount);
  						if(taxAmount>0){
  							total=total+taxAmount;
  						}
