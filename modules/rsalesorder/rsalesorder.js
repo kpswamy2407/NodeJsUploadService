@@ -1571,7 +1571,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
  			
  			for (var i = 0; i < xrsoProdLineItems.length; i++) {
- 				console.log(i);
+ 				
  				var item=xrsoProdLineItems[i];
  				var soProdRel=new SoProdRel();
  				soProdRel['id']=so['salesorderid'];
@@ -1602,20 +1602,24 @@ rSalesOrder.prototype.getFields=async function (log){
  				soProdRel.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(soRel){
+ 						console.log("befor total self.netTotalAmount",self.netTotalAmount);
  						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
  						log.info("===================== tax calucation - start ==========")
- 						console.log("i",i);
- 						console.log("total",total);
+ 						
  						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
- 						console.log('taxAmount',taxAmount);
+ 						
  						if(taxAmount>0){
  							total=total+taxAmount;
+ 							self.netTotalAmount=self.netTotalAmount+total;
  						}
- 						console.log("self.netTotalAmount",self.netTotalAmount);
- 						self.netTotalAmount=self.netTotalAmount+total;
+ 						else{
+ 							self.netTotalAmount=self.netTotalAmount+total;
+ 						}
+ 						console.log(" after total self.netTotalAmount",self.netTotalAmount);
+ 						
  						log.info("===================== tax calucation - end ==========")
  					
- 					
+ 					return true;
  				}).catch(e=>{
  					log.error(e.message);
  					return false;
