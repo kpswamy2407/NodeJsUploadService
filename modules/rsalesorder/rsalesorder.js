@@ -1600,11 +1600,10 @@ rSalesOrder.prototype.getFields=async function (log){
  				soProdRel.created_at=moment().format('YYYY-MM-DD HH:mm:ss');
  				soProdRel.modified_at=moment().format('YYYY-MM-DD HH:mm:ss');
 
- 				soProdRel.save({logging:(msg)=>{
+ 				let total= soProdRel.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(soRel){
- 						console.log("befor total self.netTotalAmount",self.netTotalAmount);
- 						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
+ 						
  						log.info("===================== tax calucation - start ==========")
  						
  						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
@@ -1616,17 +1615,17 @@ rSalesOrder.prototype.getFields=async function (log){
  						else{
  							self.netTotalAmount=self.netTotalAmount+total;
  						}
- 						console.log(" after total self.netTotalAmount",self.netTotalAmount);
+ 						
  						
  						log.info("===================== tax calucation - end ==========")
  					
- 					return true;
+ 					return self.netTotalAmount+total;
  				}).catch(e=>{
  					log.error(e.message);
- 					return false;
+ 					return 0;
  				});			
  			}
- 			console.log(self.netTotalAmount);
+
  			return self.netTotalAmount;
  		}catch(e){
  			return false;
