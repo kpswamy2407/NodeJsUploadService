@@ -196,7 +196,19 @@ const { QueryTypes } = require('sequelize');
  									log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
  									log.info("*********** RSO to SO conversion start ************")
  									await self.autoRsoToSo(so,socf,distributorId,customerType,log);
- 									console.log('=>netTotalAmount',self.netTotalAmount);	
+ 									
+ 									await dbconn.query("update vtiger_xrso set total=?,subtotal=? where salesorderid=?",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:[self.netTotalAmount,self.netTotalAmount,so.salesorderid],
+ 										logging:(msg)=>{
+ 											log.debug(msg);
+ 										}
+ 									}).then(()=>{
+ 										log.info("xrso total updated");
+ 									}).catch(e=>{
+ 										log.error(e.message+ " issue with xrso total");
+ 									});
+ 										
  									log.info("*********** RSO to SO conversion end ***************");
 
  									await dbconn.query("update vtiger_xrso set status=?,is_processed=? where salesorderid=?",{
@@ -221,6 +233,7 @@ const { QueryTypes } = require('sequelize');
  									}).catch(e=>{
  										log.error(e.message + " issue with vtiger_xrsocf update");
  									})
+
  									
  									
  								}
@@ -1478,8 +1491,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							console.log('netTotal',netTotal);
- 							console.log('self.netTotalAmount',self.netTotalAmount);
+ 							
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1609,7 +1621,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					return false;
  				});
  				if(soRel){
- 						console.log("befor total self.netTotalAmount",self.netTotalAmount);
+ 						
  						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
  						log.info("===================== tax calucation - start ==========")
  						
@@ -1622,14 +1634,12 @@ rSalesOrder.prototype.getFields=async function (log){
  						else{
  							self.netTotalAmount=self.netTotalAmount+total;
  						}
- 						tempTotal=self.netTotalAmount;
- 						console.log(" after total self.netTotalAmount",self.netTotalAmount);
+ 						
  						
  						log.info("===================== tax calucation - end ==========")
  				}			
  			}
- 			console.log('tempTotal',tempTotal);
- 			console.log("self.netTotalAmount",self.netTotalAmount);
+
  			return self.netTotalAmount;
  		}catch(e){
  			return false;
