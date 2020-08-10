@@ -1478,7 +1478,8 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							
+ 							console.log('netTotal',netTotal);
+ 							console.log('self.netTotalAmount',self.netTotalAmount);
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
@@ -1625,7 +1626,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					return false;
  				});			
  			}
- 			return true;
+ 			return self.netTotalAmount;
  		}catch(e){
  			return false;
  		}
