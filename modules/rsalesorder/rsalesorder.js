@@ -1570,7 +1570,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			const SoProdRel=dbconn.import('./../../models/so-prod-rel');
  			const SaleXBatchInfo=dbconn.import('./../../models/sale-x-batch-info');
  			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
- 			
+ 			let tempTotal=0;
  			for (var i = 0; i < xrsoProdLineItems.length; i++) {
  				
  				var item=xrsoProdLineItems[i];
@@ -1600,10 +1600,17 @@ rSalesOrder.prototype.getFields=async function (log){
  				soProdRel.created_at=moment().format('YYYY-MM-DD HH:mm:ss');
  				soProdRel.modified_at=moment().format('YYYY-MM-DD HH:mm:ss');
 
- 				let temptotal= await soProdRel.save({logging:(msg)=>{
+ 				let soRel=await soProdRel.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(soRel){
- 						
+ 						return soRel;
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return false;
+ 				});
+ 				if(soRel){
+ 						console.log("befor total self.netTotalAmount",self.netTotalAmount);
+ 						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
  						log.info("===================== tax calucation - start ==========")
  						
  						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
@@ -1615,17 +1622,14 @@ rSalesOrder.prototype.getFields=async function (log){
  						else{
  							self.netTotalAmount=self.netTotalAmount+total;
  						}
- 						
+ 						tempTotal=self.netTotalAmount;
+ 						console.log(" after total self.netTotalAmount",self.netTotalAmount);
  						
  						log.info("===================== tax calucation - end ==========")
- 					
- 					return self.netTotalAmount+total;
- 				}).catch(e=>{
- 					log.error(e.message);
- 					return 0;
- 				});			
+ 				}			
  			}
- 			console.log('total after',self.netTotalAmount)
+ 			console.log('tempTotal',tempTotal);
+ 			console.log("self.netTotalAmount",self.netTotalAmount);
  			return self.netTotalAmount;
  		}catch(e){
  			return false;
