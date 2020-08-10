@@ -1606,7 +1606,8 @@ rSalesOrder.prototype.getFields=async function (log){
 
  						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
  						log.info("===================== tax calucation - start ==========")
- 						
+ 						console.log("i",i);
+ 						console.log("total",total);
  						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
  						console.log('taxAmount',taxAmount);
  						if(taxAmount>0){
@@ -1621,6 +1622,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					log.error(e.message);
  					return false;
  				});
+ 				i++;
  			}, Promise.resolve());
  		}catch(e){
  			return false;
