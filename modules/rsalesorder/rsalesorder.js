@@ -1569,10 +1569,10 @@ rSalesOrder.prototype.getFields=async function (log){
  			const SoProdRel=dbconn.import('./../../models/so-prod-rel');
  			const SaleXBatchInfo=dbconn.import('./../../models/sale-x-batch-info');
  			var xrsoProdLineItems=await self.getXrsoProdRel(rsoId);
- 			var i=1;
  			
- 			return await xrsoProdLineItems.reduce(async (promise, item) => {
- 				await promise;
+ 			for (var i = 0; i < xrsoProdLineItems.length; i++) {
+ 				console.log(i);
+ 				var item=xrsoProdLineItems[i];
  				var soProdRel=new SoProdRel();
  				soProdRel['id']=so['salesorderid'];
  				soProdRel['productid']=item['productid'];
@@ -1602,8 +1602,6 @@ rSalesOrder.prototype.getFields=async function (log){
  				soProdRel.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(soRel){
-
-
  						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
  						log.info("===================== tax calucation - start ==========")
  						console.log("i",i);
@@ -1621,9 +1619,9 @@ rSalesOrder.prototype.getFields=async function (log){
  				}).catch(e=>{
  					log.error(e.message);
  					return false;
- 				});
- 				i++;
- 			}, Promise.resolve());
+ 				});			
+ 			}
+ 			return true;
  		}catch(e){
  			return false;
  		}
