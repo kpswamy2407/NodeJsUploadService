@@ -202,9 +202,9 @@ const { QueryTypes } = require('sequelize');
  									log.info("*********** RSO to SO conversion end ***************");
 
  									
- 									await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where subject=?",{
+ 									await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where salesorderid=?",{
  										type:QueryTypes.UPDATE,
- 										replacements:[so.subject],
+ 										replacements:[so.salesorderid],
  										logging:(msg)=>{
  											log.debug(msg);
  										}
