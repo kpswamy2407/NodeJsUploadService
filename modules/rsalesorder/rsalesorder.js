@@ -1169,9 +1169,8 @@ rSalesOrder.prototype.getFields=async function (log){
 						break;
 						case transRel.profirldname :
 						try{
-							console.log("transRel.profirldname",transRel.profirldname);
-							console.log(lineItem.productcode._text);
-							console.log(typeof(lineItem.productcode._text)!=='undefined');
+							
+							
 							if(typeof(lineItem.productcode._text)!=='undefined'){
 								if(is_process==1){
 								log.info("====== product details ==============")
@@ -1612,6 +1611,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(taxAmount>0){
  							total=total+taxAmount;
  						}
+ 						console.log("self.netTotalAmount",self.netTotalAmount);
  						self.netTotalAmount=self.netTotalAmount+total;
  						log.info("===================== tax calucation - end ==========")
  					
