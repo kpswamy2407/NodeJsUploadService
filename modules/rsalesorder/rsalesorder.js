@@ -1600,7 +1600,7 @@ rSalesOrder.prototype.getFields=async function (log){
  				soProdRel.created_at=moment().format('YYYY-MM-DD HH:mm:ss');
  				soProdRel.modified_at=moment().format('YYYY-MM-DD HH:mm:ss');
 
- 				let total= soProdRel.save({logging:(msg)=>{
+ 				let temptotal= await soProdRel.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(soRel){
  						
@@ -1625,7 +1625,7 @@ rSalesOrder.prototype.getFields=async function (log){
  					return 0;
  				});			
  			}
-
+ 			console.log('total after',self.netTotalAmount)
  			return self.netTotalAmount;
  		}catch(e){
  			return false;
