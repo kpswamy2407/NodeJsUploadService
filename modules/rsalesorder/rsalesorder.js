@@ -197,34 +197,14 @@ const { QueryTypes } = require('sequelize');
  									log.info("*********** RSO to SO conversion start ************")
  									await self.autoRsoToSo(so,socf,distributorId,customerType,log);
  									
- 									await dbconn.query("update vtiger_xrso set total=?,subtotal=? where salesorderid=?",{
- 										type:QueryTypes.UPDATE,
- 										replacements:[self.netTotalAmount,self.netTotalAmount,so.salesorderid],
- 										logging:(msg)=>{
- 											log.debug(msg);
- 										}
- 									}).then(()=>{
- 										log.info("xrso total updated");
- 									}).catch(e=>{
- 										log.error(e.message+ " issue with xrso total");
- 									});
+ 									
  										
  									log.info("*********** RSO to SO conversion end ***************");
 
- 									await dbconn.query("update vtiger_xrso set status=?,is_processed=? where salesorderid=?",{
+ 									
+ 									await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where subject=?",{
  										type:QueryTypes.UPDATE,
- 										replacements:['Processed',2,so.salesorderid],
- 										logging:(msg)=>{
- 											log.debug(msg);
- 										}
- 									}).then(()=>{
- 										log.info("xrso status updated");
- 									}).catch(e=>{
- 										log.error(e.message+ " issue with xrso update status");
- 									});
- 									await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where salesorderid=?",{
- 										type:QueryTypes.UPDATE,
- 										replacements:[so.salesorderid],
+ 										replacements:[so.subject],
  										logging:(msg)=>{
  											log.debug(msg);
  										}
@@ -1491,7 +1471,17 @@ rSalesOrder.prototype.getFields=async function (log){
  						if(t.commit()){
  							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							
+ 							await dbconn.query("update vtiger_xsalesorder set total='?',subtotal='?'' where subject='?'",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:[self.netTotalAmount,self.netTotalAmount,so.subject],
+ 										logging:(msg)=>{
+ 											log.debug(msg);
+ 										}
+ 									}).then(()=>{
+ 										log.info("vtiger_xsalesorder total updated");
+ 									}).catch(e=>{
+ 										log.error(e.message+ " issue with vtiger_xsalesorder total");
+ 									});
  							await soBillAds.save({logging:(msg)=>{
  								log.debug(msg);
  							}}).then().catch(e=>{
