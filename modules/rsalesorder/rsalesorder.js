@@ -1460,10 +1460,8 @@ rSalesOrder.prototype.getFields=async function (log){
 					return true;
 				}
 
-				var salesOrderId=await self.getCrmEntity('xSalesOrder',log);
- 			//get Salesorder Object 
- 			log.info("xSalesOrder crmentity id :"+salesOrderId)
- 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(salesOrderId,rso,rsocf,distId,custType,log);
+				
+ 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(rso,rsocf,distId,custType,log);
 
  			await dbconn.transaction().then(async (t) => {
  				return await so.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
@@ -2070,12 +2068,14 @@ rSalesOrder.prototype.getFields=async function (log){
 
  		}
  	}
- 	rSalesOrder.prototype.prepareSo=async function(soId,rso,rsocf,distId,custType,log){
+ 	rSalesOrder.prototype.prepareSo=async function(rso,rsocf,distId,custType,log){
  		var self=this;
  		const dbconn=this.getDb();
  		const SalesOrder=dbconn.import('./../../models/salesorder');
  		const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
- 		
+ 		var soId=await self.getCrmEntity('xSalesOrder',log);
+ 			//get Salesorder Object 
+ 			log.info("xSalesOrder crmentity id :"+soId)
  		so=new SalesOrder();
  		so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
  		so['salesorderid']=soId;
@@ -2200,6 +2200,7 @@ rSalesOrder.prototype.getFields=async function (log){
 		}
  		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
  	}
+
  	rSalesOrder.prototype.getSalesmanBeatInfo= async function(custId,log){
  		try{
  			var self=this;
