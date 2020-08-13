@@ -2823,6 +2823,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 			terms_conditions:null,
 	 		});
 	 		return rsocrm.save({logging:(msg)=>{
+	 			log.info("===")
 	 			log.debug(msg);
 	 		}}).then(crm=>{
 	 			return crm.crmid;
