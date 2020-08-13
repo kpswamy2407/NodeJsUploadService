@@ -19,6 +19,8 @@ module.exports=(sequelize,DataTypes)=>{
             }
         }).spread( result => {
             return result.insertId;
+        }).catch(e=>{
+            log.error("vtiger_crmentity_seq error "+e.message)
         });
     
     }
