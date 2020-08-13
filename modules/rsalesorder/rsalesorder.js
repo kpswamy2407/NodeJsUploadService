@@ -1464,7 +1464,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			var {so,socf,soBillAds,soShipAds,error}= await self.prepareSo(rso,rsocf,distId,custType,log);
  			if(error==false){
  				return await so.save({logging:(msg)=>{log.debug(msg)}}).then(async(so)=>{
- 					return await socf.save({logging:(msg)=>{log.debug(msg)}}).thne(async(socf)).then(async(socf)=>{
+ 					return await socf.save({logging:(msg)=>{log.debug(msg)}}).then(async(socf)=>{
  						let isCrmRelUpdate = await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
  						if(isCrmRelUpdate){
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
@@ -1500,6 +1500,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						
  					})
  				}).catch(e=>{
+ 					console.log(e);
  					log.error(" saving the salesorder"+e.message);
  					return false;
  				})
