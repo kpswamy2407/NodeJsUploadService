@@ -2092,7 +2092,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			const soId=await self.getCrmEntity('xSalesOrder',log);
  			log.info("xSalesOrder crmentity id :"+soId)
  			if(soId){
- 					so=new SalesOrder();
+ 					const so=new SalesOrder();
  			 		so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
  			 		so['salesorderid']=soId;
  			 		so['subject']=rso['subject'];
@@ -2152,7 +2152,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 
  			 		//preparing the socf table 
- 			 		var socf=new SalesOrderCf();
+ 			 		const socf=new SalesOrderCf();
  			 		socf['salesorderid']=soId;
  			 		socf['cf_salesorder_sales_order_date']=rsocf['cf_salesorder_sales_order_date'];
  			 		
@@ -2823,7 +2823,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 			terms_conditions:null,
 	 		});
 	 		return rsocrm.save({logging:(msg)=>{
-	 			log.info("===")
+	 			log.info("***")
 	 			log.debug(msg);
 	 		}}).then(crm=>{
 	 			return crm.crmid;
