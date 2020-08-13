@@ -1461,48 +1461,54 @@ rSalesOrder.prototype.getFields=async function (log){
 				}
 
 				
- 			var {so,socf,soBillAds,soShipAds}= await self.prepareSo(rso,rsocf,distId,custType,log);
-
- 			await dbconn.transaction().then(async (t) => {
- 				return await so.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
- 					return await socf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
- 						if(t.commit()){
- 							await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
+ 			var {so,socf,soBillAds,soShipAds,error}= await self.prepareSo(rso,rsocf,distId,custType,log);
+ 			if(error==false){
+ 				return await so.save({logging:(msg)=>{log.debug(msg)}}).then(async(so)=>{
+ 					return await socf.save({logging:(msg)=>{log.debug(msg)}}).thne(async(socf)).then(async(socf)=>{
+ 						let isCrmRelUpdate = await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
+ 						if(isCrmRelUpdate){
  							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							await dbconn.query("update vtiger_xsalesorder set total=?,subtotal=? where salesorderid=?",{
+ 							return await dbconn.query("update vtiger_xsalesorder set total=?,subtotal=? where salesorderid=?",{
  										type:QueryTypes.UPDATE,
  										replacements:[self.netTotalAmount,self.netTotalAmount,so.salesorderid],
  										logging:(msg)=>{
  											log.debug(msg);
  										}
- 									}).then(()=>{
+ 									}).then(async()=>{
  										log.info("vtiger_xsalesorder total updated");
+ 										await soBillAds.save({logging:(msg)=>{
+ 											log.debug(msg);
+ 										}}).then().catch(e=>{
+ 											log.error(e.message)
+ 										});
+ 										await soShipAds.save({logging:(msg)=>{
+ 											log.debug(msg);
+ 										}}).then().catch(e=>{
+ 											log.error(e.message)
+ 										});
+ 										return true		
  									}).catch(e=>{
  										log.error(e.message+ " issue with vtiger_xsalesorder total");
+ 										return false;
  									});
- 							await soBillAds.save({logging:(msg)=>{
- 								log.debug(msg);
- 							}}).then().catch(e=>{
- 								log.error(e.message)
- 							});
- 							await soShipAds.save({logging:(msg)=>{
- 								log.debug(msg);
- 							}}).then().catch(e=>{
- 								log.error(e.message)
- 							});	
- 												
- 						}
- 					});
- 				}).then(async (t) => {
 
- 				}).catch(async (err) => {
- 					log.error(err.message);
- 					return await t.rollback();
- 				});
- 			});
- 			
- 			return true;
- 			
+ 						}
+ 						else{
+ 							return false;
+ 						}
+ 											
+ 						
+ 					})
+ 				}).catch(e=>{
+ 					log.error(" saving the salesorder"+e.message);
+ 					return false;
+ 				})
+ 			}
+ 			else{
+ 				log.error(" unable to get values from prepare so")
+ 				return false;
+ 			}
+	
  		}catch(e){
  			log.error(e.message);
  			return false;
@@ -1549,18 +1555,24 @@ rSalesOrder.prototype.getFields=async function (log){
  		}
  	}
  	rSalesOrder.prototype.updateCrmRelEntity=async function(crmId,module,relCrmId,relModule,log){
- 		var self=this;
- 		const dbconn=this.getDb();
- 		const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
- 		var crmEntityRel=new CrmEntityRel();
- 		crmEntityRel['crmid']=crmId;
- 		crmEntityRel['module']=module;
- 		crmEntityRel['relcrmid']=relCrmId;
- 		crmEntityRel['relmodule']=relModule;
- 		crmEntityRel.save({logging:(msg)=>{
- 			log.debug(msg);
- 			return true;
- 		}});
+ 		try{
+ 			var self=this;
+ 			const dbconn=this.getDb();
+ 			const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
+ 			var crmEntityRel=new CrmEntityRel();
+ 			crmEntityRel['crmid']=crmId;
+ 			crmEntityRel['module']=module;
+ 			crmEntityRel['relcrmid']=relCrmId;
+ 			crmEntityRel['relmodule']=relModule;
+ 			crmEntityRel.save({logging:(msg)=>{
+ 				log.debug(msg);
+ 				return true;
+ 			}});
+ 		}
+ 		catch(e){
+ 			log.error("In updateCrmRelEntity "+e.message);
+ 			return false;
+ 		}
  		
  	}
  	rSalesOrder.prototype.updateSoLineItems=async function(so,socf,rsoId,distId,log){
@@ -2069,136 +2081,144 @@ rSalesOrder.prototype.getFields=async function (log){
  		}
  	}
  	rSalesOrder.prototype.prepareSo=async function(rso,rsocf,distId,custType,log){
- 		var self=this;
- 		const dbconn=this.getDb();
- 		const SalesOrder=dbconn.import('./../../models/salesorder');
- 		const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
- 		var soId=await self.getCrmEntity('xSalesOrder',log);
- 			//get Salesorder Object 
+ 		try{
+ 			var self=this;
+ 			const dbconn=this.getDb();
+ 			const SalesOrder=dbconn.import('./../../models/salesorder');
+ 			const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
+ 			let soId=await self.getCrmEntity('xSalesOrder',log);
  			log.info("xSalesOrder crmentity id :"+soId)
- 		so=new SalesOrder();
- 		so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
- 		so['salesorderid']=soId;
- 		so['subject']=rso['subject'];
- 		so['type']=rso['type'];
- 		so['duedate']=rso['duedate'];
- 		so['contactid']=rso['contactid'];
- 		so['exciseduty']=Number(rso['exciseduty']);
- 		so['salescommission']=Number(rso['salescommission']);
- 		so['terms_conditions']=rso['terms_conditions'];
- 		so['currency_id']=rso['currency_id'];
- 		so['conversion_rate']=rso['conversion_rate'];
- 		so['tracking_no']=rso['tracking_no'];
- 		so['carrier']=rso['carrier'];
- 		so['deleted']=0;
- 		if(Number(custType)==1){
- 			var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
- 				log.info("Buyer Id in so :"+buyerId);
- 				if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
- 					buyerId=rso['buyerid'];
- 						so['buyerid']=rso['buyerid'];
+ 			if(soId){
+ 				so=new SalesOrder();
+ 			 		so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
+ 			 		so['salesorderid']=soId;
+ 			 		so['subject']=rso['subject'];
+ 			 		so['type']=rso['type'];
+ 			 		so['duedate']=rso['duedate'];
+ 			 		so['contactid']=rso['contactid'];
+ 			 		so['exciseduty']=Number(rso['exciseduty']);
+ 			 		so['salescommission']=Number(rso['salescommission']);
+ 			 		so['terms_conditions']=rso['terms_conditions'];
+ 			 		so['currency_id']=rso['currency_id'];
+ 			 		so['conversion_rate']=rso['conversion_rate'];
+ 			 		so['tracking_no']=rso['tracking_no'];
+ 			 		so['carrier']=rso['carrier'];
+ 			 		so['deleted']=0;
+ 			 		if(Number(custType)==1){
+ 			 			var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
+ 			 				log.info("Buyer Id in so :"+buyerId);
+ 			 				if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
+ 			 					buyerId=rso['buyerid'];
+ 			 						so['buyerid']=rso['buyerid'];
+ 			 					}
+ 			 					else{
+ 			 						buyerId=rso['buyerid'];
+ 			 						so['buyerid']=buyerId;
+ 			 				}
+ 			 		}
+ 			 		else{
+ 			 			buyerId=rso['buyerid'];
+ 			 			so['buyerid']=rso['buyerid'];
+ 			 		}
+ 					so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 			 		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 					so['requisition_no']=rso['requisition_no'];
+ 					so['tracking_no']=rso['tracking_no'];
+ 					so['adjustment']=Number(rso['adjustment']);
+ 					so['total']=rso['total'];
+ 					so['taxtype']=rso['taxtype'];
+ 					so['discount_percent']=Number(rso['discount_percent']);
+ 					so['discount_amount']=rso['discount_amount'];
+ 					so['s_h_amount']=rso['s_h_amount'];
+ 					so['is_taxfiled']=0;
+
+ 					so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
+ 					var SO_LBL_TAX_OPTION_ENABLE= await self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
+ 					if(SO_LBL_TAX_OPTION_ENABLE.toLowerCase()!="true"){
+ 						so['taxtype']='individual';
+ 					}
+ 					log.info("address1:"+buyerId);
+ 					var soBillAds=await self.prepareBillAds(soId,buyerId,log);
+ 					soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 					soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 					soBillAds['deleted']=0;
+ 					var soShipAds=await self.prepareShipAds(soId,buyerId,log);
+ 					soShipAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 					soShipAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 					soShipAds['deleted']=0;
+
+
+ 			 		//preparing the socf table 
+ 			 		var socf=new SalesOrderCf();
+ 			 		socf['salesorderid']=soId;
+ 			 		socf['cf_salesorder_sales_order_date']=rsocf['cf_salesorder_sales_order_date'];
+ 			 		
+ 			 		
+ 			 		var salesmanBeatInfo= await self.getSalesmanBeatInfo(buyerId,log);
+ 			 		
+
+ 			 		if(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_beat']=='undefined' || rsocf['cf_xrso_beat'] ==null)){
+ 			 			socf['cf_xsalesorder_beat']=salesmanBeatInfo['xbeatid'];
+ 			 		}
+ 			 		else{
+ 			 			socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
+ 			 		}
+ 			 		
+ 			 		if(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_sales_man']=='undefined' || rsocf['cf_xrso_sales_man']==null)){
+ 			 			socf['cf_xsalesorder_sales_man']=salesmanBeatInfo['xsalesmanid'];
+ 			 		}
+ 			 		else{
+ 			 			socf['cf_xsalesorder_sales_man']=rsocf['cf_xrso_sales_man'];
+ 			 		}
+ 			 		
+ 			 		if(typeof(rsocf['cf_xrso_credit_term'])==null || rsocf['cf_xrso_credit_term']=='' ||rsocf['cf_xrso_credit_term']==null){
+ 			 			var creditTerm=await self.getCreditTerm(rso['buyerid'],log);
+ 			 			socf['cf_xsalesorder_credit_term']=creditTerm;
+ 			 		}
+ 			 		
+ 			 		socf['cf_salesinvoice_beat']=rsocf['cf_xrso_beat'];
+ 			 		socf['cf_xsalesorder_billing_address_pick']=soBillAds.xaddressid;
+ 			 		socf['cf_xsalesorder_shipping_address_pick']=soShipAds.xaddressid;
+ 			 		var nextStage= await self.getStageAction('Submit',log);
+ 			 		socf['cf_xsalesorder_next_stage_name'] = nextStage.cf_workflowstage_next_stage;
+ 			 		so['status'] = nextStage.cf_workflowstage_next_content_status;
+ 			 		so['salesorder_status']='Open Order';
+ 			 		socf['cf_xsalesorder_seller_id']=distId;
+ 			 		socf['cf_xsalesorder_buyer_id']=buyerId;
+ 			 		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
+ 			 		socf['cf_salesorder_transaction_number']=xGenSeries;
+ 			 		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
+ 			 		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 			 		socf['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+ 			 		socf['deleted']=0;
+ 			 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+ 					
+ 					if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
+ 						so['trntaxtype']='GST';
+ 						var {gstinno,statecode}=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
+ 						so['buyer_gstinno']=gstinno;
+ 						so['buyer_state']=statecode;
+ 						var {sellerGstinNo,sellerStateCode}=await self.getSellerGstStateInfo(distId,log);
+ 						so['seller_gstinno']=sellerGstinNo;
+ 						so['seller_state']=sellerStateCode;
+
  					}
  					else{
- 						buyerId=rso['buyerid'];
- 						so['buyerid']=buyerId;
- 				}
- 		}
- 		else{
- 			buyerId=rso['buyerid'];
- 			so['buyerid']=rso['buyerid'];
- 		}
-		//get the receive customer master - reference id for buyer id
-	/*	*/
-		
-		
-		
-		so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
-		so['requisition_no']=rso['requisition_no'];
-		so['tracking_no']=rso['tracking_no'];
-		so['adjustment']=Number(rso['adjustment']);
-		so['total']=rso['total'];
-		so['taxtype']=rso['taxtype'];
-		so['discount_percent']=Number(rso['discount_percent']);
-		so['discount_amount']=rso['discount_amount'];
-		so['s_h_amount']=rso['s_h_amount'];
-		so['is_taxfiled']=0;
+ 						so['trntaxtype']="VAT";
+ 					}
 
-		so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
-		var SO_LBL_TAX_OPTION_ENABLE= await self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
-		if(SO_LBL_TAX_OPTION_ENABLE.toLowerCase()!="true"){
-			so['taxtype']='individual';
-		}
-		log.info("address1:"+buyerId);
-		var soBillAds=await self.prepareBillAds(soId,buyerId,log);
-		soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
-		soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
-		soBillAds['deleted']=0;
-		var soShipAds=await self.prepareShipAds(soId,buyerId,log);
-		soShipAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
-		soShipAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
-		soShipAds['deleted']=0;
+ 			 		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:false};
+ 			}
+ 			else{
+ 			 		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:true};
 
-
- 		//preparing the socf table 
- 		var socf=new SalesOrderCf();
- 		socf['salesorderid']=soId;
- 		socf['cf_salesorder_sales_order_date']=rsocf['cf_salesorder_sales_order_date'];
- 		
- 		
- 		var salesmanBeatInfo= await self.getSalesmanBeatInfo(buyerId,log);
- 		
-
- 		if(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_beat']=='undefined' || rsocf['cf_xrso_beat'] ==null)){
- 			socf['cf_xsalesorder_beat']=salesmanBeatInfo['xbeatid'];
+ 			} 		
+ 			 	
+ 		}catch(e){
+ 			log.error(" Exception in prepare so "+e.message)
+ 			return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:true};
+ 			
  		}
- 		else{
- 			socf['cf_xsalesorder_beat']=rsocf['cf_xrso_beat'];
- 		}
- 		
- 		if(typeof(salesmanBeatInfo)=='object' && (rsocf['cf_xrso_sales_man']=='undefined' || rsocf['cf_xrso_sales_man']==null)){
- 			socf['cf_xsalesorder_sales_man']=salesmanBeatInfo['xsalesmanid'];
- 		}
- 		else{
- 			socf['cf_xsalesorder_sales_man']=rsocf['cf_xrso_sales_man'];
- 		}
- 		
- 		if(typeof(rsocf['cf_xrso_credit_term'])==null || rsocf['cf_xrso_credit_term']=='' ||rsocf['cf_xrso_credit_term']==null){
- 			var creditTerm=await self.getCreditTerm(rso['buyerid'],log);
- 			socf['cf_xsalesorder_credit_term']=creditTerm;
- 		}
- 		
- 		socf['cf_salesinvoice_beat']=rsocf['cf_xrso_beat'];
- 		socf['cf_xsalesorder_billing_address_pick']=soBillAds.xaddressid;
- 		socf['cf_xsalesorder_shipping_address_pick']=soShipAds.xaddressid;
- 		var nextStage= await self.getStageAction('Submit',log);
- 		socf['cf_xsalesorder_next_stage_name'] = nextStage.cf_workflowstage_next_stage;
- 		so['status'] = nextStage.cf_workflowstage_next_content_status;
- 		so['salesorder_status']='Open Order';
- 		socf['cf_xsalesorder_seller_id']=distId;
- 		socf['cf_xsalesorder_buyer_id']=buyerId;
- 		var {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
- 		socf['cf_salesorder_transaction_number']=xGenSeries;
- 		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
- 		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 		socf['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 		socf['deleted']=0;
- 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
-		
-		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
-			so['trntaxtype']='GST';
-			var {gstinno,statecode}=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
-			so['buyer_gstinno']=gstinno;
-			so['buyer_state']=statecode;
-			var {sellerGstinNo,sellerStateCode}=await self.getSellerGstStateInfo(distId,log);
-			so['seller_gstinno']=sellerGstinNo;
-			so['seller_state']=sellerStateCode;
-
-		}
-		else{
-			so['trntaxtype']="VAT";
-		}
- 		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds};
  	}
 
  	rSalesOrder.prototype.getSalesmanBeatInfo= async function(custId,log){
@@ -2773,40 +2793,46 @@ rSalesOrder.prototype.getFields=async function (log){
 
  	}
  	rSalesOrder.prototype.getCrmEntity=async function(module,log){
- 		const dbconn=this.getDb();
- 		const CrmEntity=dbconn.import('./../../models/crmentity');
- 		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
- 		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
- 		var id=await CrmEntitySeq.fnxtIncrement(log);
- 		var tab=await VtigerTab.getTab(module,log);
- 		var rsocrm=new CrmEntity({
- 			crmid:id,
- 			smcreatorid:0,
- 			smownerid:0,
- 			modifiedby:0,
- 			setype:tab.name,
- 			setype_id:tab.tabid,
- 			description:null,
- 			createdtime:new Date(),
- 			modifiedtime:new Date(),
- 			viewedtime:null,
- 			status:null,
- 			version:0,
- 			presence:1,
- 			deleted:0,
- 			sendstatus:0,
- 			terms_conditions:null,
- 		});
- 		return rsocrm.save({logging:(msg)=>{
- 			log.debug(msg);
- 		}}).then(crm=>{
- 			return crm.crmid;
- 		}).catch(e=>{
- 			
- 			log.error(e.message);
- 			throw new Error('Unable to create CRM entity for rSalesOrder.');
- 		});
+ 		try{
 
+	 		const dbconn=this.getDb();
+	 		const CrmEntity=dbconn.import('./../../models/crmentity');
+	 		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
+	 		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
+	 		var id=await CrmEntitySeq.fnxtIncrement(log);
+	 		var tab=await VtigerTab.getTab(module,log);
+	 		var rsocrm=new CrmEntity({
+	 			crmid:id,
+	 			smcreatorid:0,
+	 			smownerid:0,
+	 			modifiedby:0,
+	 			setype:tab.name,
+	 			setype_id:tab.tabid,
+	 			description:null,
+	 			createdtime:new Date(),
+	 			modifiedtime:new Date(),
+	 			viewedtime:null,
+	 			status:null,
+	 			version:0,
+	 			presence:1,
+	 			deleted:0,
+	 			sendstatus:0,
+	 			terms_conditions:null,
+	 		});
+	 		return rsocrm.save({logging:(msg)=>{
+	 			log.debug(msg);
+	 		}}).then(crm=>{
+	 			return crm.crmid;
+	 		}).catch(e=>{
+	 			
+	 			log.error(e.message);
+	 			return false;
+	 		});
+ 		}
+ 		catch(e){
+ 			log.error(" in CrmEntity "+module+" =>"+e.message);
+ 			return false;
+ 		}
  	}
  	return rSalesOrder;
  })();
