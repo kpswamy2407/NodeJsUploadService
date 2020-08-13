@@ -2260,6 +2260,9 @@ rSalesOrder.prototype.getFields=async function (log){
  				}
  			}).spread((info)=>{
  				return {sellerGstinNo:info.gstinno,sellerStateCode:info.statecode};
+ 			}).catch(e=>{
+ 				log.error("getSellerGstStateInfo  "+e.message);
+ 				return {sellerGstinNo:'',sellerStateCode:''};
  			})
  		}
  		catch(e){
@@ -2281,7 +2284,9 @@ rSalesOrder.prototype.getFields=async function (log){
  							type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
  							}).spread((info)=>{
  									return {gstinno:info.gstinno,statecode:info.statecode}
- 								})
+ 							}).catch(e=>{
+ 								log.error("getBuyerGSTStateInfo "+e.message);
+ 							})
  							
  						}
  						else{
