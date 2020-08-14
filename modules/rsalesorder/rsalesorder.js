@@ -178,66 +178,74 @@ const { QueryTypes } = require('sequelize');
  					if(self.isFailure==true){
  						return Promise.resolve(this.updateStatus(self.isFailure));
  					}
- 					var salesorderid=await self.getCrmEntity('xrSalesOrder',log);
+ 					const salesorderid=await self.getCrmEntity('xrSalesOrder',log);
  					log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
- 					rso.salesorderid=salesorderid;
- 					rsocf.salesorderid=salesorderid;
- 					return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
- 						return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
- 							if(t.commit()){
- 								log.info("============ Related Modules: Bill Ads, Ship Ads ===============")
- 								await self.updateBillShipAds(socf.salesorderid,log);
- 								await self.save(socf.salesorderid,log);
- 								log.info("************* Transaction -vtiger_xrso- end ***************");
- 								log.info("*********************** vtiger_xrso - lineItems update start **************")
- 								await self.updateLineItems(so,audit,coll.lineitems,log,crdr.prkey()).then(async()=>{
- 									if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
- 									log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
- 									log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
- 									log.info("*********** RSO to SO conversion start ************")
- 									await self.autoRsoToSo(so,socf,distributorId,customerType,log);
- 									
- 									
+ 					if(salesorderid != false){
+ 						rso.salesorderid=salesorderid;
+ 						rsocf.salesorderid=salesorderid;
+ 						return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
+ 							return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
+ 								if(t.commit()){
+ 									log.info("============ Related Modules: Bill Ads, Ship Ads ===============")
+ 									await self.updateBillShipAds(socf.salesorderid,log);
+ 									await self.save(socf.salesorderid,log);
+ 									log.info("************* Transaction -vtiger_xrso- end ***************");
+ 									log.info("*********************** vtiger_xrso - lineItems update start **************")
+ 									await self.updateLineItems(so,audit,coll.lineitems,log,crdr.prkey()).then(async()=>{
+ 										if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
+ 										log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
+ 										log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
+ 										log.info("*********** RSO to SO conversion start ************")
+ 										await self.autoRsoToSo(so,socf,distributorId,customerType,log);
  										
- 									log.info("*********** RSO to SO conversion end ***************");
+ 										
+ 											
+ 										log.info("*********** RSO to SO conversion end ***************");
 
- 									
- 									await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where salesorderid=?",{
- 										type:QueryTypes.UPDATE,
- 										replacements:[so.salesorderid],
- 										logging:(msg)=>{
- 											log.debug(msg);
- 										}
- 									}).then(()=>{
- 										log.info("vtiger_xrsocf next stage updated");
- 									}).catch(e=>{
- 										log.error(e.message + " issue with vtiger_xrsocf update");
- 									})
+ 										
+ 										await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where salesorderid=?",{
+ 											type:QueryTypes.UPDATE,
+ 											replacements:[so.salesorderid],
+ 											logging:(msg)=>{
+ 												log.debug(msg);
+ 											}
+ 										}).then(()=>{
+ 											log.info("vtiger_xrsocf next stage updated");
+ 										}).catch(e=>{
+ 											log.error(e.message + " issue with vtiger_xrsocf update");
+ 										})
 
+ 										
+ 										
+ 									}
+ 								}).catch(e=>{
+ 									return;
+ 								});
+ 									log.info("****************** vtiger_xrso lineitems update -end *********************")
  									
- 									
+
  								}
- 							}).catch(e=>{
- 								return;
  							});
- 								log.info("****************** vtiger_xrso lineitems update -end *********************")
- 								
+ 						}).then(async (t) => {
 
- 							}
+ 						}).catch(async (err) => {
+ 							console.log(err);
+ 							audit.statusCode='FN2010';
+ 							audit.statusMsg=err.message;
+ 							audit.reason=err.message;
+ 							audit.status='Failed';
+ 							audit.subject=rso.subject;
+ 							await audit.saveLog(dbconn,log);
+ 							self.isFailure=true;
+ 							return await t.rollback();
  						});
- 					}).then(async (t) => {
-
- 					}).catch(async (err) => {
- 						console.log(err);
- 						audit.statusCode='FN2010';
- 						audit.statusMsg=err.message;
- 						audit.reason=err.message;
- 						audit.status='Failed';
- 						audit.subject=rso.subject;
- 						await audit.saveLog(dbconn,log);
- 						self.isFailure=true;
- 						return await t.rollback();
- 					});
+ 					}
+ 					else{
+ 						log.errr(" unable get the salesorderid for xrso");
+ 						return;
+ 					}
+ 					
+ 					
  				});
 
  			}, Promise.resolve());
@@ -2220,7 +2228,6 @@ rSalesOrder.prototype.getFields=async function (log){
  		}catch(e){
  			log.error(" Exception in prepare so "+e.message)
  			return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:true};
- 			
  		}
  	}
 

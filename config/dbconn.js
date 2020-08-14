@@ -9,7 +9,8 @@ const dbconn=new Sequelize(database,null,null,{
     pool: {
         max: 15,
         min: 5,
-        idle: 10000
+        idle: 10000,
+        acquire: 30000
     },
     logQueryParameters:true,
     port:process.env.FNXT_MYSQLPORT,
