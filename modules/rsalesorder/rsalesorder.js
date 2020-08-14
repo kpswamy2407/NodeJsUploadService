@@ -1508,8 +1508,8 @@ rSalesOrder.prototype.getFields=async function (log){
 		}
 		rSalesOrder.prototype.getSeqNumberForModule=async function(mod,seqModule,reqStr='',reqNo='',log){
 			try{
-				var self=this;
-				var dbconn=this.getDb();
+				const self=this;
+				const dbconn=this.getDb();
  			//select tabid from vtiger_tab where name=
  			return await dbconn.query("select prefix from vtiger_modentity_num where semodule=? and active = 1",{
  				type:QueryTypes.SELECT,
@@ -1518,8 +1518,8 @@ rSalesOrder.prototype.getFields=async function (log){
  					log.debug(msg);
  				}
  			}).spread(async (modentity)=>{
- 				var prefix=modentity.prefix;
- 				var tabid=await dbconn.query('select tabid from vtiger_tab where name=?',{
+ 				const prefix=modentity.prefix;
+ 				const tabid=await dbconn.query('select tabid from vtiger_tab where name=?',{
  					type:QueryTypes.SELECT,
  					replacements:[seqModule],
  					logging:(msg)=>{
@@ -1528,7 +1528,7 @@ rSalesOrder.prototype.getFields=async function (log){
  				}).spread((tab)=>{
  					return tab.tabid;
  				});
- 				var code= await dbconn.query("SELECT count(1) as `cnt` FROM vtiger_crmentity where setype_id=?",{
+ 				const code= await dbconn.query("SELECT count(1) as `cnt` FROM vtiger_crmentity where setype_id=?",{
  					type:QueryTypes.SELECT,
  					replacements:[tabid],
  					logging:(msg)=>{
@@ -1538,6 +1538,9 @@ rSalesOrder.prototype.getFields=async function (log){
  					return countRes.cnt+1;
  				});
  				return prefix+code;
+ 			}).catch(e=>{
+ 				log.error(" getSeqNumberForModule " +e.message);
+ 				return false;
  			});
  			
  		}
@@ -2083,7 +2086,8 @@ rSalesOrder.prototype.getFields=async function (log){
 	 		if(soId){
 	 			const so=new SalesOrder();
 	 			const socf=new SalesOrderCf();
-	 			so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
+	 			const soSeqNumber=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
+	 			so['salesorder_no']=soSeqNumber;
 	 			so['salesorderid']=soId;
 	 			so['subject']=rso['subject'];
 	 			so['type']=rso['type'];
