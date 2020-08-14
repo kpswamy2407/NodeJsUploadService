@@ -7,10 +7,10 @@ const dbconn=new Sequelize(database,null,null,{
     timezone:'+05:30',
     logging:false,
     pool: {
-        max: 15,
-        min: 5,
-        idle: 10000,
-        acquire: 30000
+            max: 30,
+            min: 0,
+            acquire: 60000,
+            idle: 5000
     },
     logQueryParameters:true,
     port:process.env.FNXT_MYSQLPORT,

@@ -132,35 +132,35 @@ const { QueryTypes } = require('sequelize');
  						replacements:[unique_retailer_code],
  						logging:(msg)=>{
  							log.debug(msg);
- 							}
- 						}).spread(async(distQryRes)=>{
- 							
- 							if(distQryRes){
- 								audit.distCode=distQryRes.distributorcode;
- 								 	distributorId=distQryRes.distributor_id;
- 									distributorCodeForSellerId=distQryRes.distributorcode;
- 									return;
- 							}
- 						}).catch(e=>{
- 							log.info(" type 14 or 12 values not available "+ e.message);
- 						})
+ 						}
+ 					}).spread(async(distQryRes)=>{
+
+ 						if(distQryRes){
+ 							audit.distCode=distQryRes.distributorcode;
+ 							distributorId=distQryRes.distributor_id;
+ 							distributorCodeForSellerId=distQryRes.distributorcode;
+ 							return;
+ 						}
+ 					}).catch(e=>{
+ 						log.info(" type 14 or 12 values not available "+ e.message);
+ 					})
  				}
  				else{
  					
- 				
+
 
  					if(coll.hasOwnProperty('distributor_id') && coll.distributor_id.hasOwnProperty('_text') && typeof(coll.distributor_id._text)!='undefined'){
- 						 distributorId=coll.distributor_id._text;
+ 						distributorId=coll.distributor_id._text;
  					}
  					else{
  						distributorId=await dbconn.query("SELECT xdistributorid FROM vtiger_xdistributor where distributorcode=?",{
- 								type:QueryTypes.SELECT,
- 								replacements:[crdr.fromId()],
- 								logging:(msg)=>{
- 									log.debug(msg);
- 								}
+ 							type:QueryTypes.SELECT,
+ 							replacements:[crdr.fromId()],
+ 							logging:(msg)=>{
+ 								log.debug(msg);
+ 							}
  						}).spread(async(dist)=>{
- 						return dist.xdistributorid;
+ 							return dist.xdistributorid;
  						}).catch(e=>{
  							log.info("dist id from fromid "+e.message);
  						})
@@ -174,125 +174,108 @@ const { QueryTypes } = require('sequelize');
  				if(coll.hasOwnProperty('type') && (Number(coll.type._text)==14 || Number(coll.type._text)==12)){
  					rsocf['cf_xrso_seller_id']=distributorCodeForSellerId;
  				}
- 				await dbconn.transaction().then(async (t) => {
- 					if(self.isFailure==true){
- 						return Promise.resolve(this.updateStatus(self.isFailure));
- 					}
- 					const salesorderid=await self.getCrmEntity('xrSalesOrder',log);
- 					log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
- 					if(salesorderid != false){
- 						rso.salesorderid=salesorderid;
- 						rsocf.salesorderid=salesorderid;
- 						return await rso.save({transaction: t,logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
- 							return await rsocf.save({transaction:t,logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
- 								if(t.commit()){
- 									log.info("============ Related Modules: Bill Ads, Ship Ads ===============")
- 									await self.updateBillShipAds(socf.salesorderid,log);
- 									await self.save(socf.salesorderid,log);
- 									log.info("************* Transaction -vtiger_xrso- end ***************");
- 									log.info("*********************** vtiger_xrso - lineItems update start **************")
- 									await self.updateLineItems(so,audit,coll.lineitems,log,crdr.prkey()).then(async()=>{
- 										if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
- 										log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
- 										log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
- 										log.info("*********** RSO to SO conversion start ************")
- 										await self.autoRsoToSo(so,socf,distributorId,customerType,log);
- 										
- 										
- 											
- 										log.info("*********** RSO to SO conversion end ***************");
+ 				
+ 				if(self.isFailure==true){
+ 					return Promise.resolve(this.updateStatus(self.isFailure));
+ 				}
+ 				const salesorderid=await self.getCrmEntity('xrSalesOrder',log);
+ 				log.info("CrmEntity last inserted ID used as salesorderid: "+salesorderid)
+ 				if(salesorderid != false){
+ 					rso.salesorderid=salesorderid;
+ 					rsocf.salesorderid=salesorderid;
+ 					return await rso.save({logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
+ 						return await rsocf.save({logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
 
- 										
- 										await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where salesorderid=?",{
- 											type:QueryTypes.UPDATE,
- 											replacements:[so.salesorderid],
- 											logging:(msg)=>{
- 												log.debug(msg);
- 											}
- 										}).then(()=>{
- 											log.info("vtiger_xrsocf next stage updated");
- 										}).catch(e=>{
- 											log.error(e.message + " issue with vtiger_xrsocf update");
- 										})
-
- 										
- 										
- 									}
- 								}).catch(e=>{
- 									return;
- 								});
- 									log.info("****************** vtiger_xrso lineitems update -end *********************")
- 									
-
+ 							log.info("============ Related Modules: Bill Ads, Ship Ads ===============")
+ 							await self.updateBillShipAds(socf.salesorderid,log);
+ 							await self.save(socf.salesorderid,log);
+ 							log.info("************* Transaction -vtiger_xrso- end ***************");
+ 							log.info("*********************** vtiger_xrso - lineItems update start **************")
+ 							await self.updateLineItems(so,audit,coll.lineitems,log,crdr.prkey()).then(async()=>{
+ 								if(LBL_AUTO_RSO_TO_SO.toLowerCase()=='true' && LBL_RSO_SUB_RETAILER_CONVERT.toLowerCase()=='true' && Number(so.customer_type)!=2){
+ 									log.info('LBL_AUTO_RSO_TO_SO : '+LBL_AUTO_RSO_TO_SO);
+ 									log.info('LBL_RSO_SUB_RETAILER_CONVERT : '+LBL_RSO_SUB_RETAILER_CONVERT);
+ 									log.info("*********** RSO to SO conversion start ************")
+ 									await self.autoRsoToSo(so,socf,distributorId,customerType,log);
+ 									log.info("*********** RSO to SO conversion end ***************");
+ 									await dbconn.query("update vtiger_xrsocf set cf_xrso_next_stage_name='' where salesorderid=?",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:[so.salesorderid],
+ 										logging:(msg)=>{
+ 											log.debug(msg);
+ 										}
+ 									}).then(()=>{
+ 										log.info("vtiger_xrsocf next stage updated");
+ 									}).catch(e=>{
+ 										log.error(e.message + " issue with vtiger_xrsocf update");
+ 									})
  								}
+ 							}).catch(e=>{
+ 								return;
  							});
- 						}).then(async (t) => {
+ 							log.info("****************** vtiger_xrso lineitems update -end *********************")
 
- 						}).catch(async (err) => {
- 							console.log(err);
- 							audit.statusCode='FN2010';
- 							audit.statusMsg=err.message;
- 							audit.reason=err.message;
- 							audit.status='Failed';
- 							audit.subject=rso.subject;
- 							await audit.saveLog(dbconn,log);
- 							self.isFailure=true;
- 							return await t.rollback();
  						});
- 					}
- 					else{
- 						log.errr(" unable get the salesorderid for xrso");
- 						return;
- 					}
- 					
- 					
- 				});
-
+ 					}).catch(async (err) => {	
+	 					audit.statusCode='FN2010';
+	 					audit.statusMsg=err.message;
+	 					audit.reason=err.message;
+	 					audit.status='Failed';
+	 					audit.subject=rso.subject;
+	 					await audit.saveLog(dbconn,log);
+	 					self.isFailure=true;
+	 					return await t.rollback();
+ 				 });
+ 				}
+ 				else{
+ 					log.err(" unable get the salesorderid for xrso");
+ 					return;
+ 				}
  			}, Promise.resolve());
 
- 			log.info("=========================RSO End==================")
- 		}
- 		catch(e){
- 			
- 			return  Promise.reject(e);
- 		}
- 		
- 		return Promise.resolve(this.updateStatus(self.isFailure));
+log.info("=========================RSO End==================")
+}
+catch(e){
 
- 	};
- 	rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId,prkey){
- 		var self=this;
- 		var dbconn=this.getDb();
- 		const rSalesOrder=dbconn.import('./../../models/rsalesorder');
- 		const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
- 		const CurrencyInfo=dbconn.import('./../../models/currency-info');
- 		var rso=new rSalesOrder();
- 		var rsocf=new rSalesOrderCf();
- 		
- 		rso.lbl_rso_save_pro_cate=await self.getInvMgtConfig('lbl_rso_save_pro_cate');
+	return  Promise.reject(e);
+}
 
- 		await fields.reduce(async (promise, field) => {
- 			await promise;
+return Promise.resolve(this.updateStatus(self.isFailure));
 
- 			switch(field.uitype){
- 				case 117:
- 				log.info("=========== Related Module: Currency ================")
- 				await CurrencyInfo.findOne({
- 					where:{currency_code:coll.currency_id.currency_code._text},
- 					logging:(msg)=>{
- 						log.info("currency code: "+coll.currency_id.currency_code._text);
- 						log.debug(msg);
- 					}
- 				}).then(currency=>{
- 					log.info(field.columnname+" : "+currency.id+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
- 					rso[field.columnname]=currency.id;
- 					rsocf[field.columnname]=currency.id;
+};
+rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId,prkey){
+	var self=this;
+	var dbconn=this.getDb();
+	const rSalesOrder=dbconn.import('./../../models/rsalesorder');
+	const rSalesOrderCf=dbconn.import('./../../models/rsalesorder-cf');
+	const CurrencyInfo=dbconn.import('./../../models/currency-info');
+	var rso=new rSalesOrder();
+	var rsocf=new rSalesOrderCf();
 
- 				}).catch(e=>{
- 					throw new Error('Unable to get the currency id for sales order');
- 				});
- 				break;
- 				case 10:
+	rso.lbl_rso_save_pro_cate=await self.getInvMgtConfig('lbl_rso_save_pro_cate');
+
+	await fields.reduce(async (promise, field) => {
+		await promise;
+
+		switch(field.uitype){
+			case 117:
+			log.info("=========== Related Module: Currency ================")
+			await CurrencyInfo.findOne({
+				where:{currency_code:coll.currency_id.currency_code._text},
+				logging:(msg)=>{
+					log.info("currency code: "+coll.currency_id.currency_code._text);
+					log.debug(msg);
+				}
+			}).then(currency=>{
+				log.info(field.columnname+" : "+currency.id+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
+				rso[field.columnname]=currency.id;
+				rsocf[field.columnname]=currency.id;
+
+			}).catch(e=>{
+				throw new Error('Unable to get the currency id for sales order');
+			});
+			break;
+			case 10:
  			 	 //default related module for buyerid is xRetailer
  			 	 switch(field.columnname){
  			 	 	case 'buyerid':
@@ -336,7 +319,7 @@ const { QueryTypes } = require('sequelize');
  			 	 			audit.subject=coll.subject._text;
  			 	 			await audit.saveLog(dbconn,log);
  			 	 			self.isFailure=true;
- 			 	 		
+
  			 	 		}
  			 	 	}
  			 	 	else{
@@ -376,14 +359,14 @@ const { QueryTypes } = require('sequelize');
  			 	 	}
  			 	 	else{
  			 	 		if(field.typeofdata.includes('M')){
-	 			 	 		log.error("Unable to get the salesman info");
-	 			 	 		audit.statusCode='FN8210';
-	 			 	 		audit.statusMsg="Invalid Salesman";
-	 			 	 		audit.reason="Error while getting the related module data";
-	 			 	 		audit.status='Failed';
-	 			 	 		audit.subject=coll.subject._text;
-	 			 	 		await audit.saveLog(dbconn,log);
-	 			 	 		self.isFailure=true;
+ 			 	 			log.error("Unable to get the salesman info");
+ 			 	 			audit.statusCode='FN8210';
+ 			 	 			audit.statusMsg="Invalid Salesman";
+ 			 	 			audit.reason="Error while getting the related module data";
+ 			 	 			audit.status='Failed';
+ 			 	 			audit.subject=coll.subject._text;
+ 			 	 			await audit.saveLog(dbconn,log);
+ 			 	 			self.isFailure=true;
  			 	 		}
  			 	 	}
 
@@ -400,84 +383,84 @@ const { QueryTypes } = require('sequelize');
  			 	 }
  			 	 break;
  			 	 default:
-	 		     if(field.typeofdata.includes('M') && field.columnname=='subject'){
-	 		     	return rSalesOrder.findOne({
-	 		     		where:{subject:coll[field.columnname]._text},
-	 		     		attributes:['subject'],
-	 		     		logging:(msg)=>{
-	 		     			log.debug(msg);
-	 		     		}
-	 		     	}).then(async(xrsorder)=>{
-	 		     		if(xrsorder){
-	 		     			if(xrsorder.subject!=''){
-	 		     				log.error(field.columnname+" is required");
-	 		     				audit.statusCode='FN8210';
-	 		     				audit.statusMsg="Rejected since Order already available";
-	 		     				audit.reason=coll.subject._text+ " Already Available In Application";
-	 		     				audit.status='Failed';
-	 		     				audit.subject=coll.subject._text;
-	 		     				await audit.saveLog(dbconn,log);
-	 		     				self.isFailure=true;
-	 		     			}
-	 		     		}
-	 		     		else{
-	 		     			if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
-	 		     				log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
-	 		     				rso[field.columnname]= coll[field.columnname]._text;
-	 		     				rsocf[field.columnname]= coll[field.columnname]._text;
-	 		     			}
-	 		     			else{
-		 		     			log.error(field.columnname+" is required");
-		 		     			audit.statusCode='FN8211';
-		 		     			audit.statusMsg="Invalid Reference Number / Empty Reference Number";
-		 		     			audit.reason=field.columnname+" is required";
-		 		     			audit.status='Failed';
-		 		     			audit.subject=coll.subject._text;
-		 		     			await audit.saveLog(dbconn,log);
-		 		     			self.isFailure=true;
-	 		     			} 
-	 		     		}
-	 		     	}).catch(e=>{
-	 		     		log.error(" subject "+e.message);
-	 		     	});
-	 		     }  
-	 		     
-	 		     	if(field.typeofdata.includes('M')){
-	 		     		if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
-	 		     			log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
-	 		     			rso[field.columnname]= coll[field.columnname]._text;
-	 		     			rsocf[field.columnname]= coll[field.columnname]._text;
-	 		     		}
-	 		     		else{
-	 		     			log.error(field.columnname+" is required");
-	 		     			audit.statusCode='FN8210';
-	 		     			audit.statusMsg=field.columnname+" is required";
-	 		     			audit.reason=field.columnname+" is required";
-	 		     			audit.status='Failed';
-	 		     			audit.subject=coll.subject._text;
-	 		     			await audit.saveLog(dbconn,log);
-	 		     			self.isFailure=true;
-	 		     		} 
-	 		     	}
-	 		     	else{
-	 		     		if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
+ 			 	 if(field.typeofdata.includes('M') && field.columnname=='subject'){
+ 			 	 	return rSalesOrder.findOne({
+ 			 	 		where:{subject:coll[field.columnname]._text},
+ 			 	 		attributes:['subject'],
+ 			 	 		logging:(msg)=>{
+ 			 	 			log.debug(msg);
+ 			 	 		}
+ 			 	 	}).then(async(xrsorder)=>{
+ 			 	 		if(xrsorder){
+ 			 	 			if(xrsorder.subject!=''){
+ 			 	 				log.error(field.columnname+" is required");
+ 			 	 				audit.statusCode='FN8210';
+ 			 	 				audit.statusMsg="Rejected since Order already available";
+ 			 	 				audit.reason=coll.subject._text+ " Already Available In Application";
+ 			 	 				audit.status='Failed';
+ 			 	 				audit.subject=coll.subject._text;
+ 			 	 				await audit.saveLog(dbconn,log);
+ 			 	 				self.isFailure=true;
+ 			 	 			}
+ 			 	 		}
+ 			 	 		else{
+ 			 	 			if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+ 			 	 				log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
+ 			 	 				rso[field.columnname]= coll[field.columnname]._text;
+ 			 	 				rsocf[field.columnname]= coll[field.columnname]._text;
+ 			 	 			}
+ 			 	 			else{
+ 			 	 				log.error(field.columnname+" is required");
+ 			 	 				audit.statusCode='FN8211';
+ 			 	 				audit.statusMsg="Invalid Reference Number / Empty Reference Number";
+ 			 	 				audit.reason=field.columnname+" is required";
+ 			 	 				audit.status='Failed';
+ 			 	 				audit.subject=coll.subject._text;
+ 			 	 				await audit.saveLog(dbconn,log);
+ 			 	 				self.isFailure=true;
+ 			 	 			} 
+ 			 	 		}
+ 			 	 	}).catch(e=>{
+ 			 	 		log.error(" subject "+e.message);
+ 			 	 	});
+ 			 	 }  
 
-	 		     			if( typeof (coll[field.columnname]) !=='undefined' &&coll[field.columnname]!=='undefined' && coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
-	 		     				log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
-	 		     				rso[field.columnname]= coll[field.columnname]._text;
-	 		     				rsocf[field.columnname]= coll[field.columnname]._text;
-	 		     			} 
-	 		     		}
-	 		     	}
+ 			 	 if(field.typeofdata.includes('M')){
+ 			 	 	if(coll[field.columnname]!=='undefined' &&coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+ 			 	 		log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
+ 			 	 		rso[field.columnname]= coll[field.columnname]._text;
+ 			 	 		rsocf[field.columnname]= coll[field.columnname]._text;
+ 			 	 	}
+ 			 	 	else{
+ 			 	 		log.error(field.columnname+" is required");
+ 			 	 		audit.statusCode='FN8210';
+ 			 	 		audit.statusMsg=field.columnname+" is required";
+ 			 	 		audit.reason=field.columnname+" is required";
+ 			 	 		audit.status='Failed';
+ 			 	 		audit.subject=coll.subject._text;
+ 			 	 		await audit.saveLog(dbconn,log);
+ 			 	 		self.isFailure=true;
+ 			 	 	} 
+ 			 	 }
+ 			 	 else{
+ 			 	 	if(field.columnname!='crmid' && field.columnname!='cf_xrso_type'){
 
-	 		                   
+ 			 	 		if( typeof (coll[field.columnname]) !=='undefined' &&coll[field.columnname]!=='undefined' && coll[field.columnname]!==null && Object.keys(coll[field.columnname]).length>0){
+ 			 	 			log.info(field.columnname+" : "+coll[field.columnname]._text+" typeof data: "+field.typeofdata+" ui type: "+field.uitype);
+ 			 	 			rso[field.columnname]= coll[field.columnname]._text;
+ 			 	 			rsocf[field.columnname]= coll[field.columnname]._text;
+ 			 	 		} 
+ 			 	 	}
+ 			 	 }
+
+
  			 	 
  			 	 break;
  			 	}
 
 
 
-	 		       }, Promise.resolve());
+ 			 }, Promise.resolve());
 
 return {rso:rso,rsocf: rsocf}; 
 }
@@ -512,7 +495,7 @@ rSalesOrder.prototype.getFields=async function (log){
 				tablename:tableName,xmlreceivetable:1},
 				attributes: ['columnname'],
 				order:[
-					['columnname',order]
+				['columnname',order]
 				],
 				logging:(msg)=>{
 					log.debug(msg);
@@ -935,9 +918,9 @@ rSalesOrder.prototype.getFields=async function (log){
 					return  RecCustMaster.findOne({
 						where:{
 							[Op.and]: [
-							  { deleted:0 },
-							  { distributor_id:distId},
-							  {[columnname]:coll.buyerid.customercode._text}
+							{ deleted:0 },
+							{ distributor_id:distId},
+							{[columnname]:coll.buyerid.customercode._text}
 							]
 						},
 						attributes:[entityidfield],
@@ -1094,32 +1077,32 @@ rSalesOrder.prototype.getFields=async function (log){
 											log.debug(msg);
 										}
 									}).spread(async(catLeveRes)=>{
-											if(catLeveRes){
-												var hpath=await catLeveRes.hpath;
-												var catParentQtyQuery="select group_concat(HIR.xprodhierid) as cateids from vtiger_xprodhier HIR INNER JOIN vtiger_xprodhiercf HRCF ON HIR.xprodhierid = HRCF.xprodhierid where HIR.xprodhierid = ? or HRCF.cf_xprodhier_code_path like '"+hpath+" -%'";
-												await dbconn.query(catParentQtyQuery,{
-													type:QueryTypes.SELECT,
-													replacements:[prodHierId],
-													logging:(msg)=>{
-														log.debug(msg);
+										if(catLeveRes){
+											var hpath=await catLeveRes.hpath;
+											var catParentQtyQuery="select group_concat(HIR.xprodhierid) as cateids from vtiger_xprodhier HIR INNER JOIN vtiger_xprodhiercf HRCF ON HIR.xprodhierid = HRCF.xprodhierid where HIR.xprodhierid = ? or HRCF.cf_xprodhier_code_path like '"+hpath+" -%'";
+											await dbconn.query(catParentQtyQuery,{
+												type:QueryTypes.SELECT,
+												replacements:[prodHierId],
+												logging:(msg)=>{
+													log.debug(msg);
+												}
+											}).spread(async(catParentQtyRes)=>{
+												if(catParentQtyRes){
+													if(catParentQtyRes.cateids!=''){
+														prodHierId=catParentQtyRes.cateids.replace(',',"','");
 													}
-												}).spread(async(catParentQtyRes)=>{
-													if(catParentQtyRes){
-														if(catParentQtyRes.cateids!=''){
-															prodHierId=catParentQtyRes.cateids.replace(',',"','");
-														}
-													}
-												}).catch(e=>{
-													log.error(e.message);
-												});
-											}
+												}
+											}).catch(e=>{
+												log.error(e.message);
+											});
+										}
 									}).catch(e=>{
 										log.error(" Problem identified in product hierachy category level, " + e.message);
 									});
-								
-								var productCatCode=lineItem.product_category_code._text;
-								var productQuery="select PRO.xproductid as proid,PRO.productcode as productcode from vtiger_xproduct PRO  inner Join vtiger_xproductcf PROCF on PRO.xproductid = PROCF.xproductid Where PRO.productcode = ? or PROCF.cf_xproduct_category in(?) order by PRO.productcode DESC limit 1";
-								await dbconn.query(productQuery,{
+
+									var productCatCode=lineItem.product_category_code._text;
+									var productQuery="select PRO.xproductid as proid,PRO.productcode as productcode from vtiger_xproduct PRO  inner Join vtiger_xproductcf PROCF on PRO.xproductid = PROCF.xproductid Where PRO.productcode = ? or PROCF.cf_xproduct_category in(?) order by PRO.productcode DESC limit 1";
+									await dbconn.query(productQuery,{
 										type:QueryTypes.SELECT,
 										replacements:[productCatCode,prodHierId],
 									}).spread(async(productRes)=>{
@@ -1175,33 +1158,33 @@ rSalesOrder.prototype.getFields=async function (log){
 							
 							if(typeof(lineItem.productcode._text)!=='undefined'){
 								if(is_process==1){
-								log.info("====== product details ==============")
-								var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
-								if(productId==false){
-									if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
-										audit.statusCode='FN8212';
-										audit.statusMsg="Invalid Product Code"
-										audit.reason="Product Is Not Availabale with provided input "+lineItem.productcode._text;
-										audit.status='Failed';
-										audit.subject=so.subject;
-										await audit.saveLog(dbconn,log);
-										self.trash(so.salesorderid,log);
-										self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
-										self.isFailure=true;
-										return Promise.reject(false);
+									log.info("====== product details ==============")
+									var productId=await self.getProductId(lineItem.productcode._text,log,prkey);
+									if(productId==false){
+										if(LBL_VALIDATE_RPI_PROD_CODE.toLowerCase()=='true'){
+											audit.statusCode='FN8212';
+											audit.statusMsg="Invalid Product Code"
+											audit.reason="Product Is Not Availabale with provided input "+lineItem.productcode._text;
+											audit.status='Failed';
+											audit.subject=so.subject;
+											await audit.saveLog(dbconn,log);
+											self.trash(so.salesorderid,log);
+											self.updateSubject(so.salesorderid,so.subject+'_'+so.salesorderid,log);
+											self.isFailure=true;
+											return Promise.reject(false);
+										}
+										else{
+											xrsoProdRel['productname']='0';
+											xrsoProdRel['productcode']=lineItem.productcode._text;
+											xrsoProdRel[transRel.profirldname]=productId;
+										}
 									}
 									else{
-										xrsoProdRel['productname']='0';
-										xrsoProdRel['productcode']=lineItem.productcode._text;
+										xrsoProdRel['productname']=productId;
 										xrsoProdRel[transRel.profirldname]=productId;
+										xrsoProdRel['productcode']=lineItem.productcode._text;
 									}
 								}
-								else{
-									xrsoProdRel['productname']=productId;
-									xrsoProdRel[transRel.profirldname]=productId;
-									xrsoProdRel['productcode']=lineItem.productcode._text;
-								}
-							}
 							}
 							else{
 								console.log("Something went wrong");
@@ -1373,7 +1356,7 @@ rSalesOrder.prototype.getFields=async function (log){
 				return false;
 			}
 			
-		
+
 
 		}
 		rSalesOrder.prototype.isProdUomMap=async function(productId,uomId,log){
@@ -1469,66 +1452,66 @@ rSalesOrder.prototype.getFields=async function (log){
 				}
 
 				
- 			var {so,socf,soBillAds,soShipAds,error}= await self.prepareSo(rso,rsocf,distId,custType,log);
- 			if(error==false){
- 				console.log(so.dataValues)
- 				console.log(socf.dataValues)
- 				return await so.save({logging:(msg)=>{log.debug(msg)}}).then(async(so)=>{
- 					return await socf.save({logging:(msg)=>{log.debug(msg)}}).then(async(socf)=>{
- 						let isCrmRelUpdate = await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
- 						if(isCrmRelUpdate){
- 							var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
- 							return await dbconn.query("update vtiger_xsalesorder set total=?,subtotal=? where salesorderid=?",{
- 										type:QueryTypes.UPDATE,
- 										replacements:[self.netTotalAmount,self.netTotalAmount,so.salesorderid],
- 										logging:(msg)=>{
- 											log.debug(msg);
- 										}
- 									}).then(async()=>{
- 										log.info("vtiger_xsalesorder total updated");
- 										await soBillAds.save({logging:(msg)=>{
- 											log.debug(msg);
- 										}}).then().catch(e=>{
- 											log.error(e.message)
- 										});
- 										await soShipAds.save({logging:(msg)=>{
- 											log.debug(msg);
- 										}}).then().catch(e=>{
- 											log.error(e.message)
- 										});
- 										return true		
- 									}).catch(e=>{
- 										log.error(e.message+ " issue with vtiger_xsalesorder total");
- 										return false;
- 									});
+				var {so,socf,soBillAds,soShipAds,error}= await self.prepareSo(rso,rsocf,distId,custType,log);
+				if(error==false){
+					console.log(so.dataValues)
+					console.log(socf.dataValues)
+					return await so.save({logging:(msg)=>{log.debug(msg)}}).then(async(so)=>{
+						return await socf.save({logging:(msg)=>{log.debug(msg)}}).then(async(socf)=>{
+							let isCrmRelUpdate = await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
+							if(isCrmRelUpdate){
+								var netTotal=await self.updateSoLineItems(so,socf,rso.salesorderid,distId,log);
+								return await dbconn.query("update vtiger_xsalesorder set total=?,subtotal=? where salesorderid=?",{
+									type:QueryTypes.UPDATE,
+									replacements:[self.netTotalAmount,self.netTotalAmount,so.salesorderid],
+									logging:(msg)=>{
+										log.debug(msg);
+									}
+								}).then(async()=>{
+									log.info("vtiger_xsalesorder total updated");
+									await soBillAds.save({logging:(msg)=>{
+										log.debug(msg);
+									}}).then().catch(e=>{
+										log.error(e.message)
+									});
+									await soShipAds.save({logging:(msg)=>{
+										log.debug(msg);
+									}}).then().catch(e=>{
+										log.error(e.message)
+									});
+									return true		
+								}).catch(e=>{
+									log.error(e.message+ " issue with vtiger_xsalesorder total");
+									return false;
+								});
 
- 						}
- 						else{
- 							return false;
- 						}
- 											
- 						
- 					})
- 				}).catch(e=>{
- 					console.log(e);
- 					log.error(" saving the salesorder"+e.message);
- 					return false;
- 				})
- 			}
- 			else{
- 				log.error(" unable to get values from prepare so")
- 				return false;
- 			}
-	
- 		}catch(e){
- 			log.error(e.message);
- 			return false;
- 		}
- 	}
- 	rSalesOrder.prototype.getSeqNumberForModule=async function(mod,seqModule,reqStr='',reqNo='',log){
- 		try{
- 			var self=this;
- 			var dbconn=this.getDb();
+							}
+							else{
+								return false;
+							}
+
+
+						})
+					}).catch(e=>{
+						console.log(e);
+						log.error(" saving the salesorder"+e.message);
+						return false;
+					})
+				}
+				else{
+					log.error(" unable to get values from prepare so")
+					return false;
+				}
+
+			}catch(e){
+				log.error(e.message);
+				return false;
+			}
+		}
+		rSalesOrder.prototype.getSeqNumberForModule=async function(mod,seqModule,reqStr='',reqNo='',log){
+			try{
+				var self=this;
+				var dbconn=this.getDb();
  			//select tabid from vtiger_tab where name=
  			return await dbconn.query("select prefix from vtiger_modentity_num where semodule=? and active = 1",{
  				type:QueryTypes.SELECT,
@@ -1626,28 +1609,28 @@ rSalesOrder.prototype.getFields=async function (log){
  				let soRel=await soProdRel.save({logging:(msg)=>{
  					log.debug(msg);
  				}}).then(async function(soRel){
- 						return soRel;
+ 					return soRel;
  				}).catch(e=>{
  					log.error(e.message);
  					return false;
  				});
  				if(soRel){
- 						
- 						var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
- 						log.info("===================== tax calucation - start ==========")
- 						
- 						var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
- 						
- 						if(taxAmount>0){
- 							total=total+taxAmount;
- 							self.netTotalAmount=self.netTotalAmount+total;
- 						}
- 						else{
- 							self.netTotalAmount=self.netTotalAmount+total;
- 						}
- 						
- 						
- 						log.info("===================== tax calucation - end ==========")
+
+ 					var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
+ 					log.info("===================== tax calucation - start ==========")
+
+ 					var taxAmount=await self.getProductTax(soRel['productid'],'xSalesOrder',distId,so['buyerid'],socf['cf_xrsalesorder_shipping_address_pick'],socf['cf_salesorder_sales_order_date'],log,soRel['lineitem_id'],total,so,soProdRel['baseqty']);
+
+ 					if(taxAmount>0){
+ 						total=total+taxAmount;
+ 						self.netTotalAmount=self.netTotalAmount+total;
+ 					}
+ 					else{
+ 						self.netTotalAmount=self.netTotalAmount+total;
+ 					}
+
+
+ 					log.info("===================== tax calucation - end ==========")
  				}			
  			}
 
@@ -1663,105 +1646,105 @@ rSalesOrder.prototype.getFields=async function (log){
  			var dbconn=this.getDb();
  			var ALLOW_GST_TRANSACTION= await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
  			if(Number(ALLOW_GST_TRANSACTION)==1 || ALLOW_GST_TRANSACTION.toLowerCase()=='true'){
-	 			var retailerTaxType=await dbconn.query("SELECT vtiger_xretailer.retailertaxtype FROM vtiger_xretailer where vtiger_xretailer.xretailerid=? and vtiger_xretailer.deleted=0",{
-	 					type:QueryTypes.SELECT,
-	 					replacements:[buyerId],
-	 					logging:(msg)=>{
-	 						log.debug(msg);
-	 					}
-	 				}).spread((retailer)=>{
-	 					return retailer.retailertaxtype;
-	 				}).catch(e=>{
-	 					log.error(e.message);
-	 					return false;
-	 				});
-	 			if(transactionDate!=''){
-	 				var txnDate=transactionDate;
-	 			}
-	 			else{
-	 				var txnDate=moment().format('YYYY-MM-DD');
-	 			}
-	 			var productTaxType=await dbconn.query("SELECT producttaxtype FROM vtiger_xproduct where 	producttaxtype='Taxable' AND xproductid=?",{
+ 				var retailerTaxType=await dbconn.query("SELECT vtiger_xretailer.retailertaxtype FROM vtiger_xretailer where vtiger_xretailer.xretailerid=? and vtiger_xretailer.deleted=0",{
+ 					type:QueryTypes.SELECT,
+ 					replacements:[buyerId],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread((retailer)=>{
+ 					return retailer.retailertaxtype;
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return false;
+ 				});
+ 				if(transactionDate!=''){
+ 					var txnDate=transactionDate;
+ 				}
+ 				else{
+ 					var txnDate=moment().format('YYYY-MM-DD');
+ 				}
+ 				var productTaxType=await dbconn.query("SELECT producttaxtype FROM vtiger_xproduct where 	producttaxtype='Taxable' AND xproductid=?",{
 
-	 					type:QueryTypes.SELECT,
-	 					replacements:[productId],
-	 					logging:(msg)=>{
-	 						log.debug(msg);
-	 					}
-	 				}).spread((product)=>{
-	 					return product.producttaxtype;
-	 				}).catch(e=>{
-	 					log.error(e.message);
-	 					return false;
-	 				});
-	 			var distTaxType=await dbconn.query("SELECT xdistributorid,distributortaxtype FROM vtiger_xdistributor where distributortaxtype='Registered' AND xdistributorid=?",{
-	 					type:QueryTypes.SELECT,
-	 					replacements:[distId],
-	 					logging:(msg)=>{
-	 						log.debug(msg);
-	 					}
-	 				}).spread((dist)=>{
-	 					return dist.distributortaxtype;
-	 				}).catch(e=>{
-	 					log.error(e.message);
-	 					return false;
-	 				});
-	 			var buyerOrSellerId=await dbconn.query("SELECT reference_id FROM vtiger_xreceivecustomermaster where xreceivecustomermasterid=?",{
-	 					type:QueryTypes.SELECT,
-	 					replacements:[buyerId],
-	 					logging:(msg)=>{
-	 						log.debug(msg);
-	 					}
-	 				}).spread((cust)=>{
-	 					if(cust){
-	 						return cust.reference_id;
-	 					}
-	 					else{
-	 						return buyerId;
-	 					}
-	 				}).catch(e=>{
-	 					log.error(e.message);
-	 					return buyerId;
-	 				});
-	 			var distStateId=await dbconn.query("SELECT cf_xdistributor_state FROM vtiger_xdistributorcf INNER JOIN vtiger_xdistributor ON vtiger_xdistributor.xdistributorid=vtiger_xdistributorcf.xdistributorid where vtiger_xdistributor.gstinno!='' AND vtiger_xdistributorcf.xdistributorid=?",{
-	 					type:QueryTypes.SELECT,
-	 					replacements:[distId],
-	 					logging:(msg)=>{
-	 						log.debug(msg);
-	 					}
-	 				}).spread((dist)=>{
-	 					return dist.cf_xdistributor_state;
-	 				}).catch(e=>{
-	 					log.error(e.message);
-	 					return false;
-	 				});
-	 			var retailerStateId= await dbconn.query("SELECT xState.xstateid from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?",{
-	 					type:QueryTypes.SELECT,
-	 					replacements:[shippingAddressId],
-	 					logging:(msg)=>{
-	 						log.debug(msg);
-	 					}
-	 				}).spread(async(state)=>{
-	 					if(state){
-	 						return state.xstateid;
-	 					}
-	 					else{
-	 						return await dbconn.query("SELECT vtiger_xretailercf.cf_xretailer_state FROM vtiger_xretailercf where vtiger_xretailercf.xretailerid=?",{
-	 							type:QueryTypes.SELECT,
-	 							replacements:[buyerOrSellerId],
-	 							logging:(msg)=>{
-	 								log.debug(msg)
-	 							}
-	 						}).spread((state)=>{
-	 								return state.cf_xretailer_state
-	 						})
-	 					}
-	 				}).catch(e=>{
-	 					log.error(e.message);
-	 					return false;
-	 				});
-	 			if(distStateId!=false && retailerStateId!=false){
-	 				
+ 					type:QueryTypes.SELECT,
+ 					replacements:[productId],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread((product)=>{
+ 					return product.producttaxtype;
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return false;
+ 				});
+ 				var distTaxType=await dbconn.query("SELECT xdistributorid,distributortaxtype FROM vtiger_xdistributor where distributortaxtype='Registered' AND xdistributorid=?",{
+ 					type:QueryTypes.SELECT,
+ 					replacements:[distId],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread((dist)=>{
+ 					return dist.distributortaxtype;
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return false;
+ 				});
+ 				var buyerOrSellerId=await dbconn.query("SELECT reference_id FROM vtiger_xreceivecustomermaster where xreceivecustomermasterid=?",{
+ 					type:QueryTypes.SELECT,
+ 					replacements:[buyerId],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread((cust)=>{
+ 					if(cust){
+ 						return cust.reference_id;
+ 					}
+ 					else{
+ 						return buyerId;
+ 					}
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return buyerId;
+ 				});
+ 				var distStateId=await dbconn.query("SELECT cf_xdistributor_state FROM vtiger_xdistributorcf INNER JOIN vtiger_xdistributor ON vtiger_xdistributor.xdistributorid=vtiger_xdistributorcf.xdistributorid where vtiger_xdistributor.gstinno!='' AND vtiger_xdistributorcf.xdistributorid=?",{
+ 					type:QueryTypes.SELECT,
+ 					replacements:[distId],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread((dist)=>{
+ 					return dist.cf_xdistributor_state;
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return false;
+ 				});
+ 				var retailerStateId= await dbconn.query("SELECT xState.xstateid from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?",{
+ 					type:QueryTypes.SELECT,
+ 					replacements:[shippingAddressId],
+ 					logging:(msg)=>{
+ 						log.debug(msg);
+ 					}
+ 				}).spread(async(state)=>{
+ 					if(state){
+ 						return state.xstateid;
+ 					}
+ 					else{
+ 						return await dbconn.query("SELECT vtiger_xretailercf.cf_xretailer_state FROM vtiger_xretailercf where vtiger_xretailercf.xretailerid=?",{
+ 							type:QueryTypes.SELECT,
+ 							replacements:[buyerOrSellerId],
+ 							logging:(msg)=>{
+ 								log.debug(msg)
+ 							}
+ 						}).spread((state)=>{
+ 							return state.cf_xretailer_state
+ 						})
+ 					}
+ 				}).catch(e=>{
+ 					log.error(e.message);
+ 					return false;
+ 				});
+ 				if(distStateId!=false && retailerStateId!=false){
+
 	 				//AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL)
 	 				if(distStateId==retailerStateId){
 	 					var taxTypeToApply='LST';
@@ -1770,393 +1753,393 @@ rSalesOrder.prototype.getFields=async function (log){
 	 					var taxTypeToApply='CST';
 	 				}
 	 				var productTaxDetails=await dbconn.query("SELECT vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'Product' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group, CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1 WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2 ELSE '' END as product_uom, CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1 WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion ELSE '' END as uom_conversion, vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor, vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion, vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid = vtiger_xtaxmappingcf.cf_xtaxmapping_product where vtiger_xtaxmapping.deleted=0 and vtiger_xtaxmappingcf.cf_xtaxmapping_product=? and vtiger_xtaxmapping.statename=? and vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= ? and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= ?) ) AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DESC",{
-	 						type:QueryTypes.SELECT,
-	 						replacements:[productId,retailerStateId,txnDate,txnDate],
-	 						logging:(msg)=>{
-	 							log.info("***************** getProductTax *****************")
-	 							log.debug(msg);
-	 						}
-	 					}).then(async (productTax)=>{
-	 						
-	 						if(productTax.length>0){
-	 							return productTax;
-	 						}
-	 						else{
-	 							var product=await dbconn.query("SELECT vtiger_xproductcf.cf_xproduct_category,vtiger_xproduct.hsncode FROM vtiger_xproduct INNER JOIN vtiger_xproductcf on vtiger_xproductcf.xproductid=vtiger_xproduct.xproductid WHERE vtiger_xproduct.xproductid = ?",{
-	 								type:QueryTypes.SELECT,
-	 								replacements:[productId],
-	 								logging:(msg)=>{
-	 									log.info("Getting the product hsncode and category");
-	 									log.debug(msg)
-	 								}
-	 							}).spread((product)=>{
-	 								return product;
-	 							}).catch(e=>{
-	 								log.error("Error while getting the product details "+e.message);
-	 								return false;
-	 							});
-	 							if(product){
-	 								var hsncode=product.hsncode;
-	 								var cf_xproduct_category=product.cf_xproduct_category;
-	 								log.info("Prod hier Tax")
-	 								var productTaxDetails= await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
-	 								
-	 								if(productTaxDetails){
-	 									if(productTaxDetails.length>0){
-	 										return productTaxDetails;
-	 									}
-	 									else{
-	 										
-	 										return await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
-	 									
-	 									}
-	 									
+	 					type:QueryTypes.SELECT,
+	 					replacements:[productId,retailerStateId,txnDate,txnDate],
+	 					logging:(msg)=>{
+	 						log.info("***************** getProductTax *****************")
+	 						log.debug(msg);
+	 					}
+	 				}).then(async (productTax)=>{
+
+	 					if(productTax.length>0){
+	 						return productTax;
+	 					}
+	 					else{
+	 						var product=await dbconn.query("SELECT vtiger_xproductcf.cf_xproduct_category,vtiger_xproduct.hsncode FROM vtiger_xproduct INNER JOIN vtiger_xproductcf on vtiger_xproductcf.xproductid=vtiger_xproduct.xproductid WHERE vtiger_xproduct.xproductid = ?",{
+	 							type:QueryTypes.SELECT,
+	 							replacements:[productId],
+	 							logging:(msg)=>{
+	 								log.info("Getting the product hsncode and category");
+	 								log.debug(msg)
+	 							}
+	 						}).spread((product)=>{
+	 							return product;
+	 						}).catch(e=>{
+	 							log.error("Error while getting the product details "+e.message);
+	 							return false;
+	 						});
+	 						if(product){
+	 							var hsncode=product.hsncode;
+	 							var cf_xproduct_category=product.cf_xproduct_category;
+	 							log.info("Prod hier Tax")
+	 							var productTaxDetails= await self.getProdHierTax(cf_xproduct_category,'cf_xtaxmapping_sales_tax',retailerStateId,'','',hsncode,'',txnDate,productId,log);
+
+	 							if(productTaxDetails){
+	 								if(productTaxDetails.length>0){
+	 									return productTaxDetails;
 	 								}
 	 								else{
-	 									log.info("**** indian tax ******");
+
 	 									return await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
 	 									
 	 								}
 
 	 							}
+	 							else{
+	 								log.info("**** indian tax ******");
+	 								return await self.getProdIndTax(productId,cf_xproduct_category,hsncode,'cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
+
+	 							}
 
 	 						}
+
+	 					}
+	 				});
+	 				taxAmount=0.00;
+	 				taxValue=0.00;
+
+	 				await productTaxDetails.reduce(async(promise,tax)=>{
+	 					await promise;
+	 					var XtaxRelSo=dbconn.import('./../../models/x-tax-rel-so');
+	 					var xtaxRelSo=new XtaxRelSo();
+	 					var taxOnUomFlag=tax.tax_on_uom_flag;
+	 					var uomConversion=(tax.uom_conversion)?tax.uom_conversion:1;
+	 					if(taxTypeToApply=='LST'){
+	 						var percentage=tax.cf_xtax_lst_percentage;
+	 						var basePercentage=tax.cf_xtax_lst_percentage/uomConversion;
+	 						var taxGroupType=tax.lst_tax_group;
+	 					}
+	 					else{
+	 						var percentage=tax.cf_xtax_cst_percentage;
+	 						var basePercentage=tax.cf_xtax_cst_percentage/uomConversion;
+	 						var taxGroupType=tax.cst_tax_group;
+	 					}
+	 					var LBL_TAX_CONFIGURATION=await self.getInvMgtConfig('LBL_TAX_CONFIGURATION');
+	 					if(LBL_TAX_CONFIGURATION=='1' && taxOnUomFlag==1){
+	 						var taxPercentage=basePercentage;
+	 					}
+	 					else{
+	 						var taxPercentage=percentage;
+	 						var taxOnUomFlag=0;
+	 					}
+	 					if(taxOnUomFlag==1){
+	 						var taxAmount=await (Number(baseqty)*Number(taxPercentage));
+	 					}
+	 					else{
+	 						var taxAmount=await (Number(netTotal)*Number(taxPercentage)/100); 
+	 					}
+	 					taxValue=taxValue+taxAmount;
+	 					xtaxRelSo['transaction_id']=so['salesorderid'];
+	 					xtaxRelSo['lineitem_id']=productId;
+	 					xtaxRelSo['transaction_name']='xSalesOrder';
+	 					xtaxRelSo['tax_type']=(tax.taxcode?tax.taxcode:'');
+	 					xtaxRelSo['tax_label']=tax.taxdescription;
+	 					xtaxRelSo['tax_percentage']=taxPercentage;
+	 					xtaxRelSo['tax_amt']=taxAmount;
+	 					xtaxRelSo['taxable_amt']=netTotal;
+	 					xtaxRelSo['transaction_line_id']=lineItemId;
+	 					xtaxRelSo['xtaxid']=tax.xtaxid;
+	 					xtaxRelSo['tax_group_type']=taxGroupType;
+	 					xtaxRelSo['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 					xtaxRelSo['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 					xtaxRelSo['tax_on_uom_flag']=taxOnUomFlag;
+	 					xtaxRelSo['tax_display_percentage']=(tax.display_percentage_intra?tax.display_percentage_intra:taxPercentage);
+	 					xtaxRelSo.save({logging:(msg)=>{
+	 						log.debug(msg);
+	 					}}).then(xtax=>{
+	 						log.info(" sify xtransaction rel so table save complete");
+	 					}).catch(e=>{
+	 						log.error(" sify xtransaction rel so table error "+ e.message);
 	 					});
-	 					taxAmount=0.00;
-	 					taxValue=0.00;
+	 				},Promise.resolve());
 
-	 					await productTaxDetails.reduce(async(promise,tax)=>{
-	 						await promise;
-	 						var XtaxRelSo=dbconn.import('./../../models/x-tax-rel-so');
-	 						var xtaxRelSo=new XtaxRelSo();
-	 						var taxOnUomFlag=tax.tax_on_uom_flag;
-	 						var uomConversion=(tax.uom_conversion)?tax.uom_conversion:1;
-	 						if(taxTypeToApply=='LST'){
-	 							var percentage=tax.cf_xtax_lst_percentage;
-	 							var basePercentage=tax.cf_xtax_lst_percentage/uomConversion;
-	 							var taxGroupType=tax.lst_tax_group;
-	 						}
-	 						else{
-	 							var percentage=tax.cf_xtax_cst_percentage;
-	 							var basePercentage=tax.cf_xtax_cst_percentage/uomConversion;
-	 							var taxGroupType=tax.cst_tax_group;
-	 						}
-	 						var LBL_TAX_CONFIGURATION=await self.getInvMgtConfig('LBL_TAX_CONFIGURATION');
-	 						if(LBL_TAX_CONFIGURATION=='1' && taxOnUomFlag==1){
-	 							var taxPercentage=basePercentage;
-	 						}
-	 						else{
-	 							var taxPercentage=percentage;
-	 							var taxOnUomFlag=0;
-	 						}
-	 						if(taxOnUomFlag==1){
-	 							var taxAmount=await (Number(baseqty)*Number(taxPercentage));
-	 						}
-	 						else{
-	 							var taxAmount=await (Number(netTotal)*Number(taxPercentage)/100); 
-	 						}
-	 						taxValue=taxValue+taxAmount;
-	 						xtaxRelSo['transaction_id']=so['salesorderid'];
-	 						xtaxRelSo['lineitem_id']=productId;
-	 						xtaxRelSo['transaction_name']='xSalesOrder';
-	 						xtaxRelSo['tax_type']=(tax.taxcode?tax.taxcode:'');
-	 						xtaxRelSo['tax_label']=tax.taxdescription;
-	 						xtaxRelSo['tax_percentage']=taxPercentage;
-	 						xtaxRelSo['tax_amt']=taxAmount;
-	 						xtaxRelSo['taxable_amt']=netTotal;
-	 						xtaxRelSo['transaction_line_id']=lineItemId;
-	 						xtaxRelSo['xtaxid']=tax.xtaxid;
-	 						xtaxRelSo['tax_group_type']=taxGroupType;
-	 						xtaxRelSo['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
-	 						xtaxRelSo['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
-	 						xtaxRelSo['tax_on_uom_flag']=taxOnUomFlag;
-	 						xtaxRelSo['tax_display_percentage']=(tax.display_percentage_intra?tax.display_percentage_intra:taxPercentage);
-	 						xtaxRelSo.save({logging:(msg)=>{
-	 							log.debug(msg);
-	 						}}).then(xtax=>{
-	 							log.info(" sify xtransaction rel so table save complete");
-	 						}).catch(e=>{
-	 							log.error(" sify xtransaction rel so table error "+ e.message);
-	 						});
-	 					},Promise.resolve());
-
-	 					return taxValue;    
+	 				return taxValue;    
 	 			}
 	 			else{
 	 				return false;
 	 			}
- 			}
- 			else{
- 				return false;
- 			}
- 		}
- 		catch(e){
- 			log.error(e.message);
- 			return false;
- 		}
+	 		}
+	 		else{
+	 			return false;
+	 		}
+	 	}
+	 	catch(e){
+	 		log.error(e.message);
+	 		return false;
+	 	}
 
- 	}
- 	rSalesOrder.prototype.getProdHierTax=async function(prodCat,taxToRetrive,retStateId,amenId,invDate,hsncode,limit,txnDate,productId,log){
- 		try{
- 			var self=this;
- 			var dbconn=this.getDb();
- 			return await dbconn.query("SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'Hierachy' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group, CASE			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2			ELSE ''			END as product_uom,			CASE 			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion			ELSE ''			END as uom_conversion,			vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,			vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,			vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping			inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid	inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid =? where vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxmappingcf.cf_xtaxmapping_product=0 and vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy=? and vtiger_xtaxmapping.statename=? and vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= ? and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= ?) ) AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DESC",{
- 				type:QueryTypes.SELECT,
- 				replacements:[productId,prodCat,retStateId,txnDate,txnDate],
- 				logging:(msg)=>{
- 					log.info("*****************getProdHierTax 1************")
- 					log.debug(msg);
- 				}
- 			}).then(async(productTaxDetails)=>{
- 				if(productTaxDetails){
- 					if(productTaxDetails.length>0){
- 						log.info("tax present prodct category")
- 						return productTaxDetails;
- 					}
- 				}
- 				else{
- 					
- 					var prodParentCat=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
- 						type:QueryTypes.SELECT,
- 						replacements:[prodCat],
- 						logging:(msg)=>{
- 							log.debug(msg)
- 						}
- 					}).spread(async(categoryDetails)=>{
- 						if(categoryDetails){
- 							log.info("*****************getProdHierTax category based************")
- 							return await self.getProdHierTax(categoryDetails.cf_xprodhier_parent,taxToRetrive,retStateId,'','',hsncode,'',txnDate,productId,log);
- 							
- 						}
- 						else{
- 							if(hsncode!=''){
- 								return await dbconn.query("SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'HSNCode' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group, CASE			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2			ELSE ''			END as product_uom,			CASE 			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion			ELSE ''			END as uom_conversion,			vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,			vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,			vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid	inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid =? where vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxmapping.hsncode=? AND vtiger_xtaxmapping.statename=? AND vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 AND ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= ? and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= ?))  AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DESC ",{
- 									type:QueryTypes.SELECT,
- 									replacements:[productId,hsncode,retStateId,txnDate,txnDate],
- 									logging:(msg)=>{
- 										log.info("tax calucation in getProdHierTax based on hsncode");
- 										log.debug(msg);
- 									}
- 								}).then(async(productTaxDetails)=>{
- 									if(productTaxDetails){
- 										if(productTaxDetails.length>0){
- 											
- 											return productTaxDetails;
- 										}
- 										else{
- 											return false;
+	 }
+	 rSalesOrder.prototype.getProdHierTax=async function(prodCat,taxToRetrive,retStateId,amenId,invDate,hsncode,limit,txnDate,productId,log){
+	 	try{
+	 		var self=this;
+	 		var dbconn=this.getDb();
+	 		return await dbconn.query("SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'Hierachy' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group, CASE			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2			ELSE ''			END as product_uom,			CASE 			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion			ELSE ''			END as uom_conversion,			vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,			vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,			vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping			inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid	inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid =? where vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxmappingcf.cf_xtaxmapping_product=0 and vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy=? and vtiger_xtaxmapping.statename=? and vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= ? and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= ?) ) AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DESC",{
+	 			type:QueryTypes.SELECT,
+	 			replacements:[productId,prodCat,retStateId,txnDate,txnDate],
+	 			logging:(msg)=>{
+	 				log.info("*****************getProdHierTax 1************")
+	 				log.debug(msg);
+	 			}
+	 		}).then(async(productTaxDetails)=>{
+	 			if(productTaxDetails){
+	 				if(productTaxDetails.length>0){
+	 					log.info("tax present prodct category")
+	 					return productTaxDetails;
+	 				}
+	 			}
+	 			else{
 
- 										}
- 									}
- 									else{
- 										return false;
- 									}
- 									
- 									
- 									
- 								}).catch(e=>{
- 									log.error("Got it in getProdHierTax "+e.message);
- 									return false;
- 								});
- 							}
- 							else{
- 								return false;
- 							}
- 						}
- 					})
- 				}
- 			})
- 		}
- 		catch(e){
- 			log.error("Error in getProdHierTax:"+e.message)
- 		}
- 	}
- 	rSalesOrder.prototype.getProdIndTax=async function(productId,prodCat,hsncode,taxToRetrive,invDate,taxapplytype,amenId,limit,txnDate,level,moduleFrom,retailerTaxType,log){
- 		try{
- 			log.info("We are in get getProdIndTax function");
- 			var self=this;
- 			var dbconn=this.getDb();
- 			var where="vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 AND vtiger_xstate.is_allstate=1";
- 			var uomType=", CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom		WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1 WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2 ELSE '' END as product_uom,		CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1 WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion ELSE '' END as uom_conversion,		vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,		vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,		vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion";
- 			var product="inner join vtiger_xproductcf on vtiger_xproductcf.xproductid = "+productId;
- 			if(productId!='' && level==0){
- 				where=where+" AND vtiger_xtaxmappingcf.cf_xtaxmapping_product='"+productId+"'";
- 			}
- 			else if(prodCat!='' && level==1){
- 				where=where+" AND vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy='"+prodCat+"'";
- 			}
- 			else if(hsncode!='' && level==3){
- 				where=where+" AND vtiger_xtaxmapping.hsncode='"+hsncode+"'";
- 			}
- 			if(amenId!=''){
- 				where=where+" and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '"+invDate+"' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '"+invDate+"') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' ORDER BY vtiger_xtaxmapping.modified_at DESC";
- 			}
- 			else{
- 				 where=where+"  and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '"+txnDate+"' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '"+txnDate+"') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' ORDER BY vtiger_xtaxmapping.modified_at DESC"
- 			}
- 			var indTax=" vtiger_xtaxmappingcf.incremental_flag=1 AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) AND ";
- 			
- 			var checkQuery="SELECT vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group "+uomType+" FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xstate on vtiger_xstate.xstateid=vtiger_xtaxmapping.statename "+product+"  where "+indTax+" "+where;
- 			log.info(checkQuery);
- 			var noOfRows=await dbconn.query(checkQuery,{
- 					type:QueryTypes.SELECT,
- 					logging:(msg)=>{
- 						log.info("************** check querygetProdIndTax ********* level: "+level)
- 						log.debug(msg);
- 					}
- 				}).then(async(checkResult)=>{
- 					return checkResult.length;
- 				}).catch(e=>{
- 					log.error(e.message);
- 					return 0;
- 				});
- 			
- 			var fromWhere='';
- 			if(noOfRows==0){
- 				fromWhere =" (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) AND ";
- 			}
- 			var mainTaxQuery="SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group "+uomType+" FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xstate on vtiger_xstate.xstateid=vtiger_xtaxmapping.statename "+product+" where "+fromWhere+" "+where;  
-		
- 			var productTaxDetails= await dbconn.query(mainTaxQuery,{
- 					type:QueryTypes.SELECT,
- 					logging:(msg)=>{
- 						log.info("************** tax getProdIndTax ********* level: "+level);
- 						log.debug(msg);
- 					}
- 				}).then(async(taxDetails)=>{
- 					if(taxDetails){
- 						if(taxDetails.length>0){
- 							return taxDetails;
- 						}
- 					}
- 					else if(level!=2){
- 						if(level==0){
- 							return await self.getProdIndTax(productId,prodCat,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,1,moduleFrom,retailerTaxType,log);
- 						}
- 						else{
- 							var parentCategory=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
- 									type:QueryTypes.SELECT,
- 									replacements:[prodCat],
- 									logging:(msg)=>{
- 										log.debug(msg);
- 									}
- 								}).spread(async(cat)=>{
- 									return cat;
- 								}).catch(e=>{
- 									log.error("with selection of cf_xprodhier_parent query in getProdIndTax fuction");
- 									return false;
- 								});
- 							if(parentCategory!=false){
- 								return await self.getProdIndTax(productId,parentCategory.cf_xprodhier_parent,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,1,moduleFrom,retailerTaxType,log);	
- 							}
- 							else{
- 								if(hsncode!=''){
- 									return await self.getProdIndTax(productId,prodCat,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,2,moduleFrom,retailerTaxType,log);
- 								}
- 							}
- 						}
- 					}
- 				}).catch(e=>{
- 					log.error(e.message);
- 					return false;
- 				});
- 				return productTaxDetails;
+	 				var prodParentCat=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
+	 					type:QueryTypes.SELECT,
+	 					replacements:[prodCat],
+	 					logging:(msg)=>{
+	 						log.debug(msg)
+	 					}
+	 				}).spread(async(categoryDetails)=>{
+	 					if(categoryDetails){
+	 						log.info("*****************getProdHierTax category based************")
+	 						return await self.getProdHierTax(categoryDetails.cf_xprodhier_parent,taxToRetrive,retStateId,'','',hsncode,'',txnDate,productId,log);
 
- 		}
- 		catch(e){
- 		
- 			log.error(e.message);
- 			return false;
- 		}
- 	}
- 	rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,distId,log){
- 		var self=this;
- 		const dbconn=this.getDb();
- 		const ALLOW_GST_TRANSACTION=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
- 		if(ALLOW_GST_TRANSACTION){
- 			var netTotal = 0;
- 			if(Number(sorel['listprice']) > 0 && Number(sorel['quantity']) > 0){
- 				netTotal=Number(sorel['listprice'])*Number(sorel['quantity']);
- 			}
- 			if(Number(sorel['discount_amount'])>0 && netTotal>=Number(sorel['discount_amount'])){
- 				netTotal=netTotal-Number(sorel['discount_amount']);
- 			}
- 			if(Number(sorel['discount_percent'])>0 && netTotal>=Number(sorel['discount_percent']) && Number(sorel['discount_percent'])<100) {
- 				netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
- 			}
- 			else if (Number(sorel['discount_percent'])>0 && Number(sorel['discount_percent'])>=100){
- 				netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
- 			}
- 			return netTotal;
+	 					}
+	 					else{
+	 						if(hsncode!=''){
+	 							return await dbconn.query("SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,'HSNCode' as taxapplytype,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group, CASE			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2			ELSE ''			END as product_uom,			CASE 			WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1			WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion			WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion			ELSE ''			END as uom_conversion,			vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,			vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,			vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid	inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xproductcf on vtiger_xproductcf.xproductid =? where vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxmapping.hsncode=? AND vtiger_xtaxmapping.statename=? AND vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 AND ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= ? and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= ?))  AND vtiger_xtaxcf.cf_xtax_status='Approved' AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) ORDER BY vtiger_xtaxmapping.modified_at DESC ",{
+	 								type:QueryTypes.SELECT,
+	 								replacements:[productId,hsncode,retStateId,txnDate,txnDate],
+	 								logging:(msg)=>{
+	 									log.info("tax calucation in getProdHierTax based on hsncode");
+	 									log.debug(msg);
+	 								}
+	 							}).then(async(productTaxDetails)=>{
+	 								if(productTaxDetails){
+	 									if(productTaxDetails.length>0){
 
- 		}
- 	}
- 	rSalesOrder.prototype.prepareSo=async function(rso,rsocf,distId,custType,log){
- 		try{
- 			var self=this;
- 			const dbconn=this.getDb();
- 			const SalesOrder=dbconn.import('./../../models/salesorder');
- 			const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
- 			const soId=await self.getCrmEntity('xSalesOrder',log);
- 			log.info("xSalesOrder crmentity id :"+soId)
- 			if(soId){
- 					const so=new SalesOrder();
- 			 		so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
- 			 		so['salesorderid']=soId;
- 			 		so['subject']=rso['subject'];
- 			 		so['type']=rso['type'];
- 			 		so['duedate']=rso['duedate'];
- 			 		so['contactid']=rso['contactid'];
- 			 		so['exciseduty']=Number(rso['exciseduty']);
- 			 		so['salescommission']=Number(rso['salescommission']);
- 			 		so['terms_conditions']=rso['terms_conditions'];
- 			 		so['currency_id']=rso['currency_id'];
- 			 		so['conversion_rate']=rso['conversion_rate'];
- 			 		so['tracking_no']=rso['tracking_no'];
- 			 		so['carrier']=rso['carrier'];
- 			 		so['deleted']=0;
- 			 		if(Number(custType)==1){
- 			 			var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
- 			 				log.info("Buyer Id in so :"+buyerId);
- 			 				if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
- 			 					buyerId=rso['buyerid'];
- 			 						so['buyerid']=rso['buyerid'];
- 			 					}
- 			 					else{
- 			 						buyerId=rso['buyerid'];
- 			 						so['buyerid']=buyerId;
- 			 				}
- 			 		}
- 			 		else{
- 			 			buyerId=rso['buyerid'];
- 			 			so['buyerid']=rso['buyerid'];
- 			 		}
- 					so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 			 		so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 					so['requisition_no']=rso['requisition_no'];
- 					so['tracking_no']=rso['tracking_no'];
- 					so['adjustment']=Number(rso['adjustment']);
- 					so['total']=rso['total'];
- 					so['taxtype']=rso['taxtype'];
- 					so['discount_percent']=Number(rso['discount_percent']);
- 					so['discount_amount']=rso['discount_amount'];
- 					so['s_h_amount']=rso['s_h_amount'];
- 					so['is_taxfiled']=0;
+	 										return productTaxDetails;
+	 									}
+	 									else{
+	 										return false;
 
- 					so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
- 					var SO_LBL_TAX_OPTION_ENABLE= await self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
- 					if(SO_LBL_TAX_OPTION_ENABLE.toLowerCase()!="true"){
- 						so['taxtype']='individual';
- 					}
- 					log.info("address1:"+buyerId);
- 					var soBillAds=await self.prepareBillAds(soId,buyerId,log);
- 					soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 					soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 					soBillAds['deleted']=0;
- 					var soShipAds=await self.prepareShipAds(soId,buyerId,log);
- 					soShipAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 					soShipAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
- 					soShipAds['deleted']=0;
+	 									}
+	 								}
+	 								else{
+	 									return false;
+	 								}
+
+
+
+	 							}).catch(e=>{
+	 								log.error("Got it in getProdHierTax "+e.message);
+	 								return false;
+	 							});
+	 						}
+	 						else{
+	 							return false;
+	 						}
+	 					}
+	 				})
+	 			}
+	 		})
+	 	}
+	 	catch(e){
+	 		log.error("Error in getProdHierTax:"+e.message)
+	 	}
+	 }
+	 rSalesOrder.prototype.getProdIndTax=async function(productId,prodCat,hsncode,taxToRetrive,invDate,taxapplytype,amenId,limit,txnDate,level,moduleFrom,retailerTaxType,log){
+	 	try{
+	 		log.info("We are in get getProdIndTax function");
+	 		var self=this;
+	 		var dbconn=this.getDb();
+	 		var where="vtiger_xtaxmapping.deleted=0 AND vtiger_xtaxcf.cf_xtax_active=1 AND vtiger_xtaxmappingcf.cf_xtaxmapping_active=1 AND vtiger_xstate.is_allstate=1";
+	 		var uomType=", CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN vtiger_xproductcf.cf_xproduct_base_uom		WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1 WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2 ELSE '' END as product_uom,		CASE WHEN vtiger_xtax.tax_on_uom = 'Base UOM' THEN 1 WHEN vtiger_xtax.tax_on_uom = 'UOM1' THEN vtiger_xproductcf.cf_xproduct_uom1_conversion WHEN vtiger_xtax.tax_on_uom = 'UOM2' THEN vtiger_xproductcf.cf_xproduct_uom2_conversion ELSE '' END as uom_conversion,		vtiger_xproductcf.cf_xproduct_base_uom,vtiger_xproductcf.cf_xproduct_conversion_factor,		vtiger_xproductcf.cf_xproduct_uom1,vtiger_xproductcf.cf_xproduct_uom1_conversion,		vtiger_xproductcf.cf_xproduct_uom2,vtiger_xproductcf.cf_xproduct_uom2_conversion";
+	 		var product="inner join vtiger_xproductcf on vtiger_xproductcf.xproductid = "+productId;
+	 		if(productId!='' && level==0){
+	 			where=where+" AND vtiger_xtaxmappingcf.cf_xtaxmapping_product='"+productId+"'";
+	 		}
+	 		else if(prodCat!='' && level==1){
+	 			where=where+" AND vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy='"+prodCat+"'";
+	 		}
+	 		else if(hsncode!='' && level==3){
+	 			where=where+" AND vtiger_xtaxmapping.hsncode='"+hsncode+"'";
+	 		}
+	 		if(amenId!=''){
+	 			where=where+" and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '"+invDate+"' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '"+invDate+"') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' ORDER BY vtiger_xtaxmapping.modified_at DESC";
+	 		}
+	 		else{
+	 			where=where+"  and ( DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_from_date) <= '"+txnDate+"' and (vtiger_xtaxmappingcf.cf_xtaxmapping_to_date is NULL or DATE(vtiger_xtaxmappingcf.cf_xtaxmapping_to_date) >= '"+txnDate+"') ) AND vtiger_xtaxcf.cf_xtax_status='Approved' ORDER BY vtiger_xtaxmapping.modified_at DESC"
+	 		}
+	 		var indTax=" vtiger_xtaxmappingcf.incremental_flag=1 AND (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) AND ";
+
+	 		var checkQuery="SELECT vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group "+uomType+" FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xstate on vtiger_xstate.xstateid=vtiger_xtaxmapping.statename "+product+"  where "+indTax+" "+where;
+	 		log.info(checkQuery);
+	 		var noOfRows=await dbconn.query(checkQuery,{
+	 			type:QueryTypes.SELECT,
+	 			logging:(msg)=>{
+	 				log.info("************** check querygetProdIndTax ********* level: "+level)
+	 				log.debug(msg);
+	 			}
+	 		}).then(async(checkResult)=>{
+	 			return checkResult.length;
+	 		}).catch(e=>{
+	 			log.error(e.message);
+	 			return 0;
+	 		});
+
+	 		var fromWhere='';
+	 		if(noOfRows==0){
+	 			fromWhere =" (vtiger_xtax.form_type='' OR vtiger_xtax.form_type is NULL) AND ";
+	 		}
+	 		var mainTaxQuery="SELECT  vtiger_xtaxmapping.xtaxmappingid,vtiger_xtax.xtaxid,vtiger_xtax.taxcode,vtiger_xtax.taxdescription,vtiger_xtax.tax_on_uom_flag,vtiger_xtax.tax_on_uom,vtiger_xtax.display_percentage_intra,vtiger_xtax.display_percentage_inter,vtiger_xtaxmappingcf.tax_apply_type,vtiger_xtaxcf.cf_xtax_lst_percentage,vtiger_xtaxcf.cf_xtax_cst_percentage,vtiger_xtaxmappingcf.incremental_flag,vtiger_xtaxmappingcf.cf_xtaxmapping_product,vtiger_xtaxmappingcf.cf_xtaxmapping_product_hierachy,vtiger_xtaxcf.lst_tax_group,vtiger_xtaxcf.cst_tax_group "+uomType+" FROM vtiger_xtaxmapping inner join vtiger_xtaxmappingcf on vtiger_xtaxmappingcf.xtaxmappingid=vtiger_xtaxmapping.xtaxmappingid inner join vtiger_xtax on vtiger_xtax.xtaxid=vtiger_xtaxmappingcf.cf_xtaxmapping_sales_tax inner join vtiger_xtaxcf on vtiger_xtaxcf.xtaxid=vtiger_xtax.xtaxid inner join vtiger_xstate on vtiger_xstate.xstateid=vtiger_xtaxmapping.statename "+product+" where "+fromWhere+" "+where;  
+
+	 		var productTaxDetails= await dbconn.query(mainTaxQuery,{
+	 			type:QueryTypes.SELECT,
+	 			logging:(msg)=>{
+	 				log.info("************** tax getProdIndTax ********* level: "+level);
+	 				log.debug(msg);
+	 			}
+	 		}).then(async(taxDetails)=>{
+	 			if(taxDetails){
+	 				if(taxDetails.length>0){
+	 					return taxDetails;
+	 				}
+	 			}
+	 			else if(level!=2){
+	 				if(level==0){
+	 					return await self.getProdIndTax(productId,prodCat,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,1,moduleFrom,retailerTaxType,log);
+	 				}
+	 				else{
+	 					var parentCategory=await dbconn.query("SELECT cf_xprodhier_parent FROM vtiger_xprodhiercf WHERE cf_xprodhier_active=1 AND cf_xprodhier_parent!=0 AND xprodhierid = ?",{
+	 						type:QueryTypes.SELECT,
+	 						replacements:[prodCat],
+	 						logging:(msg)=>{
+	 							log.debug(msg);
+	 						}
+	 					}).spread(async(cat)=>{
+	 						return cat;
+	 					}).catch(e=>{
+	 						log.error("with selection of cf_xprodhier_parent query in getProdIndTax fuction");
+	 						return false;
+	 					});
+	 					if(parentCategory!=false){
+	 						return await self.getProdIndTax(productId,parentCategory.cf_xprodhier_parent,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,1,moduleFrom,retailerTaxType,log);	
+	 					}
+	 					else{
+	 						if(hsncode!=''){
+	 							return await self.getProdIndTax(productId,prodCat,hsncode,'cf_xtaxmapping_sales_tax',invDate,taxapplytype,'','',txnDate,2,moduleFrom,retailerTaxType,log);
+	 						}
+	 					}
+	 				}
+	 			}
+	 		}).catch(e=>{
+	 			log.error(e.message);
+	 			return false;
+	 		});
+	 		return productTaxDetails;
+
+	 	}
+	 	catch(e){
+
+	 		log.error(e.message);
+	 		return false;
+	 	}
+	 }
+	 rSalesOrder.prototype.updateSoXRelInfo=async function(so,socf,sorel,distId,log){
+	 	var self=this;
+	 	const dbconn=this.getDb();
+	 	const ALLOW_GST_TRANSACTION=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+	 	if(ALLOW_GST_TRANSACTION){
+	 		var netTotal = 0;
+	 		if(Number(sorel['listprice']) > 0 && Number(sorel['quantity']) > 0){
+	 			netTotal=Number(sorel['listprice'])*Number(sorel['quantity']);
+	 		}
+	 		if(Number(sorel['discount_amount'])>0 && netTotal>=Number(sorel['discount_amount'])){
+	 			netTotal=netTotal-Number(sorel['discount_amount']);
+	 		}
+	 		if(Number(sorel['discount_percent'])>0 && netTotal>=Number(sorel['discount_percent']) && Number(sorel['discount_percent'])<100) {
+	 			netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
+	 		}
+	 		else if (Number(sorel['discount_percent'])>0 && Number(sorel['discount_percent'])>=100){
+	 			netTotal=netTotal-(netTotal*(Number(sorel['discount_percent'])/100));
+	 		}
+	 		return netTotal;
+
+	 	}
+	 }
+	 rSalesOrder.prototype.prepareSo=async function(rso,rsocf,distId,custType,log){
+	 	try{
+	 		var self=this;
+	 		const dbconn=this.getDb();
+	 		const SalesOrder=dbconn.import('./../../models/salesorder');
+	 		const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
+	 		const soId=await self.getCrmEntity('xSalesOrder',log);
+	 		log.info("xSalesOrder crmentity id :"+soId)
+	 		if(soId){
+	 			const so=new SalesOrder();
+	 			so['salesorder_no']=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
+	 			so['salesorderid']=soId;
+	 			so['subject']=rso['subject'];
+	 			so['type']=rso['type'];
+	 			so['duedate']=rso['duedate'];
+	 			so['contactid']=rso['contactid'];
+	 			so['exciseduty']=Number(rso['exciseduty']);
+	 			so['salescommission']=Number(rso['salescommission']);
+	 			so['terms_conditions']=rso['terms_conditions'];
+	 			so['currency_id']=rso['currency_id'];
+	 			so['conversion_rate']=rso['conversion_rate'];
+	 			so['tracking_no']=rso['tracking_no'];
+	 			so['carrier']=rso['carrier'];
+	 			so['deleted']=0;
+	 			if(Number(custType)==1){
+	 				var buyerId=await self.getCustomerRefId(rso['buyerid'],log);
+	 				log.info("Buyer Id in so :"+buyerId);
+	 				if(buyerId==false || typeof(buyerId)=='undefined'|| buyerId=='undefined'){
+	 					buyerId=rso['buyerid'];
+	 					so['buyerid']=rso['buyerid'];
+	 				}
+	 				else{
+	 					buyerId=rso['buyerid'];
+	 					so['buyerid']=buyerId;
+	 				}
+	 			}
+	 			else{
+	 				buyerId=rso['buyerid'];
+	 				so['buyerid']=rso['buyerid'];
+	 			}
+	 			so['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 			so['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 			so['requisition_no']=rso['requisition_no'];
+	 			so['tracking_no']=rso['tracking_no'];
+	 			so['adjustment']=Number(rso['adjustment']);
+	 			so['total']=rso['total'];
+	 			so['taxtype']=rso['taxtype'];
+	 			so['discount_percent']=Number(rso['discount_percent']);
+	 			so['discount_amount']=rso['discount_amount'];
+	 			so['s_h_amount']=rso['s_h_amount'];
+	 			so['is_taxfiled']=0;
+
+	 			so['so_lbl_save_pro_cate']=await self.getInvMgtConfig('SO_LBL_SAVE_PRO_CATE');
+	 			var SO_LBL_TAX_OPTION_ENABLE= await self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
+	 			if(SO_LBL_TAX_OPTION_ENABLE.toLowerCase()!="true"){
+	 				so['taxtype']='individual';
+	 			}
+	 			log.info("address1:"+buyerId);
+	 			var soBillAds=await self.prepareBillAds(soId,buyerId,log);
+	 			soBillAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 			soBillAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 			soBillAds['deleted']=0;
+	 			var soShipAds=await self.prepareShipAds(soId,buyerId,log);
+	 			soShipAds['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 			soShipAds['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
+	 			soShipAds['deleted']=0;
 
 
  			 		//preparing the socf table 
@@ -2203,334 +2186,334 @@ rSalesOrder.prototype.getFields=async function (log){
  			 		socf['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  			 		socf['deleted']=0;
  			 		var TAX_TYPE=await self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
- 					
- 					if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
- 						so['trntaxtype']='GST';
- 						var {gstinno,statecode}=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
- 						so['buyer_gstinno']=gstinno;
- 						so['buyer_state']=statecode;
- 						var {sellerGstinNo,sellerStateCode}=await self.getSellerGstStateInfo(distId,log);
- 						so['seller_gstinno']=sellerGstinNo;
- 						so['seller_state']=sellerStateCode;
 
- 					}
- 					else{
- 						so['trntaxtype']="VAT";
- 					}
+ 			 		if(TAX_TYPE.toLowerCase()=='true' || Number(TAX_TYPE)==1){
+ 			 			so['trntaxtype']='GST';
+ 			 			var {gstinno,statecode}=await self.getBuyerGSTStateInfo(soShipAds.xaddressid,so['buyerid'],log);
+ 			 			so['buyer_gstinno']=gstinno;
+ 			 			so['buyer_state']=statecode;
+ 			 			var {sellerGstinNo,sellerStateCode}=await self.getSellerGstStateInfo(distId,log);
+ 			 			so['seller_gstinno']=sellerGstinNo;
+ 			 			so['seller_state']=sellerStateCode;
+
+ 			 		}
+ 			 		else{
+ 			 			so['trntaxtype']="VAT";
+ 			 		}
 
  			 		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:false};
- 			}
- 			else{
+ 			 	}
+ 			 	else{
  			 		return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:true};
 
- 			} 		
+ 			 	} 		
  			 	
- 		}catch(e){
- 			log.error(" Exception in prepare so "+e.message)
- 			return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:true};
- 		}
- 	}
+ 			 }catch(e){
+ 			 	log.error(" Exception in prepare so "+e.message)
+ 			 	return{so:so,socf:socf,soBillAds:soBillAds,soShipAds:soShipAds,error:true};
+ 			 }
+ 			}
 
- 	rSalesOrder.prototype.getSalesmanBeatInfo= async function(custId,log){
- 		try{
- 			var self=this;
- 			var dbconn=this.getDb();
- 			return await dbconn.query("select beat.xbeatid, beat.beatname, sal.xsalesmanid, sal.salesman from vtiger_xbeat as beat INNER JOIN vtiger_crmentityrel crmrel ON crmrel.relcrmid = beat.xbeatid INNER JOIN vtiger_crmentityrel crmrel1 ON crmrel1.relcrmid = crmrel.relcrmid and crmrel1.module = 'xSalesman' INNER JOIN vtiger_xsalesman sal ON sal.xsalesmanid = crmrel1.crmid INNER JOIN vtiger_xbeatcf beatcf ON beatcf.xbeatid = beat.xbeatid INNER JOIN vtiger_xsalesmancf salcf ON salcf.xsalesmanid = sal.xsalesmanid where crmrel.crmid = ? and beatcf.cf_xbeat_active = '1' and salcf.cf_xsalesman_active = '1'order by sal.salesman,beat.beatname limit 1",{
- 				type:QueryTypes.SELECT,
- 				replacements:[custId],
- 				logging:(msg)=>{
- 					log.debug(msg)
+ 			rSalesOrder.prototype.getSalesmanBeatInfo= async function(custId,log){
+ 				try{
+ 					var self=this;
+ 					var dbconn=this.getDb();
+ 					return await dbconn.query("select beat.xbeatid, beat.beatname, sal.xsalesmanid, sal.salesman from vtiger_xbeat as beat INNER JOIN vtiger_crmentityrel crmrel ON crmrel.relcrmid = beat.xbeatid INNER JOIN vtiger_crmentityrel crmrel1 ON crmrel1.relcrmid = crmrel.relcrmid and crmrel1.module = 'xSalesman' INNER JOIN vtiger_xsalesman sal ON sal.xsalesmanid = crmrel1.crmid INNER JOIN vtiger_xbeatcf beatcf ON beatcf.xbeatid = beat.xbeatid INNER JOIN vtiger_xsalesmancf salcf ON salcf.xsalesmanid = sal.xsalesmanid where crmrel.crmid = ? and beatcf.cf_xbeat_active = '1' and salcf.cf_xsalesman_active = '1'order by sal.salesman,beat.beatname limit 1",{
+ 						type:QueryTypes.SELECT,
+ 						replacements:[custId],
+ 						logging:(msg)=>{
+ 							log.debug(msg)
+ 						}
+ 					}).spread((info)=>{
+ 						if(info){
+ 							return info;
+ 						}
+ 						else{
+ 							return false;
+ 						}
+ 					})
  				}
- 			}).spread((info)=>{
- 				if(info){
- 					return info;
- 				}
- 				else{
+ 				catch(e){
+ 					log.error(e.message);
  					return false;
  				}
- 			})
- 		}
- 		catch(e){
- 			log.error(e.message);
- 			return false;
- 		}
- 	}
- 	rSalesOrder.prototype.getSellerGstStateInfo= async function (distId, log){
- 		try{
- 			var self=this;
- 			var dbconn=this.getDb();
- 			return await dbconn.query("SELECT xDis.gstinno,xState.statecode from vtiger_xdistributor xDis INNER JOIN vtiger_xdistributorcf xDiscf on xDiscf.xdistributorid=xDis.xdistributorid INNER JOIN vtiger_xstate xState on xState.xstateid=xDiscf.cf_xdistributor_state where xDis.xdistributorid=?",{
- 				type:QueryTypes.SELECT,
- 				replacements:[distId],
- 				logging:(msg)=>{
- 					log.debug(msg)
- 				}
- 			}).spread((info)=>{
- 				return {sellerGstinNo:info.gstinno,sellerStateCode:info.statecode};
- 			}).catch(e=>{
- 				log.error("getSellerGstStateInfo  "+e.message);
- 				return {sellerGstinNo:'',sellerStateCode:''};
- 			})
- 		}
- 		catch(e){
- 			log.error(e.message);
- 			return {sellerGstinNo:'',sellerStateCode:''};
- 		}
- 	}
- 	rSalesOrder.prototype.getBuyerGSTStateInfo=async function(xaddressid,buyerid,log){
- 		try{
- 			
- 			var self=this;
- 			var dbconn=this.getDb();
- 			return await dbconn.query("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
- 				{ type: QueryTypes.SELECT,replacements:[xaddressid], logging:(msg)=>{log.debug(msg)}}).spread(async (info)=>{
- 					if(info){
- 						if(typeof(info.gstinno)=='undefined' || info.gstinno==''){
-
- 							return await dbconn.query('SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?',{
- 							type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
- 							}).spread((info)=>{
- 									return {gstinno:info.gstinno,statecode:info.statecode}
- 							}).catch(e=>{
- 								log.error("getBuyerGSTStateInfo "+e.message);
- 							})
- 							
+ 			}
+ 			rSalesOrder.prototype.getSellerGstStateInfo= async function (distId, log){
+ 				try{
+ 					var self=this;
+ 					var dbconn=this.getDb();
+ 					return await dbconn.query("SELECT xDis.gstinno,xState.statecode from vtiger_xdistributor xDis INNER JOIN vtiger_xdistributorcf xDiscf on xDiscf.xdistributorid=xDis.xdistributorid INNER JOIN vtiger_xstate xState on xState.xstateid=xDiscf.cf_xdistributor_state where xDis.xdistributorid=?",{
+ 						type:QueryTypes.SELECT,
+ 						replacements:[distId],
+ 						logging:(msg)=>{
+ 							log.debug(msg)
  						}
- 						else{
- 							
- 							return {gstinno:info.gstinno,statecode:info.statecode}
- 						}
- 					}
- 					else{
- 						return await dbconn.query("SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?",{
- 					type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
  					}).spread((info)=>{
- 							
- 							return {gstinno:info.gstinno,statecode:info.statecode}
- 						})
- 					}
- 				}).catch(e=>{
- 					log.error(e.message);
- 					
- 					return {gstinno:'',statecode:''}
- 				});
- 			
- 		}
- 		catch(e){
- 			
- 			log.error(e.message);
- 			return {gstinno:'',statecode:''}
- 		}
- 	}
- 	rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
- 		try{
- 			var self=this;
- 			var dbconn=this.getDb();
- 			const XSeries=dbconn.import('./../../models/x-series');
- 			const XSeriesCf=dbconn.import('./../../models/x-series-cf');
- 			return XSeriesCf.findOne({
- 				where:{
- 					cf_xtransactionseries_transaction_type:type
- 				},
- 				order:[
- 					['cf_xtransactionseries_mark_as_default','DESC'],
- 					['xtransactionseriesid','DESC']
- 				],
-				include:[{
- 					model:XSeries,
- 					required:true,
- 					where:{xdistributorid:distId,deleted:0},
- 					
- 				}],
- 				logging:(msg)=>{
- 					log.debug(msg);
+ 						return {sellerGstinNo:info.gstinno,sellerStateCode:info.statecode};
+ 					}).catch(e=>{
+ 						log.error("getSellerGstStateInfo  "+e.message);
+ 						return {sellerGstinNo:'',sellerStateCode:''};
+ 					})
  				}
- 			}).then(async function(series){
- 				
- 				if(series){
- 					try{
- 						
- 						const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
- 						
- 						var nextValue=currentValue=minValue=0;
- 						if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
- 							if(diffFromLastXDate>0){
- 								nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
- 								minValue=1;
- 							}
- 							else{
- 								currentValue =series.cf_xtransactionseries_current_value;
- 								nextValue=currentValue= Number(currentValue)+1;
- 							}
- 						}
- 						else{
- 							
- 							if(diffFromLastXDate>0){
- 								const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
- 								const currentMonth=moment().format('MM');
- 								
- 								if(fiscalFinanceMonth.isSameOrAfter(currentMonth) || diffFromLastXDate>1 ||series.XSery.fiscal_finance.length<=0){
- 									nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
- 									minValue = 1;
+ 				catch(e){
+ 					log.error(e.message);
+ 					return {sellerGstinNo:'',sellerStateCode:''};
+ 				}
+ 			}
+ 			rSalesOrder.prototype.getBuyerGSTStateInfo=async function(xaddressid,buyerid,log){
+ 				try{
+
+ 					var self=this;
+ 					var dbconn=this.getDb();
+ 					return await dbconn.query("SELECT xAdd.gstinno,xState.statecode from vtiger_xaddress xAdd INNER JOIN vtiger_xstate xState on xState.xstateid=xAdd.xstateid where xAdd.xaddressid=?", 
+ 						{ type: QueryTypes.SELECT,replacements:[xaddressid], logging:(msg)=>{log.debug(msg)}}).spread(async (info)=>{
+ 							if(info){
+ 								if(typeof(info.gstinno)=='undefined' || info.gstinno==''){
+
+ 									return await dbconn.query('SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?',{
+ 										type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
+ 									}).spread((info)=>{
+ 										return {gstinno:info.gstinno,statecode:info.statecode}
+ 									}).catch(e=>{
+ 										log.error("getBuyerGSTStateInfo "+e.message);
+ 									})
+
  								}
  								else{
- 									currentValue =series.cf_xtransactionseries_current_value;
- 									nextValue=currentValue= Number(currentValue)+1;
+
+ 									return {gstinno:info.gstinno,statecode:info.statecode}
  								}
  							}
  							else{
- 								const fiscalFinanceYearMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('YYYY-MM');
- 								
- 								const currentYearMonth=moment().format('YYYY-MM');
- 								
- 								const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
- 								const fisMonthCurYear=moment([moment().format('YYYY'),moment().month('"'+series.XSery.fiscal_finance+'"').format('MM')]).format('YYYY-MM');
- 								
- 								if(currentYearMonth>=fisMonthCurYear && LastDateUpdate<fisMonthCurYear){
- 									
- 									nextValue=currentValue=series['cf_xtransactionseries_current_value'];
- 									minValue=1;
- 								}
- 								else{
- 									nextValue=currentValue=Number(series['cf_xtransactionseries_current_value'])+1;
- 								}
- 							}
- 						}
- 						if(increment==true){
- 							if(minValue==1){
- 								
- 								series.cf_xtransactionseries_current_value=series.cf_xtransactionseries_minimum_value;
- 								series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
- 								series.save().then(()=>{
- 									nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 								return await dbconn.query("SELECT vtiger_xretailer.gstinno,xState.statecode FROM vtiger_xretailer INNER JOIN vtiger_xretailercf on vtiger_xretailercf.xretailerid=vtiger_xretailer.xretailerid LEFT JOIN vtiger_xstate xState on xState.xstateid=vtiger_xretailercf.cf_xretailer_state  where vtiger_xretailercf.xretailerid=?",{
+ 									type:QueryTypes.SELECT,replacements:[buyerid],logging:(msg)=>{log.debug(msg)}
+ 								}).spread((info)=>{
 
- 								});
-
+ 									return {gstinno:info.gstinno,statecode:info.statecode}
+ 								})
  							}
- 							else{
- 								series.cf_xtransactionseries_current_value=Number(series.cf_xtransactionseries_current_value)+1;
- 								series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
- 								series.save().then(()=>{
- 									nextValue=currentValue=series.cf_xtransactionseries_current_value;
- 								});
- 							}
- 							
- 						}
- 						var xGenSeries='';
- 						for( let key in series.rawAttributes ){
- 							
- 							if(key.includes('scheme') && series[key].length>0 ){
- 								if(Number(key.substr(-2))){
- 									var gen=await self.getNextValueForSeries(series[key],nextValue);
- 									xGenSeries=xGenSeries+gen;
- 								}
- 								else{
- 									xGenSeries=xGenSeries+series[key];
- 								}
+ 						}).catch(e=>{
+ 							log.error(e.message);
 
- 							}
+ 							return {gstinno:'',statecode:''}
+ 						});
 
- 						}
- 						
- 						return {xGenSeries:xGenSeries,xtransactionseriesid:series.xtransactionseriesid};
- 						
  					}
  					catch(e){
+
  						log.error(e.message);
+ 						return {gstinno:'',statecode:''}
+ 					}
+ 				}
+ 				rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
+ 					try{
+ 						var self=this;
+ 						var dbconn=this.getDb();
+ 						const XSeries=dbconn.import('./../../models/x-series');
+ 						const XSeriesCf=dbconn.import('./../../models/x-series-cf');
+ 						return XSeriesCf.findOne({
+ 							where:{
+ 								cf_xtransactionseries_transaction_type:type
+ 							},
+ 							order:[
+ 							['cf_xtransactionseries_mark_as_default','DESC'],
+ 							['xtransactionseriesid','DESC']
+ 							],
+ 							include:[{
+ 								model:XSeries,
+ 								required:true,
+ 								where:{xdistributorid:distId,deleted:0},
+
+ 							}],
+ 							logging:(msg)=>{
+ 								log.debug(msg);
+ 							}
+ 						}).then(async function(series){
+
+ 							if(series){
+ 								try{
+
+ 									const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
+
+ 									var nextValue=currentValue=minValue=0;
+ 									if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
+ 										if(diffFromLastXDate>0){
+ 											nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
+ 											minValue=1;
+ 										}
+ 										else{
+ 											currentValue =series.cf_xtransactionseries_current_value;
+ 											nextValue=currentValue= Number(currentValue)+1;
+ 										}
+ 									}
+ 									else{
+
+ 										if(diffFromLastXDate>0){
+ 											const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
+ 											const currentMonth=moment().format('MM');
+
+ 											if(fiscalFinanceMonth.isSameOrAfter(currentMonth) || diffFromLastXDate>1 ||series.XSery.fiscal_finance.length<=0){
+ 												nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
+ 												minValue = 1;
+ 											}
+ 											else{
+ 												currentValue =series.cf_xtransactionseries_current_value;
+ 												nextValue=currentValue= Number(currentValue)+1;
+ 											}
+ 										}
+ 										else{
+ 											const fiscalFinanceYearMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('YYYY-MM');
+
+ 											const currentYearMonth=moment().format('YYYY-MM');
+
+ 											const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
+ 											const fisMonthCurYear=moment([moment().format('YYYY'),moment().month('"'+series.XSery.fiscal_finance+'"').format('MM')]).format('YYYY-MM');
+
+ 											if(currentYearMonth>=fisMonthCurYear && LastDateUpdate<fisMonthCurYear){
+
+ 												nextValue=currentValue=series['cf_xtransactionseries_current_value'];
+ 												minValue=1;
+ 											}
+ 											else{
+ 												nextValue=currentValue=Number(series['cf_xtransactionseries_current_value'])+1;
+ 											}
+ 										}
+ 									}
+ 									if(increment==true){
+ 										if(minValue==1){
+
+ 											series.cf_xtransactionseries_current_value=series.cf_xtransactionseries_minimum_value;
+ 											series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
+ 											series.save().then(()=>{
+ 												nextValue=currentValue=series.cf_xtransactionseries_current_value;
+
+ 											});
+
+ 										}
+ 										else{
+ 											series.cf_xtransactionseries_current_value=Number(series.cf_xtransactionseries_current_value)+1;
+ 											series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
+ 											series.save().then(()=>{
+ 												nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 											});
+ 										}
+
+ 									}
+ 									var xGenSeries='';
+ 									for( let key in series.rawAttributes ){
+
+ 										if(key.includes('scheme') && series[key].length>0 ){
+ 											if(Number(key.substr(-2))){
+ 												var gen=await self.getNextValueForSeries(series[key],nextValue);
+ 												xGenSeries=xGenSeries+gen;
+ 											}
+ 											else{
+ 												xGenSeries=xGenSeries+series[key];
+ 											}
+
+ 										}
+
+ 									}
+
+ 									return {xGenSeries:xGenSeries,xtransactionseriesid:series.xtransactionseriesid};
+
+ 								}
+ 								catch(e){
+ 									log.error(e.message);
+ 									return false;
+ 								}
+ 							}
+ 							else{
+ 								return false;
+ 							}
+
+ 						}).catch(e=>{
+ 							log.error(e.message);
+ 							return false;
+ 						});
+ 					}catch(e){
+ 						log.error(e.message)
  						return false;
  					}
  				}
- 				else{
- 					return false;
- 				}
- 				
- 			}).catch(e=>{
- 				log.error(e.message);
- 				return false;
- 			});
- 		}catch(e){
- 			log.error(e.message)
- 			return false;
- 		}
- 	}
 
- 	rSalesOrder.prototype.getDiffernceBtLastXDate= async function(trans){
- 		
- 		try{
- 			if(trans.cf_xtransactionseries_last_fetch_date.length<=0){
- 				return 1;
- 			}
- 			else{
- 				const currentDate=moment();
- 				const lastXDate=moment(trans.cf_xtransactionseries_last_fetch_date,'YYYY-MM-DD');
- 				switch(trans.cf_xtransactionseries_cycle_frequency){
- 					case 'Daily' :
- 					return currentDate.diff(lastXDate,'days');
- 					break;
- 					case 'Monthly' :
- 					return currentDate.diff(lastXDate,'months');
- 					break;
- 					default:
- 					
- 					return currentDate.diff(lastXDate,'years');
- 					break;
- 				}
- 			}
- 			
- 		}catch(e){
- 			
- 			return 1;
- 		}
- 	}
+ 				rSalesOrder.prototype.getDiffernceBtLastXDate= async function(trans){
 
- 	rSalesOrder.prototype.getNextValueForSeries=async function(value,nextValue){
- 		
- 		
- 		switch (value) {
- 			case "DD":
- 				return moment().format('DD').toString();
- 			break;
- 			case "MM":
- 				return moment().format('MM').toString();
- 			break;
- 			case "MMM":
- 			 return moment().format('MMM').toString();
- 			break;
- 			case "YY":
- 				return moment().format('YY').toString();
- 			break;
- 			case "YYYY":
- 					return moment().format('YYYY').toString();
- 			break;
- 			case "HH":
- 					return moment().format('HH').toString();
- 			break;
- 			case "mm":
- 					return moment().format('mm').toString();
- 			break;
- 			case "SS":
- 					return moment().format('SS').toString();
- 			break;
- 			default: 
- 				return nextValue.toString().padStart((nextValue.toString().length+value.length),"0");
- 			
- 			break;
- 		}
- 		
- 		
- 	}
- 	rSalesOrder.prototype.getCreditTerm=async function(buyerId,log){
- 		try{
- 			var self=this;
- 			var dbconn=this.getDb();
- 			const Retailer=dbconn.import('./../../models/retailer');
- 			const RetailerCf=dbconn.import('./../../models/retailer-cf');
- 			return RetailerCf.findOne({
- 				where:{
- 					xretailerid:buyerId,
- 					cf_xretailer_status:'Approved',
- 					cf_xretailer_active:'1',},
- 					attributes:['cf_xretailer_creditdays','cf_xpayment_payment_mode'],
+ 					try{
+ 						if(trans.cf_xtransactionseries_last_fetch_date.length<=0){
+ 							return 1;
+ 						}
+ 						else{
+ 							const currentDate=moment();
+ 							const lastXDate=moment(trans.cf_xtransactionseries_last_fetch_date,'YYYY-MM-DD');
+ 							switch(trans.cf_xtransactionseries_cycle_frequency){
+ 								case 'Daily' :
+ 								return currentDate.diff(lastXDate,'days');
+ 								break;
+ 								case 'Monthly' :
+ 								return currentDate.diff(lastXDate,'months');
+ 								break;
+ 								default:
+
+ 								return currentDate.diff(lastXDate,'years');
+ 								break;
+ 							}
+ 						}
+
+ 					}catch(e){
+
+ 						return 1;
+ 					}
+ 				}
+
+ 				rSalesOrder.prototype.getNextValueForSeries=async function(value,nextValue){
+
+
+ 					switch (value) {
+ 						case "DD":
+ 						return moment().format('DD').toString();
+ 						break;
+ 						case "MM":
+ 						return moment().format('MM').toString();
+ 						break;
+ 						case "MMM":
+ 						return moment().format('MMM').toString();
+ 						break;
+ 						case "YY":
+ 						return moment().format('YY').toString();
+ 						break;
+ 						case "YYYY":
+ 						return moment().format('YYYY').toString();
+ 						break;
+ 						case "HH":
+ 						return moment().format('HH').toString();
+ 						break;
+ 						case "mm":
+ 						return moment().format('mm').toString();
+ 						break;
+ 						case "SS":
+ 						return moment().format('SS').toString();
+ 						break;
+ 						default: 
+ 						return nextValue.toString().padStart((nextValue.toString().length+value.length),"0");
+
+ 						break;
+ 					}
+
+
+ 				}
+ 				rSalesOrder.prototype.getCreditTerm=async function(buyerId,log){
+ 					try{
+ 						var self=this;
+ 						var dbconn=this.getDb();
+ 						const Retailer=dbconn.import('./../../models/retailer');
+ 						const RetailerCf=dbconn.import('./../../models/retailer-cf');
+ 						return RetailerCf.findOne({
+ 							where:{
+ 								xretailerid:buyerId,
+ 								cf_xretailer_status:'Approved',
+ 								cf_xretailer_active:'1',},
+ 								attributes:['cf_xretailer_creditdays','cf_xpayment_payment_mode'],
  				//,
  				include:[
  				{
@@ -2757,35 +2740,35 @@ rSalesOrder.prototype.getFields=async function (log){
  				where:{modulename:moduleName},
  				attributes:['tabid','tablename','entityidfield'],
  				logging:(msg)=>{
- 						log.debug(msg)
-					}
- 				}).then(async(entity)=>{
- 					if(entity){
- 						if(mand=='MU'){
- 							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND columnname = '"+column+"'";
- 						}
- 						else{
- 							var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND FIND_IN_SET  (columnname,'"+prkey+"')";
- 						}
- 						return await dbconn.query(filedQuery,{
- 							type:QueryTypes.SELECT,
- 							logging:(msg)=>{
- 								log.debug(msg);
- 							}
- 						}).spread(async(field)=>{
- 							return {columnname:field.columnname,entityidfield:entity.entityidfield}
- 						}).catch(e=>{
- 							log.error("Getting issue while getting values from getEnityForRelativeModules "+e.message)
- 						})
+ 					log.debug(msg)
+ 				}
+ 			}).then(async(entity)=>{
+ 				if(entity){
+ 					if(mand=='MU'){
+ 						var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND columnname = '"+column+"'";
  					}
  					else{
-
- 						log.error(" No entity information found for module:"+moduleName);
-
+ 						var filedQuery="SELECT fieldid,columnname,uitype,vtiger_tab.`name` FROM vtiger_field INNER JOIN vtiger_tab on vtiger_tab.tabid=vtiger_field.tabid AND vtiger_field.xmlreceivetable = '1' WHERE tablename in ('"+entity.tablename+"','"+entity.tablename+"cf') AND FIND_IN_SET  (columnname,'"+prkey+"')";
  					}
- 				}).catch(e=>{
- 					log.error(e.message);
- 				});
+ 					return await dbconn.query(filedQuery,{
+ 						type:QueryTypes.SELECT,
+ 						logging:(msg)=>{
+ 							log.debug(msg);
+ 						}
+ 					}).spread(async(field)=>{
+ 						return {columnname:field.columnname,entityidfield:entity.entityidfield}
+ 					}).catch(e=>{
+ 						log.error("Getting issue while getting values from getEnityForRelativeModules "+e.message)
+ 					})
+ 				}
+ 				else{
+
+ 					log.error(" No entity information found for module:"+moduleName);
+
+ 				}
+ 			}).catch(e=>{
+ 				log.error(e.message);
+ 			});
  			log.info("Module table Names: "+rSalesOrder.tableName+","+rSalesOrder.tableName+'cf');
  			return VtigerField.findAll({
  				where:{
@@ -2800,56 +2783,56 @@ rSalesOrder.prototype.getFields=async function (log){
  				}).catch(e=>{
  					return e.error;
  				});
- 			
- 		}
- 		catch(e){
- 			log.error(e.message);
- 		}
 
- 	}
- 	rSalesOrder.prototype.getCrmEntity=async function(module,log){
- 		try{
+ 			}
+ 			catch(e){
+ 				log.error(e.message);
+ 			}
 
-	 		const dbconn=this.getDb();
-	 		const CrmEntity=dbconn.import('./../../models/crmentity');
-	 		const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
-	 		const VtigerTab=dbconn.import('./../../models/vtiger-tab');
-	 		var id=await CrmEntitySeq.fnxtIncrement(log);
-	 		var tab=await VtigerTab.getTab(module,log);
-	 		var rsocrm=new CrmEntity({
-	 			crmid:id,
-	 			smcreatorid:0,
-	 			smownerid:0,
-	 			modifiedby:0,
-	 			setype:tab.name,
-	 			setype_id:tab.tabid,
-	 			description:null,
-	 			createdtime:new Date(),
-	 			modifiedtime:new Date(),
-	 			viewedtime:null,
-	 			status:null,
-	 			version:0,
-	 			presence:1,
-	 			deleted:0,
-	 			sendstatus:0,
-	 			terms_conditions:null,
-	 		});
-	 		return rsocrm.save({logging:(msg)=>{
-	 			log.info("***")
-	 			log.debug(msg);
-	 		}}).then(crm=>{
-	 			return crm.crmid;
-	 		}).catch(e=>{
-	 			
-	 			log.error(e.message);
-	 			return false;
-	 		});
  		}
- 		catch(e){
- 			log.error(" in CrmEntity "+module+" =>"+e.message);
- 			return false;
+ 		rSalesOrder.prototype.getCrmEntity=async function(module,log){
+ 			try{
+
+ 				const dbconn=this.getDb();
+ 				const CrmEntity=dbconn.import('./../../models/crmentity');
+ 				const CrmEntitySeq=dbconn.import('./../../models/crmentityseq');
+ 				const VtigerTab=dbconn.import('./../../models/vtiger-tab');
+ 				var id=await CrmEntitySeq.fnxtIncrement(log);
+ 				var tab=await VtigerTab.getTab(module,log);
+ 				var rsocrm=new CrmEntity({
+ 					crmid:id,
+ 					smcreatorid:0,
+ 					smownerid:0,
+ 					modifiedby:0,
+ 					setype:tab.name,
+ 					setype_id:tab.tabid,
+ 					description:null,
+ 					createdtime:new Date(),
+ 					modifiedtime:new Date(),
+ 					viewedtime:null,
+ 					status:null,
+ 					version:0,
+ 					presence:1,
+ 					deleted:0,
+ 					sendstatus:0,
+ 					terms_conditions:null,
+ 				});
+ 				return rsocrm.save({logging:(msg)=>{
+ 					log.info("***")
+ 					log.debug(msg);
+ 				}}).then(crm=>{
+ 					return crm.crmid;
+ 				}).catch(e=>{
+
+ 					log.error(e.message);
+ 					return false;
+ 				});
+ 			}
+ 			catch(e){
+ 				log.error(" in CrmEntity "+module+" =>"+e.message);
+ 				return false;
+ 			}
  		}
- 	}
- 	return rSalesOrder;
- })();
- module.exports=exports=rSalesOrder;
+ 		return rSalesOrder;
+ 	})();
+ 	module.exports=exports=rSalesOrder;
