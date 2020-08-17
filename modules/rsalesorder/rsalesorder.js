@@ -1452,7 +1452,8 @@ rSalesOrder.prototype.getFields=async function (log){
 				
 				var {so,socf,soBillAds,soShipAds,error}= await self.prepareSo(rso,rsocf,distId,custType,log);
 				if(error==false){
-					
+					const soSeqNumber=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
+	 					so['salesorder_no']=soSeqNumber;
 					return await so.save({logging:(msg)=>{log.debug(msg)}}).then(async(so)=>{
 						return await socf.save({logging:(msg)=>{log.debug(msg)}}).then(async(socf)=>{
 							let isCrmRelUpdate = await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
@@ -1533,7 +1534,8 @@ rSalesOrder.prototype.getFields=async function (log){
  						log.debug(msg);
  					}
  				}).spread((countRes)=>{
- 					return countRes.cnt+1;
+ 					const cnt=countRes.cnt;
+ 					return Number(cnt)+1;
  				});
  				return prefix+code;
  			}).catch(e=>{
@@ -2087,8 +2089,6 @@ rSalesOrder.prototype.getFields=async function (log){
 	 		if(soId){
 	 			const so=new SalesOrder();
 	 			const socf=new SalesOrderCf();
-	 			const soSeqNumber=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
-	 			so['salesorder_no']=soSeqNumber;
 	 			so['salesorderid']=soId;
 	 			so['subject']=rso['subject'];
 	 			so['type']=rso['type'];
