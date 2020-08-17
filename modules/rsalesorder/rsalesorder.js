@@ -4,7 +4,7 @@ const CollecReader=require('./collec-reader');
 const Audit=require('../../utils/audit');
 const Log=require('../../utils/log');
 const XmlFile=require('../../utils/xml-file');
-var Sequelize = require("sequelize");
+var {Sequelize,Transaction} = require("sequelize");
 var moment = require('moment');
 const Op = Sequelize.Op
 const { QueryTypes } = require('sequelize');
@@ -2318,132 +2318,110 @@ rSalesOrder.prototype.getFields=async function (log){
  						const dbconn=this.getDb();
  						const XSeries=dbconn.import('./../../models/x-series');
  						const XSeriesCf=dbconn.import('./../../models/x-series-cf');
-	 					const result = await dbconn.transaction(async (t) => {
-	 						return await  XSeriesCf.findOne({
-	 							where:{
-	 								cf_xtransactionseries_transaction_type:type
-	 							},
-	 							order:[
-	 							['cf_xtransactionseries_mark_as_default','DESC'],
-	 							['xtransactionseriesid','DESC']
-	 							],
-	 							include:[{
-	 								model:XSeries,
-	 								required:true,
-	 								where:{xdistributorid:distId,deleted:0},
+ 						const t=await dbconn.transaction({isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ});
+ 						const series= await XSeriesCf.findOne({
+ 							where:{
+ 								cf_xtransactionseries_transaction_type:type
+ 							},
+ 							order:[
+ 							['cf_xtransactionseries_mark_as_default','DESC'],
+ 							['xtransactionseriesid','DESC']
+ 							],
+ 							include:[{
+ 								model:XSeries,
+ 								required:true,
+ 								where:{xdistributorid:distId,deleted:0},
+ 							}],
+ 							logging:(msg)=>{
+ 								log.debug(msg);
+ 							},
+ 							transaction: t 
+ 						}).then(series=>{
+ 							return series;
+ 						});
+ 						if(series){
+ 							console.log("series.cf_xtransactionseries_current_value",series.cf_xtransactionseries_current_value)
+ 							const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
+ 							let nextValue=currentValue=minValue=0;
+ 							if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
+ 								if(diffFromLastXDate>0){
+ 									nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
+ 									minValue=1;
+ 								}
+ 								else{
+ 									currentValue =series.cf_xtransactionseries_current_value;
+ 									nextValue=currentValue= Number(currentValue)+1;
+ 								}
+ 							}
+ 							else{
+ 								if(diffFromLastXDate>0){
+ 									const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
+ 									const currentMonth=moment().format('MM');
 
-	 							}],
-	 							logging:(msg)=>{
-	 								log.debug(msg);
-	 							},
-	 							transaction: t 
+ 									if(fiscalFinanceMonth.isSameOrAfter(currentMonth) || diffFromLastXDate>1 ||series.XSery.fiscal_finance.length<=0){
+ 										nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
+ 										minValue = 1;
+ 									}
+ 									else{
+ 										currentValue =series.cf_xtransactionseries_current_value;
+ 										nextValue=currentValue= Number(currentValue)+1;
+ 									}
+ 								}
+ 								else{
+ 									const fiscalFinanceYearMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('YYYY-MM');
 
-	 						}).then(async function(series){
+ 									const currentYearMonth=moment().format('YYYY-MM');
 
-	 							if(series){
-	 								try{
-	 									console.log(" first select date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
-	 									console.log("series.cf_xtransactionseries_current_value",series.cf_xtransactionseries_current_value)
-	 									const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
-	 									let nextValue=currentValue=minValue=0;
-	 									if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
-	 										if(diffFromLastXDate>0){
-	 											nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
-	 											minValue=1;
-	 										}
-	 										else{
-	 											currentValue =series.cf_xtransactionseries_current_value;
-	 											nextValue=currentValue= Number(currentValue)+1;
-	 										}
-	 									}
-	 									else{
-	 										if(diffFromLastXDate>0){
-	 											const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
-	 											const currentMonth=moment().format('MM');
+ 									const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
+ 									const fisMonthCurYear=moment([moment().format('YYYY'),moment().month('"'+series.XSery.fiscal_finance+'"').format('MM')]).format('YYYY-MM');
 
-	 											if(fiscalFinanceMonth.isSameOrAfter(currentMonth) || diffFromLastXDate>1 ||series.XSery.fiscal_finance.length<=0){
-	 												nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
-	 												minValue = 1;
-	 											}
-	 											else{
-	 												currentValue =series.cf_xtransactionseries_current_value;
-	 												nextValue=currentValue= Number(currentValue)+1;
-	 											}
-	 										}
-	 										else{
-	 											const fiscalFinanceYearMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('YYYY-MM');
+ 									if(currentYearMonth>=fisMonthCurYear && LastDateUpdate<fisMonthCurYear){
 
-	 											const currentYearMonth=moment().format('YYYY-MM');
-
-	 											const LastDateUpdate=moment(series.cf_xtransactionseries_last_fetch_date).format('YYYY-MM');
-	 											const fisMonthCurYear=moment([moment().format('YYYY'),moment().month('"'+series.XSery.fiscal_finance+'"').format('MM')]).format('YYYY-MM');
-
-	 											if(currentYearMonth>=fisMonthCurYear && LastDateUpdate<fisMonthCurYear){
-
-	 												nextValue=currentValue=series['cf_xtransactionseries_current_value'];
-	 												minValue=1;
-	 											}
-	 											else{
-	 												nextValue=currentValue=Number(series['cf_xtransactionseries_current_value'])+1;
-	 											}
-	 										}
-	 									}
-	 									if(increment==true){
-	 										if(minValue==1){
-												return await dbconn.query("UPDATE vtiger_xtransactionseriescf SET cf_xtransactionseries_current_value = ?,cf_xtransactionseries_last_fetch_date=? WHERE xtransactionseriesid = ?",{
-	 												type:QueryTypes.UPDATE,
-	 												replacements:[series.cf_xtransactionseries_minimum_value,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
-	 												logging:(msg=>{
-	 													log.debug(msg)
-	 												}),
-	 												transaction: t 
-	 											}).then(async()=>{
-	 												nextValue=currentValue=series.cf_xtransactionseries_current_value;
-	 												return nextValue
-	 											}).catch(e=>{
-	 													log.error(" vtiger_xtransactionseriescf "+e.message);
-	 													return false
-	 											});
-	 										}
-	 										else{
-	 											nextValue=(Number(series.cf_xtransactionseries_current_value)+1);
-	 											currentValue=(Number(series.cf_xtransactionseries_current_value)+1)
-	 											return await dbconn.query("UPDATE vtiger_xtransactionseriescf SET cf_xtransactionseries_current_value = ?,cf_xtransactionseries_last_fetch_date=? WHERE xtransactionseriesid = ?",{
-	 												type:QueryTypes.UPDATE,
-	 												replacements:[nextValue,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
-	 												logging:(msg=>{
-	 													log.debug(msg)
-	 												}),
-	 												transaction: t 
-	 											}).then(()=>{
-	 												console.log(" update date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
-	 												return nextValue;
-	 												
-	 													
-	 											}).catch(async(e)=>{
-	 												log.error(" vtiger_xtransactionseriescf else "+e.message);
-	 												return false;	
-	 											});
-	 										}
-	 									}
-	 									
-	 								}
-	 								catch(e){
-	 									
-	 									log.error(e.message);
-	 									return false;
-	 								}
-	 							}
-	 							else{
-	 								return false;
-	 							}
-
-	 						}).catch(e=>{
-	 							log.error(e.message);
-	 							return false;
-	 						});
-	 					}).then(async(nextValue)=>{
-	 						console.log('nextValue => ',nextValue);
+ 										nextValue=currentValue=series['cf_xtransactionseries_current_value'];
+ 										minValue=1;
+ 									}
+ 									else{
+ 										nextValue=currentValue=Number(series['cf_xtransactionseries_current_value'])+1;
+ 									}
+ 								}
+ 							}
+ 							if(increment==true){
+ 								if(minValue==1){
+ 									await dbconn.query("UPDATE vtiger_xtransactionseriescf SET cf_xtransactionseries_current_value = ?,cf_xtransactionseries_last_fetch_date=? WHERE xtransactionseriesid = ?",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:[series.cf_xtransactionseries_minimum_value,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
+ 										logging:(msg=>{
+ 											log.debug(msg)
+ 										}),
+ 										transaction: t 
+ 									}).then(async()=>{
+ 										nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 										await t.commit();
+ 									}).catch(async(e)=>{
+ 										log.error(" vtiger_xtransactionseriescf "+e.message);
+ 										await t.rollback();
+ 									});
+ 								}
+ 								else{
+ 									nextValue=(Number(series.cf_xtransactionseries_current_value)+1);
+ 									currentValue=(Number(series.cf_xtransactionseries_current_value)+1)
+ 									 await dbconn.query("UPDATE vtiger_xtransactionseriescf SET cf_xtransactionseries_current_value = ?,cf_xtransactionseries_last_fetch_date=? WHERE xtransactionseriesid = ?",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:[nextValue,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
+ 										logging:(msg=>{
+ 											log.debug(msg)
+ 										}),
+ 										transaction: t 
+ 									}).then(async()=>{
+ 										console.log(" update date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
+ 										await t.commit();
+ 									}).catch(async(e)=>{
+ 										log.error(" vtiger_xtransactionseriescf else "+e.message);
+ 										await t.rollback();
+ 									});
+ 								}
+ 							}
+ 							console.log('nextValue => ',nextValue);
 	 						let xGenSeries='';
 	 						for( let key in series.rawAttributes ){
 
@@ -2460,9 +2438,8 @@ rSalesOrder.prototype.getFields=async function (log){
 	 							}
 	 						}
 	 						return {xGenSeries:xGenSeries,xtransactionseriesid:series.xtransactionseriesid};
-	 					});
-					console.log(result);
-					return result;
+ 						}
+
  					}catch(e){
  						log.error(e.message)
  						return false;
