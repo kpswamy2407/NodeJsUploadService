@@ -4,10 +4,10 @@ const CollecReader=require('./collec-reader');
 const Audit=require('../../utils/audit');
 const Log=require('../../utils/log');
 const XmlFile=require('../../utils/xml-file');
-var {Sequelize,Transaction} = require("sequelize");
+var {Sequelize,Transaction,QueryTypes} = require("sequelize");
 var moment = require('moment');
 const Op = Sequelize.Op
-const { QueryTypes } = require('sequelize');
+
 /**
  * 
  * @see 
