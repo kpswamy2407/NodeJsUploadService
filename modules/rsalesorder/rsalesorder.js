@@ -1451,12 +1451,14 @@ rSalesOrder.prototype.getFields=async function (log){
 					return true;
 				}
 
-				
 				var {so,socf,soBillAds,soShipAds,error}= await self.prepareSo(rso,rsocf,distId,custType,log);
 				if(error==false){
 					const soSeqNumber=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
 	 					so['salesorder_no']=soSeqNumber;
 					return await so.save({logging:(msg)=>{log.debug(msg)}}).then(async(so)=>{
+						const {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
+ 			 			socf['cf_salesorder_transaction_number']=xGenSeries;
+ 			 			socf['cf_salesorder_transaction_series']=xtransactionseriesid;
 						return await socf.save({logging:(msg)=>{log.debug(msg)}}).then(async(socf)=>{
 							let isCrmRelUpdate = await self.updateCrmRelEntity(rso['salesorderid'],'xrSalesOrder',so['salesorderid'],'xSalesOrder',log)
 							if(isCrmRelUpdate){
@@ -2185,9 +2187,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			 		so['salesorder_status']='Open Order';
  			 		socf['cf_xsalesorder_seller_id']=distId;
  			 		socf['cf_xsalesorder_buyer_id']=buyerId;
- 			 		const {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
- 			 		socf['cf_salesorder_transaction_number']=xGenSeries;
- 			 		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
+ 			 		
  			 		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  			 		socf['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');
  			 		socf['deleted']=0;
