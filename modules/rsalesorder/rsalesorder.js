@@ -2185,7 +2185,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			 		so['salesorder_status']='Open Order';
  			 		socf['cf_xsalesorder_seller_id']=distId;
  			 		socf['cf_xsalesorder_buyer_id']=buyerId;
- 			 		const {xGenSeries,xtransactionseriesid} = self.getDefaultXSeries(distId,'Sales Order',true,log);
+ 			 		const {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
  			 		socf['cf_salesorder_transaction_number']=xGenSeries;
  			 		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
  			 		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
@@ -2312,12 +2312,13 @@ rSalesOrder.prototype.getFields=async function (log){
  					}
  				}
 
- 				rSalesOrder.prototype.getDefaultXSeries= function(distId,type,increment=true,log){
+ 				rSalesOrder.prototype.getDefaultXSeries= async function(distId,type,increment=true,log){
  					try{
  						const self=this;
  						const dbconn=this.getDb();
  						const XSeries=dbconn.import('./../../models/x-series');
  						const XSeriesCf=dbconn.import('./../../models/x-series-cf');
+ 						const t = await dbconn.transaction();
  						return  XSeriesCf.findOne({
  							where:{
  								cf_xtransactionseries_transaction_type:type
@@ -2334,7 +2335,9 @@ rSalesOrder.prototype.getFields=async function (log){
  							}],
  							logging:(msg)=>{
  								log.debug(msg);
- 							}
+ 							},
+ 							transaction: t 
+
  						}).then(async function(series){
 
  							if(series){
@@ -2412,11 +2415,20 @@ rSalesOrder.prototype.getFields=async function (log){
  												replacements:[nextValue,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
  												logging:(msg=>{
  													log.debug(msg)
- 												})
+ 												}),
+ 												transaction: t 
  											}).then(async()=>{
- 													return;
+ 												console.log(" update date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
+ 												return t.commit();
+ 												
+ 													
  											}).catch(e=>{
- 													log.error(" vtiger_xtransactionseriescf else "+e.message);
+ 												log.error(" vtiger_xtransactionseriescf else "+e.message);
+ 												return t.rollback();
+ 													
+ 											}).then(function(){
+ 												console.log(arguments);
+ 												return ;
  											});
 
  											log.info("nextValue=currentValue=series.cf_xtransactionseries_current_value" +nextValue + currentValue + Number(series.cf_xtransactionseries_current_value)+1)
