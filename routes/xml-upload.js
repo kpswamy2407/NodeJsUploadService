@@ -33,7 +33,7 @@ function get(req,res,next){
     
     const XSeries=dbconn.import('./../models/x-series');
     const XSeriesCf=dbconn.import('./../models/x-series-cf');
-    const tras=await dbconn.query("SELECT mt.*, rt.* FROM vtiger_xtransactionseries mt LEFT JOIN vtiger_xtransactionseriescf rt ON mt.xtransactionseriesid = rt.xtransactionseriesid  WHERE rt.cf_xtransactionseries_transaction_type=? and mt.xdistributorid=? order by cf_xtransactionseries_mark_as_default desc, xtransactionseriesid desc limit 1",{
+    const tras= dbconn.query("SELECT mt.*, rt.* FROM vtiger_xtransactionseries mt LEFT JOIN vtiger_xtransactionseriescf rt ON mt.xtransactionseriesid = rt.xtransactionseriesid  WHERE rt.cf_xtransactionseries_transaction_type=? and mt.xdistributorid=? order by cf_xtransactionseries_mark_as_default desc, xtransactionseriesid desc limit 1",{
         type:QueryTypes.SELECT,
         replacements:['Sales Order',16950298]
     }).spread(async(series)=>{
