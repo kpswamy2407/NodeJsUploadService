@@ -2185,7 +2185,7 @@ rSalesOrder.prototype.getFields=async function (log){
  			 		so['salesorder_status']='Open Order';
  			 		socf['cf_xsalesorder_seller_id']=distId;
  			 		socf['cf_xsalesorder_buyer_id']=buyerId;
- 			 		const {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
+ 			 		const {xGenSeries,xtransactionseriesid} = self.getDefaultXSeries(distId,'Sales Order',true,log);
  			 		socf['cf_salesorder_transaction_number']=xGenSeries;
  			 		socf['cf_salesorder_transaction_series']=xtransactionseriesid;
  			 		socf['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');
@@ -2312,13 +2312,13 @@ rSalesOrder.prototype.getFields=async function (log){
  					}
  				}
 
- 				rSalesOrder.prototype.getDefaultXSeries=async function(distId,type,increment=true,log){
+ 				rSalesOrder.prototype.getDefaultXSeries= function(distId,type,increment=true,log){
  					try{
  						const self=this;
  						const dbconn=this.getDb();
  						const XSeries=dbconn.import('./../../models/x-series');
  						const XSeriesCf=dbconn.import('./../../models/x-series-cf');
- 						return await XSeriesCf.findOne({
+ 						return  XSeriesCf.findOne({
  							where:{
  								cf_xtransactionseries_transaction_type:type
  							},
@@ -2339,6 +2339,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
  							if(series){
  								try{
+ 									console.log(" first select date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
  									console.log("series.cf_xtransactionseries_current_value",series.cf_xtransactionseries_current_value)
  									const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
  									let nextValue=currentValue=minValue=0;
@@ -2394,6 +2395,7 @@ rSalesOrder.prototype.getFields=async function (log){
  													log.debug(msg)
  												})
  											}).then(async()=>{
+ 												console.log(" update date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
  													nextValue=currentValue=series.cf_xtransactionseries_current_value;
  													return;
  											}).catch(e=>{
