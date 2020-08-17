@@ -2318,8 +2318,8 @@ rSalesOrder.prototype.getFields=async function (log){
  						const dbconn=this.getDb();
  						const XSeries=dbconn.import('./../../models/x-series');
  						const XSeriesCf=dbconn.import('./../../models/x-series-cf');
- 						const t = await dbconn.transaction();
- 						return  XSeriesCf.findOne({
+ 						const result = await dbconn.transaction(async (t) => {
+ 							return  XSeriesCf.findOne({
  							where:{
  								cf_xtransactionseries_transaction_type:type
  							},
@@ -2464,6 +2464,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						}).catch(e=>{
  							log.error(e.message);
  							return false;
+ 						});
  						});
  					}catch(e){
  						log.error(e.message)
