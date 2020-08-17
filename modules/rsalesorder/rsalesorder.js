@@ -2339,7 +2339,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
  							if(series){
  								try{
-
+ 									console.log("series.cf_xtransactionseries_current_value",series.cf_xtransactionseries_current_value)
  									const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
  									let nextValue=currentValue=minValue=0;
  									if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
@@ -2410,7 +2410,8 @@ rSalesOrder.prototype.getFields=async function (log){
  													log.debug(msg)
  												})
  											}).then(async()=>{
- 													 nextValue=currentValue=Number(series.cf_xtransactionseries_current_value)+1;
+ 													 nextValue=(Number(series.cf_xtransactionseries_current_value)+1);
+ 													 currentValue=(Number(series.cf_xtransactionseries_current_value)+1)
  													 console.log('nextValue=>',nextValue);
  													 return;
  											}).catch(e=>{
@@ -2432,6 +2433,7 @@ rSalesOrder.prototype.getFields=async function (log){
  											else{
  												xGenSeries=xGenSeries+series[key];
  											}
+ 											console.log('xGenSeries=>',xGenSeries)
  										}
  									}
  									return {xGenSeries:xGenSeries,xtransactionseriesid:series.xtransactionseriesid};
