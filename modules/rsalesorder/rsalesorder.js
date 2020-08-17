@@ -2419,12 +2419,12 @@ rSalesOrder.prototype.getFields=async function (log){
  												transaction: t 
  											}).then(async()=>{
  												console.log(" update date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
- 												return t.commit();
+ 												return await t.commit();
  												
  													
  											}).catch(e=>{
  												log.error(" vtiger_xtransactionseriescf else "+e.message);
- 												return t.rollback();
+ 												return await t.rollback();
  													
  											}).then(function(){
  												console.log(arguments);
