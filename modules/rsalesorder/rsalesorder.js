@@ -181,6 +181,8 @@ const { QueryTypes } = require('sequelize');
  				if(salesorderid != false){
  					rso.salesorderid=salesorderid;
  					rsocf.salesorderid=salesorderid;
+ 					const soSeqNumber=await self.getSeqNumberForModule('increment','xrSalesOrder','','',log);
+	 					rso.salesorder_no=soSeqNumber;
  					return await rso.save({logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  						return await rsocf.save({logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
 
@@ -2339,7 +2341,6 @@ rSalesOrder.prototype.getFields=async function (log){
  								try{
 
  									const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
-
  									var nextValue=currentValue=minValue=0;
  									if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
  										if(diffFromLastXDate>0){
@@ -2352,7 +2353,6 @@ rSalesOrder.prototype.getFields=async function (log){
  										}
  									}
  									else{
-
  										if(diffFromLastXDate>0){
  											const fiscalFinanceMonth=moment().month('"'+series.XSery.fiscal_finance+'"').format('MM');
  											const currentMonth=moment().format('MM');
@@ -2392,13 +2392,13 @@ rSalesOrder.prototype.getFields=async function (log){
  												replacements:[series.cf_xtransactionseries_minimum_value,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
  												logging:(msg=>{
  													log.debug(msg)
- 												}).then(async()=>{
- 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
- 												}).catch(e=>{
- 													log.error(" vtiger_xtransactionseriescf "+e.message);
  												})
+ 											}).then(async()=>{
+ 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 											}).catch(e=>{
+ 													log.error(" vtiger_xtransactionseriescf "+e.message);
  											});
- 											
+ 											log.info("nextValue=currentValue=series.cf_xtransactionseries_current_value" +nextValue + currentValue + series.cf_xtransactionseries_current_value)
 
  										}
  										else{
@@ -2407,12 +2407,14 @@ rSalesOrder.prototype.getFields=async function (log){
  												replacements:[Number(series.cf_xtransactionseries_current_value)+1,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
  												logging:(msg=>{
  													log.debug(msg)
- 												}).then(async()=>{
- 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
- 												}).catch(e=>{
- 													log.error(" vtiger_xtransactionseriescf else "+e.message);
  												})
+ 											}).then(async()=>{
+ 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 											}).catch(e=>{
+ 													log.error(" vtiger_xtransactionseriescf else "+e.message);
  											});
+
+ 											log.info("nextValue=currentValue=series.cf_xtransactionseries_current_value" +nextValue + currentValue + series.cf_xtransactionseries_current_value)
  										}
  									}
  									var xGenSeries='';
