@@ -2419,7 +2419,10 @@ rSalesOrder.prototype.getFields=async function (log){
 	 												transaction: t 
 	 											}).then(async()=>{
 	 												console.log(" update date & time :",moment().format('YYYY-MM-DD HH:mm:ss.SSS'));
-	 												return await t.commit();
+	 												let c= await t.commit();
+	 												console.log(c);
+	 												return c;
+	 												
 	 												
 	 													
 	 											}).catch(async(e)=>{
@@ -2453,6 +2456,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
 	 								}
 	 								catch(e){
+	 									console.log(e);
 	 									log.error(e.message);
 	 									return false;
 	 								}
