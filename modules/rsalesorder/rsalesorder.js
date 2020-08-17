@@ -2318,7 +2318,7 @@ rSalesOrder.prototype.getFields=async function (log){
  						const dbconn=this.getDb();
  						const XSeries=dbconn.import('./../../models/x-series');
  						const XSeriesCf=dbconn.import('./../../models/x-series-cf');
- 						const t=await dbconn.transaction({isolationLevel: Transaction.ISOLATION_LEVELS.READ COMMITTED});
+ 						const t=await dbconn.transaction({isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED});
  						const series= await XSeriesCf.findOne({
  							where:{
  								cf_xtransactionseries_transaction_type:type
