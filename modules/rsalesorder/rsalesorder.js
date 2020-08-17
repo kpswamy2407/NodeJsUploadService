@@ -2387,22 +2387,33 @@ rSalesOrder.prototype.getFields=async function (log){
  									if(increment==true){
  										if(minValue==1){
 
- 											series.cf_xtransactionseries_current_value=series.cf_xtransactionseries_minimum_value;
- 											series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
- 											series.save().then(()=>{
- 												nextValue=currentValue=series.cf_xtransactionseries_current_value;
-
+ 											await dbconn.query("UPDATE vtiger_xtransactionseriescf SET cf_xtransactionseries_current_value = ?,cf_xtransactionseries_last_fetch_date=? WHERE xtransactionseriesid = ?",{
+ 												type:QueryTypes.UPDATE,
+ 												replacements:[series.cf_xtransactionseries_minimum_value,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
+ 												logging:(msg=>{
+ 													log.debug(msg)
+ 												}).then(async()=>{
+ 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 												}).catch(e=>{
+ 													log.error(" vtiger_xtransactionseriescf "+e.message);
+ 												})
  											});
+ 											
 
  										}
  										else{
- 											series.cf_xtransactionseries_current_value=Number(series.cf_xtransactionseries_current_value)+1;
- 											series.cf_xtransactionseries_last_fetch_date=moment().format('YYYY-MM-DD HH:mm:ss');
- 											series.save().then(()=>{
- 												nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 											await dbconn.query("UPDATE vtiger_xtransactionseriescf SET cf_xtransactionseries_current_value = ?,cf_xtransactionseries_last_fetch_date=? WHERE xtransactionseriesid = ?",{
+ 												type:QueryTypes.UPDATE,
+ 												replacements:[Number(series.cf_xtransactionseries_current_value)+1,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
+ 												logging:(msg=>{
+ 													log.debug(msg)
+ 												}).then(async()=>{
+ 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 												}).catch(e=>{
+ 													log.error(" vtiger_xtransactionseriescf else "+e.message);
+ 												})
  											});
  										}
-
  									}
  									var xGenSeries='';
  									for( let key in series.rawAttributes ){
@@ -2415,11 +2426,8 @@ rSalesOrder.prototype.getFields=async function (log){
  											else{
  												xGenSeries=xGenSeries+series[key];
  											}
-
  										}
-
  									}
-
  									return {xGenSeries:xGenSeries,xtransactionseriesid:series.xtransactionseriesid};
 
  								}
