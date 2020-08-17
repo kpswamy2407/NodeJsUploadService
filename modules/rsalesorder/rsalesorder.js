@@ -146,9 +146,6 @@ const { QueryTypes } = require('sequelize');
  					})
  				}
  				else{
- 					
-
-
  					if(coll.hasOwnProperty('distributor_id') && coll.distributor_id.hasOwnProperty('_text') && typeof(coll.distributor_id._text)!='undefined'){
  						distributorId=coll.distributor_id._text;
  					}
@@ -163,6 +160,7 @@ const { QueryTypes } = require('sequelize');
  							return dist.xdistributorid;
  						}).catch(e=>{
  							log.info("dist id from fromid "+e.message);
+ 							return 0;
  						})
  					}
  				}
@@ -1551,18 +1549,21 @@ rSalesOrder.prototype.getFields=async function (log){
  	}
  	rSalesOrder.prototype.updateCrmRelEntity=async function(crmId,module,relCrmId,relModule,log){
  		try{
- 			var self=this;
+ 			const self=this;
  			const dbconn=this.getDb();
  			const CrmEntityRel=dbconn.import('./../../models/crmentity-rel');
- 			var crmEntityRel=new CrmEntityRel();
+ 			const crmEntityRel=new CrmEntityRel();
  			crmEntityRel['crmid']=crmId;
  			crmEntityRel['module']=module;
  			crmEntityRel['relcrmid']=relCrmId;
  			crmEntityRel['relmodule']=relModule;
- 			crmEntityRel.save({logging:(msg)=>{
+ 			return crmEntityRel.save({logging:(msg)=>{
  				log.debug(msg);
  				return true;
- 			}});
+ 			}}).catch(e=>{
+ 				log.error(" updateCrmRelEntity "+e.message);
+ 				return false;
+ 			});
  		}
  		catch(e){
  			log.error("In updateCrmRelEntity "+e.message);
@@ -2077,7 +2078,7 @@ rSalesOrder.prototype.getFields=async function (log){
 	 }
 	 rSalesOrder.prototype.prepareSo=async function(rso,rsocf,distId,custType,log){
 	 	try{
-	 		var self=this;
+	 		const self=this;
 	 		const dbconn=this.getDb();
 	 		const SalesOrder=dbconn.import('./../../models/salesorder');
 	 		const SalesOrderCf=dbconn.import('./../../models/salesorder-cf');
@@ -2408,7 +2409,7 @@ rSalesOrder.prototype.getFields=async function (log){
 
  										if(key.includes('scheme') && series[key].length>0 ){
  											if(Number(key.substr(-2))){
- 												var gen=await self.getNextValueForSeries(series[key],nextValue);
+ 												const gen=await self.getNextValueForSeries(series[key],nextValue);
  												xGenSeries=xGenSeries+gen;
  											}
  											else{
