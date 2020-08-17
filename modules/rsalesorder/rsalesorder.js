@@ -2409,12 +2409,12 @@ rSalesOrder.prototype.getFields=async function (log){
  													log.debug(msg)
  												})
  											}).then(async()=>{
- 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 													return nextValue=currentValue=Number(series.cf_xtransactionseries_current_value)+1;
  											}).catch(e=>{
  													log.error(" vtiger_xtransactionseriescf else "+e.message);
  											});
 
- 											log.info("nextValue=currentValue=series.cf_xtransactionseries_current_value" +nextValue + currentValue + series.cf_xtransactionseries_current_value)
+ 											log.info("nextValue=currentValue=series.cf_xtransactionseries_current_value" +nextValue + currentValue + Number(series.cf_xtransactionseries_current_value)+1)
  										}
  									}
  									var xGenSeries='';
