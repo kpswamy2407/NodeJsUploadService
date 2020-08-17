@@ -2341,7 +2341,7 @@ rSalesOrder.prototype.getFields=async function (log){
  								try{
 
  									const diffFromLastXDate= await self.getDiffernceBtLastXDate(series);
- 									var nextValue=currentValue=minValue=0;
+ 									let nextValue=currentValue=minValue=0;
  									if(series.cf_xtransactionseries_cycle_frequency=='Daily'||series.cf_xtransactionseries_cycle_frequency=='Monthly' || series.XSery.fiscal_finance.length<=0){
  										if(diffFromLastXDate>0){
  											nextValue=currentValue=series.cf_xtransactionseries_minimum_value;
@@ -2394,7 +2394,8 @@ rSalesOrder.prototype.getFields=async function (log){
  													log.debug(msg)
  												})
  											}).then(async()=>{
- 													return nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 													nextValue=currentValue=series.cf_xtransactionseries_current_value;
+ 													return;
  											}).catch(e=>{
  													log.error(" vtiger_xtransactionseriescf "+e.message);
  											});
@@ -2409,7 +2410,9 @@ rSalesOrder.prototype.getFields=async function (log){
  													log.debug(msg)
  												})
  											}).then(async()=>{
- 													return nextValue=currentValue=Number(series.cf_xtransactionseries_current_value)+1;
+ 													 nextValue=currentValue=Number(series.cf_xtransactionseries_current_value)+1;
+ 													 console.log('nextValue=>',nextValue);
+ 													 return;
  											}).catch(e=>{
  													log.error(" vtiger_xtransactionseriescf else "+e.message);
  											});
@@ -2417,11 +2420,12 @@ rSalesOrder.prototype.getFields=async function (log){
  											log.info("nextValue=currentValue=series.cf_xtransactionseries_current_value" +nextValue + currentValue + Number(series.cf_xtransactionseries_current_value)+1)
  										}
  									}
- 									var xGenSeries='';
+ 									let xGenSeries='';
  									for( let key in series.rawAttributes ){
 
  										if(key.includes('scheme') && series[key].length>0 ){
  											if(Number(key.substr(-2))){
+ 												console.log(series[key],nextValue)
  												const gen=await self.getNextValueForSeries(series[key],nextValue);
  												xGenSeries=xGenSeries+gen;
  											}
