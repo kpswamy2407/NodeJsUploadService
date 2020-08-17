@@ -2422,7 +2422,7 @@ rSalesOrder.prototype.getFields=async function (log){
  												return await t.commit();
  												
  													
- 											}).catch(e=>{
+ 											}).catch(async(e)=>{
  												log.error(" vtiger_xtransactionseriescf else "+e.message);
  												return await t.rollback();
  													
