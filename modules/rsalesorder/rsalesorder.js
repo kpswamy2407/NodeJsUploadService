@@ -2403,17 +2403,16 @@ rSalesOrder.prototype.getFields=async function (log){
 
  										}
  										else{
+ 											nextValue=(Number(series.cf_xtransactionseries_current_value)+1);
+ 											currentValue=(Number(series.cf_xtransactionseries_current_value)+1)
  											await dbconn.query("UPDATE vtiger_xtransactionseriescf SET cf_xtransactionseries_current_value = ?,cf_xtransactionseries_last_fetch_date=? WHERE xtransactionseriesid = ?",{
  												type:QueryTypes.UPDATE,
- 												replacements:[Number(series.cf_xtransactionseries_current_value)+1,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
+ 												replacements:[nextValue,moment().format('YYYY-MM-DD HH:mm:ss'),series.xtransactionseriesid],
  												logging:(msg=>{
  													log.debug(msg)
  												})
  											}).then(async()=>{
- 													 nextValue=(Number(series.cf_xtransactionseries_current_value)+1);
- 													 currentValue=(Number(series.cf_xtransactionseries_current_value)+1)
- 													 console.log('nextValue=>',nextValue);
- 													 return;
+ 													return;
  											}).catch(e=>{
  													log.error(" vtiger_xtransactionseriescf else "+e.message);
  											});
