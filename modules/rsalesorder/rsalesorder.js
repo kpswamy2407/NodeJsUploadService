@@ -466,9 +466,6 @@ rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId,
  			 	 		} 
  			 	 	}
  			 	 }
-
-
- 			 	 
  			 	 break;
  			 	}
 
@@ -873,7 +870,7 @@ rSalesOrder.prototype.getFields=async function (log){
 					transactionseriescode=coll.cf_salesorder_transaction_series.transactionseriescode._text
 				}
 				return XSeries.findOne({
-					where:{transactionseriescode:[transactionseriescode],
+					where:{transactionseriescode:transactionseriescode,
 						deleted:0,
 						xdistributorid:distId,
 						},
