@@ -387,7 +387,7 @@ rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId,
  			 	 	case 'cf_salesorder_transaction_series':
 	 			 	 	log.info("=========== Related Module: Transaction series ================")
 
-	 			 	 	const transSeries=await self.getTransactionSeries(coll,log);
+	 			 	 	const transSeries=await self.getTransactionSeries(coll,distId,log);
 	 			 	 	log.info(field.columnname+" : "+transSeries);  
 	 			 	 	rso[field.columnname]= transSeries;
 	 			 	 	rsocf[field.columnname]=transSeries;
@@ -864,7 +864,7 @@ rSalesOrder.prototype.getFields=async function (log){
 				{where: {id:soId}}
 				).then().catch();		
 		}
-		rSalesOrder.prototype.getTransactionSeries=async function(coll,log){
+		rSalesOrder.prototype.getTransactionSeries=async function(coll,distId,log){
 			try{
 				var dbconn=this.getDb();
 				const XSeries=dbconn.import('./../../models/x-series');
@@ -875,7 +875,7 @@ rSalesOrder.prototype.getFields=async function (log){
 				return XSeries.findOne({
 					where:{transactionseriescode:transactionseriescode,
 						deleted:0,
-						xdistributorid:coll.distributor_id._text,
+						xdistributorid:distId,
 						logging:(msg)=>{
 							log.debug(msg)
 						}
