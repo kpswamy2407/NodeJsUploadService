@@ -208,7 +208,20 @@ const Op = Sequelize.Op
  										log.info("vtiger_xrsocf next stage updated");
  									}).catch(e=>{
  										log.error(e.message + " issue with vtiger_xrsocf update");
- 									})
+ 									});
+ 									
+ 									await dbconn.query("update vtiger_xrso set is_processed='2', status='Processed' where salesorderid=?",{
+ 										type:QueryTypes.UPDATE,
+ 										replacements:[so.salesorderid],
+ 										logging:(msg)=>{
+ 											log.debug(msg);
+ 										}
+ 									}).then(()=>{
+ 										log.info("vtiger_xrsocf next stage updated");
+ 									}).catch(e=>{
+ 										log.error(e.message + " issue with vtiger_xrsocf update");
+ 									});
+
  								}
  							}).catch(e=>{
  								return;
@@ -1416,11 +1429,11 @@ rSalesOrder.prototype.getFields=async function (log){
 			try{
 				var self=this;
 				const dbconn=this.getDb();
-				var LBL_SET_NETRATE=self.getInvMgtConfig('LBL_SET_NETRATE');
-				var ALLOW_GST_TRANSACTION=self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
-				var SO_LBL_TAX_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
-				var SO_LBL_CURRENCY_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_CURRENCY_OPTION_ENABLE');
-				var isSoConverted=await self.isSoConverted(rso.salesorderid,log);
+				const LBL_SET_NETRATE=self.getInvMgtConfig('LBL_SET_NETRATE');
+				const ALLOW_GST_TRANSACTION=self.getInvMgtConfig('ALLOW_GST_TRANSACTION');
+				const SO_LBL_TAX_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_TAX_OPTION_ENABLE');
+				const SO_LBL_CURRENCY_OPTION_ENABLE=self.getInvMgtConfig('SO_LBL_CURRENCY_OPTION_ENABLE');
+				let isSoConverted=await self.isSoConverted(rso.salesorderid,log);
 				log.info("isSoConverted : "+isSoConverted);
 				if(isSoConverted){
 					rsocf.cf_xrso_next_stage_name='';
