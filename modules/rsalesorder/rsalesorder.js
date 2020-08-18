@@ -890,12 +890,13 @@ rSalesOrder.prototype.getFields=async function (log){
 					}
 
 				}).catch(e=>{
+					console.log("es",e);
 					return '';
 
 				});
 			}
 			catch(e){
-				
+				console.log(e);
 				return '';
 			}
 		}
