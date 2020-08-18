@@ -876,10 +876,10 @@ rSalesOrder.prototype.getFields=async function (log){
 					where:{transactionseriescode:[transactionseriescode],
 						deleted:0,
 						xdistributorid:distId,
-						logging:(msg)=>{
+						},
+					logging:(msg)=>{
 							log.debug(msg)
-						}
-					},
+						},
 					attributes:['xtransactionseriesid']
 				}).then(series=>{
 					if(series){
