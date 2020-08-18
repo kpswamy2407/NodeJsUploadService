@@ -869,11 +869,13 @@ rSalesOrder.prototype.getFields=async function (log){
 				if(coll.cf_salesorder_transaction_series.transactionseriescode._text!='undefined'){
 					transactionseriescode=coll.cf_salesorder_transaction_series.transactionseriescode._text
 				}
+				console.log(transactionseriescode);
 				return XSeries.findOne({
-					where:{transactionseriescode:transactionseriescode,
+					where:{
+						transactionseriescode:transactionseriescode,
 						deleted:0,
 						xdistributorid:distId,
-						},
+					},
 					logging:(msg)=>{
 							log.debug(msg)
 						},
@@ -930,7 +932,7 @@ rSalesOrder.prototype.getFields=async function (log){
 					return false
 				}
 				else{
-					return  RecCustMaster.findOne({
+					return RecCustMaster.findOne({
 						where:{
 							[Op.and]: [
 							{ deleted:0 },
