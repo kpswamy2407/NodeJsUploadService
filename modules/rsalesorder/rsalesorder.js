@@ -385,12 +385,13 @@ rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId,
 
  			 	 	break;
  			 	 	case 'cf_salesorder_transaction_series':
- 			 	 	log.info("=========== Related Module: Transaction series ================")
+	 			 	 	log.info("=========== Related Module: Transaction series ================")
 
- 			 	 	var transSeries=await self.getTransactionSeries(coll,log);
- 			 	 	log.info(field.columnname+" : "+transSeries);  
- 			 	 	rso[field.columnname]= transSeries;
- 			 	 	rsocf[field.columnname]=transSeries;
+	 			 	 	const transSeries=await self.getTransactionSeries(coll,log);
+	 			 	 	log.info(field.columnname+" : "+transSeries);  
+	 			 	 	rso[field.columnname]= transSeries;
+	 			 	 	rsocf[field.columnname]=transSeries;
+ 			 	 	
  			 	 	break;
 
  			 	 }
@@ -867,9 +868,12 @@ rSalesOrder.prototype.getFields=async function (log){
 			try{
 				var dbconn=this.getDb();
 				const XSeries=dbconn.import('./../../models/x-series');
-				log.info("coll.cf_salesorder_transaction_series.transactionseriescode._text=>"+coll.cf_salesorder_transaction_series.transactionseriescode._text)
+				let transactionseriescode='RSO1';
+				if(coll.cf_salesorder_transaction_series.transactionseriescode._text!='undefined'){
+					transactionseriescode=coll.cf_salesorder_transaction_series.transactionseriescode._text
+				}
 				return XSeries.findOne({
-					where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriescode._text,
+					where:{transactionseriescode:transactionseriescode,
 						deleted:0,
 						xdistributorid:coll.distributor_id._text,
 						logging:(msg)=>{
@@ -883,7 +887,6 @@ rSalesOrder.prototype.getFields=async function (log){
 					}
 					else{
 						return '';
-
 					}
 
 				}).catch(e=>{
