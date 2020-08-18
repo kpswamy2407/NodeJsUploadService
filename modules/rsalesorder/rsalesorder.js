@@ -865,14 +865,14 @@ rSalesOrder.prototype.getFields=async function (log){
 			try{
 				var dbconn=this.getDb();
 				const XSeries=dbconn.import('./../../models/x-series');
-				let transactionseriescode='RSO1';
+				let code='RSO1';
 				if(coll.cf_salesorder_transaction_series.transactionseriescode._text!='undefined'){
-					transactionseriescode=coll.cf_salesorder_transaction_series.transactionseriescode._text
+					code=coll.cf_salesorder_transaction_series.transactionseriescode._text
 				}
-				console.log(transactionseriescode);
+				console.log(code);
 				return XSeries.findOne({
 					where:{
-						transactionseriescode:transactionseriescode,
+						transactionseriescode:code,
 						deleted:0,
 						xdistributorid:distId,
 					},
