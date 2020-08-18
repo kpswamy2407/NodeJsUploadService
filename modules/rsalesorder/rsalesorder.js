@@ -1784,6 +1784,8 @@ rSalesOrder.prototype.getFields=async function (log){
 
 	 					if(productTax.length>0){
 	 						return productTax;
+	 						let indianTax=await self.getProdIndTax(productId,'','','cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
+	 						console.log(indianTax);
 	 					}
 	 					else{
 	 						var product=await dbconn.query("SELECT vtiger_xproductcf.cf_xproduct_category,vtiger_xproduct.hsncode FROM vtiger_xproduct INNER JOIN vtiger_xproductcf on vtiger_xproductcf.xproductid=vtiger_xproduct.xproductid WHERE vtiger_xproduct.xproductid = ?",{
