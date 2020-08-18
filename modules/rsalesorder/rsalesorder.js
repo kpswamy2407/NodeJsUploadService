@@ -1784,7 +1784,9 @@ rSalesOrder.prototype.getFields=async function (log){
 
 	 					if(productTax.length>0){
 	 						let indianTax=await self.getProdIndTax(productId,'','','cf_xtaxmapping_sales_tax','',taxTypeToApply,'','',txnDate,0,0,retailerTaxType,log)
-	 						console.log(indianTax);
+	 						if(indianTax.length>0){
+	 							return productTax.concat(indianTax);
+	 						}
 	 						return productTax;	
 	 					}
 	 					else{
