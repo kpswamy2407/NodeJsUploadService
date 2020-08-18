@@ -865,18 +865,13 @@ rSalesOrder.prototype.getFields=async function (log){
 			try{
 				var dbconn=this.getDb();
 				const XSeries=dbconn.import('./../../models/x-series');
-				console.log(XSeries);
+				
 				let code='RSO1';
 				if(coll.cf_salesorder_transaction_series.hasOwnProperty('transactionseriescode') && typeof(coll.cf_salesorder_transaction_series.transactionseriescode._text) !='undefined'){
-					code=coll.cf_salesorder_transaction_series.transactionseriescode._text
-					console.log(coll.cf_salesorder_transaction_series.transactionseriescode._text)
-					console.log("hllo")
+					code=coll.cf_salesorder_transaction_series.transactionseriescode._text	
 				}
-				else{
-					code='RSO1';
-					console.log("00000")
-				}
-				console.log(code);
+				
+				
 				return XSeries.findOne({
 					where:{
 						transactionseriescode:code,
@@ -896,13 +891,10 @@ rSalesOrder.prototype.getFields=async function (log){
 					}
 
 				}).catch(e=>{
-					console.log("es",e);
 					return '';
-
 				});
 			}
 			catch(e){
-				console.log(e);
 				return '';
 			}
 		}
