@@ -867,6 +867,7 @@ rSalesOrder.prototype.getFields=async function (log){
 			try{
 				var dbconn=this.getDb();
 				const XSeries=dbconn.import('./../../models/x-series');
+				log.info("coll.cf_salesorder_transaction_series.transactionseriescode._text=>"+coll.cf_salesorder_transaction_series.transactionseriescode._text)
 				return XSeries.findOne({
 					where:{transactionseriescode:coll.cf_salesorder_transaction_series.transactionseriescode._text,
 						deleted:0,
