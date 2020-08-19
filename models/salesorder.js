@@ -5,23 +5,7 @@ module.exports=(sequelize,DataTypes)=>{
         },
         subject:{
             type: DataTypes.STRING(100),
-            validate:{
-                isExists:function(value,error) {
-                        SalesOrder.findOne({
-                          where: {deleted: '0',subject:value},
-                          attributes: ['salesorderid']
-                        }).then(order => {
-                          if(order){
-                            error('Order already exists in the application');
-                          }
-                          else{
-                            error();
-                          }
-                        }).catch(e=>{
-                            error('Unable to validate the subject');
-                        });
-                }
-            }
+            defaultValue:null,
         },
         buyerid:{
             type: DataTypes.STRING(100),
