@@ -181,8 +181,8 @@ const Op = Sequelize.Op
  				if(salesorderid != false){
  					rso.salesorderid=salesorderid;
  					rsocf.salesorderid=salesorderid;
- 					const soSeqNumber=await self.getSeqNumberForModule('increment','xrSalesOrder','','',log);
-	 					rso.salesorder_no=soSeqNumber;
+ 					/*const soSeqNumber=await self.getSeqNumberForModule('increment','xrSalesOrder','','',log);
+	 					rso.salesorder_no=soSeqNumber;*/
  					return await rso.save({logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  						return await rsocf.save({logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
 
@@ -625,11 +625,11 @@ rSalesOrder.prototype.getFields=async function (log){
 					return config.value;
 				}
 				else{
-					return false;
+					return "";
 				}
 
 			}).catch(e=>{
-				return false;
+				return "";
 			});
 		}
 		rSalesOrder.prototype.getProductTrackSerial=async function (productId,log){
