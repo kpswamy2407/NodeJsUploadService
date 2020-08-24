@@ -1469,8 +1469,8 @@ rSalesOrder.prototype.getFields=async function (log){
 
 				var {so,socf,soBillAds,soShipAds,error}= await self.prepareSo(rso,rsocf,distId,custType,log);
 				if(error==false){
-					/*const soSeqNumber=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
-	 					so['salesorder_no']=soSeqNumber;*/
+					const soSeqNumber=await self.getSeqNumberForModule('increment','xSalesOrder','','',log);
+	 					so['salesorder_no']=soSeqNumber;
 					return await so.save({logging:(msg)=>{log.debug(msg)}}).then(async(so)=>{
 						const {xGenSeries,xtransactionseriesid} = await self.getDefaultXSeries(distId,'Sales Order',true,log);
  			 			socf['cf_salesorder_transaction_number']=xGenSeries;
