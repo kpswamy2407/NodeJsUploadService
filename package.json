@@ -4,7 +4,12 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "test": "mocha test"
+    "test": "mocha test",
+    "fnxt.start": "pm2-runtime start bin/www -i 4",
+    "fnxt.list": "pm2 list",
+    "fnxt.stop": "pm2 stop all",
+    "fnxt.reload": "pm2 reload all",
+    "fnxt.delete": "pm2 delete all"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
@@ -14,6 +19,7 @@
     "moment": "^2.24.0",
     "morgan": "~1.9.1",
     "mysql2": "^1.7.0",
+    "pm2": "^4.4.1",
     "rotating-file-stream": "^1.4.6",
     "sequelize": "^5.21.3",
     "sequelize-cli": "^5.5.1",
