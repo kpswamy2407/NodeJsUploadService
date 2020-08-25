@@ -3,3 +3,8 @@ node_modules
 package-lock.json
 public/logs
 config/env
+.env
+Dockerfile
+.dockerignore
+public/logs/*
+node_modules/

@@ -3,4 +3,5 @@
 DockerFile
 node_modules
 .dockerignore
+.env
 

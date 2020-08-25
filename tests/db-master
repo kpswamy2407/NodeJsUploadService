@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-require('dotenv').config({
-    path:'./config/env'
-});
+
 var colors = require('colors');
 const Sequelize=require('sequelize');
 

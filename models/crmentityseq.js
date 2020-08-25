@@ -11,7 +11,6 @@ module.exports=(sequelize,DataTypes)=>{
         freezeTableName:true,
     });
     CrmEntitySeq.fnxtIncrement= function(log){
-
         return sequelize.query('UPDATE vtiger_crmentity_seq SET id=LAST_INSERT_ID(id + 1)',{
             types: sequelize.QueryTypes.UPDATE,
             logging:(msg)=>{
@@ -20,7 +19,7 @@ module.exports=(sequelize,DataTypes)=>{
         }).spread( result => {
             return result.insertId;
         }).catch(e=>{
-            log.error("vtiger_crmentity_seq error "+e.message)
+            return false;
         });
     
     }

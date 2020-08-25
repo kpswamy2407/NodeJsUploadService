@@ -1,4 +1,0 @@
-Executing (61b0f968-6716-48d8-b850-40c5505f75e0): START TRANSACTION;
-Executing (61b0f968-6716-48d8-b850-40c5505f75e0): SELECT `id` FROM `vtiger_crmentity_seq` AS `CrmEntitySeq` LIMIT 1;
-Executing (default): UPDATE `vtiger_crmentity_seq` SET `id`=`id`+ 1 WHERE `id` = 222152
-Executing (61b0f968-6716-48d8-b850-40c5505f75e0): COMMIT;

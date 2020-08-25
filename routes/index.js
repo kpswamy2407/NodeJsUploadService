@@ -4,7 +4,11 @@ var router = express.Router();
 var xmlParser=require('body-parser').raw({
     type:'application/xml'
 });
-var { post,get } = require('./xml-upload');
-router.route('/xml-upload').post(xmlParser,post);
-router.route('/xml-upload').get(get);
+var { post,get } = require('./vtiger-xrso');
+router.route('/vtiger-xrso').post(xmlParser,post);
+router.route('/vtiger-xrso').get(get);
+router.route('/test').get((req,res)=>{
+	res.send('Hello World!')
+})
 module.exports = router;
+
