@@ -30,14 +30,12 @@ function get(req,res,next){
     var app=req.app;
     const applog=app.get('applog');
     const dbconn=app.get('dbconn');
-    const CrmEntitySeq=dbconn.import('./../models/crmentityseq');
-    return CrmEntitySeq.fnxtIncrement().then(id=>{
-       return res.json({
-            status:id,
+    return dbconn.query("select id from vtiger_crmentity_seq limit 1").spread(seq=>{
+         return res.json({
+            status:seq.id,
             msg:'Upload service has been done.',
             data:null,
         });
-    
     }).catch(e=>{
         return res.json({
             status:e.message,
@@ -45,8 +43,6 @@ function get(req,res,next){
             data:null,
         });
     });
-
-   
 }
 module.exports=exports={
     post,get
