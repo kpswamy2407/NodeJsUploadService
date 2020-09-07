@@ -55,6 +55,7 @@ var BaseModule=(function(){
         })
         .catch(err => {
             this.fatal(err.message);
+            console.log(err);
             throw new BaseError('Error while saving XML to the db.');
         });
     }

@@ -61,9 +61,9 @@ const Op = Sequelize.Op
  			var self=this;
  			var xmlf=new XmlFile();
  			xmlf.setLog(this.getLog());
- 			xmlf.basedir='./public/uploads';
+ 			xmlf.basedir='./public/iocl/uploads';
  			xmlf.module='xrSalesOrder';
-
+ 			
  			xmlf.fileName=moment().format('YYYYMMDDHHmmss.SSS');
  			xmlf.date=moment().format('YYYY-MM-DD');
  			xmlf.logDir();
@@ -181,8 +181,8 @@ const Op = Sequelize.Op
  				if(salesorderid != false){
  					rso.salesorderid=salesorderid;
  					rsocf.salesorderid=salesorderid;
- 					/*const soSeqNumber=await self.getSeqNumberForModule('increment','xrSalesOrder','','',log);
-	 					rso.salesorder_no=soSeqNumber;*/
+ 					const soSeqNumber=await self.getSeqNumberForModule('increment','xrSalesOrder','','',log);
+	 					rso.salesorder_no=soSeqNumber;
  					return await rso.save({logging:(msg)=>{log.debug(msg);}}).then(async (so) => {
  						return await rsocf.save({logging:(msg)=>{log.debug(msg);}}).then(async (socf)=>{
 

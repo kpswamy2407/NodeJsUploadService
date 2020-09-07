@@ -32,7 +32,7 @@ var XmlCtrl=(function(){
             const moment=require('moment')();
             var xmlf=new XmlFile();
             xmlf.setLog(this.getLog());
-            xmlf.basedir='./public/uploads';
+            xmlf.basedir='./public/iocl/uploads';
             xmlf.module=modl;
             xmlf.content=this.xmlstr;
             xmlf.fileName=moment.format('YYYYMMDDHHmmss.SSS')+Math.random().toString(36).substring(7);

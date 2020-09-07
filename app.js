@@ -9,7 +9,7 @@ const dbconn=require('./config/dbconn');
 logger.token('fnxt-date',function(req,res){
     return require('moment')().format('YYYY-MM-DD HH:mm:ss.SSS');
 });
-var logStream=require('rotating-file-stream')('access.log',{
+var logStream=require('rotating-file-stream')('iocl-access.log',{
     interval: '1d',
     path:log_dir
 });
@@ -24,7 +24,7 @@ app.set('dbconn',dbconn);
     const opts={
         errorEventName:'error',
         logDirectory:log_dir, // NOTE: folder must exist and be writable...
-        fileNamePattern:'application.log',
+        fileNamePattern:'iocl-application.log',
         dateFormat:'YYYY.MM.DD',
         timestampFormat:'YYYY-MM-DD HH:mm:ss.SSS',
         level:'all',
