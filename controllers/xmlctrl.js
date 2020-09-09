@@ -26,13 +26,13 @@ var XmlCtrl=(function(){
     }
     XmlCtrl.SAVE_XML_TO_FS=true;
     XmlCtrl.prototype.XML_FILE_NAME=null;
-    XmlCtrl.prototype.saveXml=function(modl){
+    XmlCtrl.prototype.saveXml=function(modl,client){
         if(XmlCtrl.SAVE_XML_TO_FS){
             const XmlFile=require('./../utils/xml-file');
             const moment=require('moment')();
             var xmlf=new XmlFile();
             xmlf.setLog(this.getLog());
-            xmlf.basedir='./public/iocl/uploads';
+            xmlf.basedir='./public/'+client+'/uploads';
             xmlf.module=modl;
             xmlf.content=this.xmlstr;
             xmlf.fileName=moment.format('YYYYMMDDHHmmss.SSS')+Math.random().toString(36).substring(7);
@@ -43,7 +43,7 @@ var XmlCtrl=(function(){
         }
         return Promise.resolve(true);
     }
-   XmlCtrl.prototype.import=function(){
+   XmlCtrl.prototype.import=function(client){
         try{
 
             var collc=new BaseCollection(this.xmljs);
@@ -59,7 +59,7 @@ var XmlCtrl=(function(){
             var modl=new Module(this.xmljs);
             modl.setDb(this.getDb());
             modl.setLog(this.getLog());
-            return this.saveXml(name).then(() => modl.import(this.xmlstr,this.XML_FILE_NAME));
+            return this.saveXml(name,client).then(() => modl.import(this.xmlstr,this.XML_FILE_NAME,client));
             
         }catch(e){
             console.log('catch block in controller',e);

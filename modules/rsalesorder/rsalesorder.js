@@ -56,12 +56,12 @@ const Op = Sequelize.Op
  		this.models['CrmEntitySeq']=CrmEntitySeq;
  		return this;
  	};
- 	rSalesOrder.prototype.import=async function(xml,xmlFile){
+ 	rSalesOrder.prototype.import=async function(xml,xmlFile,client){
  		try{
  			var self=this;
  			var xmlf=new XmlFile();
  			xmlf.setLog(this.getLog());
- 			xmlf.basedir='./public/iocl/uploads';
+ 			xmlf.basedir='./public/'+client+'/uploads';
  			xmlf.module='xrSalesOrder';
  			
  			xmlf.fileName=moment().format('YYYYMMDDHHmmss.SSS');
