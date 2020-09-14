@@ -317,9 +317,10 @@ rSalesOrder.prototype.prepareValues=async function(coll,fields,audit,log,distId,
  			 	 	case 'cf_xrso_beat':
  			 	 	log.info("=========== Related Module: Beat ================")
  			 	 	if(typeof(coll.cf_xrso_beat.beatcode._text)!=='undefined' && (coll.cf_xrso_beat.beatcode._text).length>0){
- 			 	 		var beatId=await self.getBeat(coll,log,distId,prkey);
+ 			 	 		const beatId=await self.getBeat(coll,log,distId,prkey);
+ 			 	 		log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
  			 	 		if(beatId){
- 			 	 			log.info(field.columnname+" : "+beatId+" type of data :" +field.typeofdata+" ui type : " +field.uitype);
+ 			 	 			
  			 	 			rso[field.columnname]=beatId;
  			 	 			rsocf[field.columnname]=beatId;
  			 	 		}
@@ -605,6 +606,7 @@ rSalesOrder.prototype.getFields=async function (log){
 					}
 
 				}).catch(e=>{
+					log.error(" unable to get related module values for beat " + e.message)
 					return false;
 				});
 			}
@@ -1639,6 +1641,33 @@ rSalesOrder.prototype.getFields=async function (log){
  					return false;
  				});
  				if(soRel){
+ 					/*const sxbinfo=new SaleXBatchInfo();
+ 					sxbinfo['transaction_id']=soRel['id'];
+ 					sxbinfo['trans_line_id']=soRel['lineitem_id'];
+ 					sxbinfo['product_id']=soRel['productid'];
+ 					sxbinfo['pkd']='';
+ 					sxbinfo['expiry']='';
+ 					sxbinfo['transaction_type']='SO';
+ 					sxbinfo['sqty']=soRel['quantity'];
+ 					sxbinfo['sfqty']=0.000000;
+ 					sxbinfo['ptr']=soRel['ptr'];
+ 					sxbinfo['pts']=0.000000;
+ 					sxbinfo['mrp']=0.000000;
+ 					sxbinfo['ecp']=0.000000;
+ 					sxbinfo['reconcile']='';
+ 					sxbinfo['distributor_id']=distId;
+ 					const trackSerial=await self.getProductTrackSerial(soRel['productid'],log);
+ 					sxbinfo['track_serial']=trackSerial;
+ 					sxbinfo['created_at']=moment().format('YYYY-MM-DD HH:mm:ss');;
+ 					sxbinfo['modified_at']=moment().format('YYYY-MM-DD HH:mm:ss');;
+ 					sxbinfo['deleted']=0;
+ 					await sxbinfo.save({logging:(msg)=>{
+ 						log.debug(msg);
+ 					}}).then(async function(sxBatchInfo){
+ 						log.info("vtiger_xsalestranaction_batchinfo saved");
+ 					}).catch(e=>{
+ 						log.error("vtiger_xsalestranaction_batchinfo " + e.message);
+ 					})*/
 
  					var total=await self.updateSoXRelInfo(so,socf,soRel,distId,log);
  					log.info("===================== tax calucation - start ==========")

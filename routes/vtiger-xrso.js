@@ -1,9 +1,6 @@
 var XmlCtrl=require('./../controllers/xmlctrl');
 const { HttpError }=require('./../core');
 var {Sequelize,Transaction,QueryTypes} = require("sequelize");
-const fs=require('fs');
-const yaml=require('yaml');
-
 function post(req,res,next){
     var app=req.app;
     const applog=app.get('applog');

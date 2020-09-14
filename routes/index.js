@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 const logs_folder=require('path').join(__dirname,'..','public','logs');
-const uploads_folder=require('path').join(__dirname,'..','public','uploads');
+const uploads_folder=require('path').join(__dirname,'..','public');
 var xmlParser=require('body-parser').raw({
     type:'application/xml'
 });
@@ -14,7 +14,7 @@ router.use('/vtiger-xrso/logs',[
 ]);
 router.use('/vtiger-xrso/uploads',[
 	express.static(uploads_folder), 
-	serveIndex(uploads_folder)
+	serveIndex(uploads_folder,{view:'details'})
 ]);
 router.route('/vtiger-xrso/:client').post(xmlParser,post);
 router.route('/vtiger-xrso/:client').get(get);

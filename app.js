@@ -9,12 +9,12 @@ const dbconn_tide=require('./config/dbconn_tide');
 const dbconn_demo=require('./config/dbconn_demo');
 const dbconn_panasonic=require('./config/dbconn_panasonic');
 const dbconn_iocl=require('./config/dbconn_iocl');
-
+const dbconn_adani=require('./config/dbconn_adani');
 
 logger.token('fnxt-date',function(req,res){
     return require('moment')().format('YYYY-MM-DD HH:mm:ss.SSS');
 });
-var logStream=require('rotating-file-stream')('access.log',{
+var logStream=require('rotating-file-stream')('xrso-access.log',{
     interval: '1d',
     path:log_dir
 });
@@ -27,6 +27,8 @@ app.set('dbconn_tide',dbconn_tide);
 app.set('dbconn_demo',dbconn_demo);
 app.set('dbconn_panasonic',dbconn_panasonic);
 app.set('dbconn_iocl',dbconn_iocl);
+app.set('dbconn_adani',dbconn_adani);
+
 
 
 // application file logger
@@ -34,7 +36,7 @@ app.set('dbconn_iocl',dbconn_iocl);
     const opts={
         errorEventName:'error',
         logDirectory:log_dir, // NOTE: folder must exist and be writable...
-        fileNamePattern:'application.log',
+        fileNamePattern:'xrso-application.log',
         dateFormat:'YYYY.MM.DD',
         timestampFormat:'YYYY-MM-DD HH:mm:ss.SSS',
         level:'all',
