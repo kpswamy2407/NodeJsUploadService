@@ -10,6 +10,8 @@ const dbconn_demo=require('./config/dbconn_demo');
 const dbconn_panasonic=require('./config/dbconn_panasonic');
 const dbconn_iocl=require('./config/dbconn_iocl');
 const dbconn_adani=require('./config/dbconn_adani');
+const dbconn_hul=require('./config/dbconn_hul');
+
 
 logger.token('fnxt-date',function(req,res){
     return require('moment')().format('YYYY-MM-DD HH:mm:ss.SSS');
@@ -28,6 +30,8 @@ app.set('dbconn_demo',dbconn_demo);
 app.set('dbconn_panasonic',dbconn_panasonic);
 app.set('dbconn_iocl',dbconn_iocl);
 app.set('dbconn_adani',dbconn_adani);
+app.set('dbconn_hul',dbconn_hul);
+
 
 
 
