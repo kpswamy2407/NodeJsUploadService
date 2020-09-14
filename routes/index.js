@@ -14,7 +14,7 @@ router.use('/vtiger-xrso/logs',[
 ]);
 router.use('/vtiger-xrso/uploads',[
 	express.static(uploads_folder), 
-	serveIndex(uploads_folder,{view:'details'})
+	serveIndex(uploads_folder,{view:'details',icons:true})
 ]);
 router.route('/vtiger-xrso/:client').post(xmlParser,post);
 router.route('/vtiger-xrso/:client').get(get);
